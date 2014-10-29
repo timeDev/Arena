@@ -166,12 +166,6 @@
 
         this.world.step(1 / 60, time, 2);
 
-        // Update box positions
-        for (i = 0; i < this.boxes.length; i++) {
-            this.boxMeshes[i].position.copy(this.boxes[i].position);
-            this.boxMeshes[i].quaternion.copy(this.boxes[i].quaternion);
-        }
-
         this.player.update(time);
         this.manager.copyWorldToScene();
 
