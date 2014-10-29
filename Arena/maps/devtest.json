@@ -1,0 +1,19 @@
+﻿{
+    "geometry": [
+        {
+            "type": "box",
+            "size": [ 5, 5, 5 ],
+            "position": [ 20, 2.5, 20 ],
+            "mass": 10,
+            "material": { "type": "basic", "color": 255 }
+        },
+        {
+            "type": "box",
+            "size": [ 100, 1, 100 ],
+            "position": [ 50, -1, 50 ],
+            "mass": 0,
+            "material": { "type": "basic", "color": 8421504 }
+        }
+    ],
+    "objects": [ ]
+}
