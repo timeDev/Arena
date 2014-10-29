@@ -11,7 +11,7 @@
                 groundBody = new CANNON.Body({ mass: 0 }),
                 geometry = new THREE.PlaneGeometry(300, 300, 50, 50),
             // Internal
-                lvlUrl = '/maps/devtest.json';
+                lvlUrl = 'maps/devtest.json';
 
             // ====== Cannon ======
 
