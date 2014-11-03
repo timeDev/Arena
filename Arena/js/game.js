@@ -13,6 +13,10 @@
             // Internal
                 lvlUrl = 'maps/devtest.json';
 
+            // -- Console --
+            this.console = new Arena.Console();
+            document.body.appendChild(this.console.domElement);
+
             // ====== Cannon ======
 
             this.world = new CANNON.World();
@@ -30,13 +34,15 @@
                 this.world.solver = solver;
             }
 
-            this.world.gravity.set(0, -10, 0);
+            this.world.gravity.set(0, -20, 0);
             this.world.broadphase = new CANNON.NaiveBroadphase();
 
             // Create a plane
             groundBody.addShape(groundShape);
             groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
             this.world.add(groundBody);
+
+            this.console.writeLine("Cannon initialized");
 
             // ====== Three ======
 
@@ -57,25 +63,6 @@
             };
             document.body.appendChild(this.renderer.domElement);
 
-            // -- Camera and Player --
-
-            //this.contactNormal = new CANNON.Vec3();
-
-            /*sphereBody.addEventListener("collide", function (e) {
-                var contact = e.contact;
-    
-                // contact.bi and contact.bj are the colliding bodies, and contact.ni is the collision normal.
-                // We do not yet know which one is which! Let's check.
-                if (contact.bi.id == sphereBody.id)  // bi is the player body, flip the contact normal
-                    contact.ni.negate(contactNormal);
-                else
-                    contactNormal.copy(contact.ni); // bi is something else. Keep the normal as it is
-    
-                // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
-                if (contactNormal.dot(upAxis) > 0.5) // Use a "good" threshold value between 0 and 1 here!
-                    ; //canJump = true;
-            });*/
-
             // -- Floor --
             geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 
@@ -91,17 +78,19 @@
                 json: true,
                 success: function (res) {
                     self.level = new Arena.Level(res.json, self.manager);
+                    self.console.writeLine("Level loaded");
                 },
-                error: function (err) { console.error(err); }
+                error: function (err) { window.console.error(err); }
             });
 
             // -- Input --
             this.input = new Arena.Input();
             this.input.onpointerlocked = function () {
                 self.paused = false;
+                self.input.prevent = true;
             };
-            this.input.onpointerunlocked = function () { self.paused = true; };
-            this.input.onescape = function () { self.paused = true; };
+            this.input.onpointerunlocked = function () { self.paused = true; self.input.prevent = false; };
+            this.input.onescape = function () { self.paused = true; self.input.prevent = false; };
 
             this.input.bind('mouseaxis', 2, 'lookx');
             this.input.bind('mouseaxis', 3, 'looky');
@@ -109,6 +98,7 @@
             this.input.bind('key', keycode.a, 'movl');
             this.input.bind('key', keycode.s, 'movb');
             this.input.bind('key', keycode.d, 'movr');
+            this.input.bind('key', keycode.space, 'jump');
             this.input.bind('mouse', 0, 'shoot');
 
             // -- Player --
@@ -138,6 +128,8 @@
             this.timestamp = Date.now();
 
             window.requestAnimationFrame(function () { self.tick(); });
+
+            this.console.writeLine("Initialization done");
         };
 
     ArenaGame.prototype.tick = function () {
@@ -158,7 +150,6 @@
     };
 
     ArenaGame.prototype.update = function (time) {
-        var i;
         if (this.paused === true) {
             this.input.resetDelta();
             return;

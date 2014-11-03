@@ -9,11 +9,12 @@ Arena.Input = (function () {
         this.pointerLockElmt = undefined;
         this.exitPointerLock = undefined;
         this.keybinds = {};
+        this.prevent = false;
 
         var self = this;
 
         this.keydown = function (e) {
-            e.preventDefault();
+            if (self.prevent) { e.preventDefault(); }
             var which = e.which || e.charCode || e.keyCode;
             if (e === 27) {
                 self.onescape();
@@ -21,17 +22,17 @@ Arena.Input = (function () {
             self.registry.key[which] = 1.0;
         };
         this.keyup = function (e) {
-            e.preventDefault();
+            if (self.prevent) { e.preventDefault(); }
             var which = e.which || e.charCode || e.keyCode;
             self.registry.key[which] = 0.0;
         };
         this.mousedown = function (e) {
-            e.preventDefault();
+            if (self.prevent) { e.preventDefault(); }
             var which = (e.button & 1 ? 1 : (e.button & 2 ? 3 : (e.button & 4 ? 2 : 0)));
             self.registry.mouse[which] = 1.0;
         };
         this.mouseup = function (e) {
-            e.preventDefault();
+            if (self.prevent) { e.preventDefault(); }
             var which = (e.button & 1 ? 1 : (e.button & 2 ? 3 : (e.button & 4 ? 2 : 0)));
             self.registry.mouse[which] = 0.0;
         };
@@ -64,7 +65,7 @@ Arena.Input = (function () {
             self.updateMouseMoveHandler();
         };
         this.lockErrorCb = function () {
-            console.log('Error requesting pointer lock! Please report this issue.');
+            window.console.log('Error requesting pointer lock! Please report this issue.');
         };
 
         this.mousemove = this.mousemove1;
@@ -94,7 +95,7 @@ Arena.Input = (function () {
         if (pad.mapping === "standard") {
             this.gamepad = pad;
         } else {
-            console.log("Non standard gamepad detected: " + pad.id);
+            window.console.log("Non standard gamepad detected: " + pad.id);
         }
     };
 
@@ -168,6 +169,7 @@ var keycode = {
     pause: 19,
     capslock: 20,
     "escape": 27,
+    space: 32,
     pageup: 33,
     pagedown: 24,
     end: 35,
