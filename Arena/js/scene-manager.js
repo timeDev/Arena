@@ -1,71 +1,79 @@
-﻿Arena.SceneManager = (function () {
+﻿define([], function () {
     "use strict";
-    var SceneManager = function (scene, world) {
-        this.scene = scene;
-        this.world = world;
-        this.objects = {};
-    }, idtracker = 0;
+    var scene, world,
+        objects = {},
+        idtracker = 0,
+        // Functions
+        newId;
 
-    SceneManager.prototype.newId = function () {
+    newId = function () {
         return idtracker++;
     };
 
-    SceneManager.prototype.addToScene = function (obj) {
-        var id = this.newId();
-        obj.tracker = { id: id, type: "scene" };
-        this.scene.add(obj);
-        this.objects[id] = obj;
-        return id;
-    };
+    return {
+        scene: scene,
+        world: world,
 
-    SceneManager.prototype.addToWorld = function (obj) {
-        var id = this.newId();
-        obj.tracker = { id: id, type: "world" };
-        this.world.add(obj);
-        this.objects[id] = obj;
-        return id;
-    };
+        init: function (sc, wo) {
+            this.scene = scene = sc;
+            this.world = world = wo;
+        },
 
-    SceneManager.prototype.link = function (a, b) {
-        if (typeof a === "number") {
-            a = this.objects[a];
-            b = this.objects[b];
-        }
-        a.tracker.link = b;
-        b.tracker.link = a;
-    };
+        addToScene: function (obj) {
+            var id = newId();
+            obj.tracker = { id: id, type: "scene" };
+            scene.add(obj);
+            objects[id] = obj;
+            return id;
+        },
 
-    SceneManager.prototype.addLink = function (s, w) {
-        this.addToScene(s);
-        this.addToWorld(w);
-        this.link(s, w);
-    };
+        addToWorld: function (obj) {
+            var id = newId();
+            obj.tracker = { id: id, type: "world" };
+            world.add(obj);
+            objects[id] = obj;
+            return id;
+        },
 
-    SceneManager.prototype.copyWorldToScene = function () {
-        var i, obj;
-        for (i = 0; i < idtracker; i++) {
-            if (this.objects[i] !== undefined) {
-                obj = this.objects[i];
-                if (obj.tracker.type === "scene" && obj.tracker.link !== undefined) {
-                    obj.position.copy(obj.tracker.link.position);
-                    obj.quaternion.copy(obj.tracker.link.quaternion);
+        link: function (a, b) {
+            if (typeof a === "number") {
+                a = objects[a];
+                b = objects[b];
+            }
+            a.tracker.link = b;
+            b.tracker.link = a;
+        },
+
+        addLink: function (s, w) {
+            this.addToScene(s);
+            this.addToWorld(w);
+            this.link(s, w);
+        },
+
+        copyWorldToScene: function () {
+            var i, obj;
+            for (i = 0; i < idtracker; i++) {
+                if (objects[i] !== undefined) {
+                    obj = objects[i];
+                    if (obj.tracker.type === "scene" && obj.tracker.link !== undefined) {
+                        obj.position.copy(obj.tracker.link.position);
+                        obj.quaternion.copy(obj.tracker.link.quaternion);
+                    }
+                }
+            }
+        },
+
+        copySceneToWorld: function () {
+            var i, obj;
+            for (i = 0; i < idtracker; i++) {
+                if (objects[i] !== undefined) {
+                    obj = objects[i];
+                    if (obj.tracker.type === "world" && obj.tracker.link !== undefined) {
+                        obj.position.copy(obj.link.position);
+                        obj.quaternion.copy(obj.link.quaternion);
+                    }
                 }
             }
         }
     };
-
-    SceneManager.prototype.copySceneToWorld = function () {
-        var i, obj;
-        for (i = 0; i < idtracker; i++) {
-            if (this.objects[i] !== undefined) {
-                obj = this.objects[i];
-                if (obj.tracker.type === "world" && obj.tracker.link !== undefined) {
-                    obj.position.copy(obj.link.position);
-                    obj.quaternion.copy(obj.link.quaternion);
-                }
-            }
-        }
-    };
-
-    return SceneManager;
-}());
+});

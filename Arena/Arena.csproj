@@ -17,26 +17,27 @@
     <IISExpressUseClassicPipelineMode />
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="js\arena.js" />
     <Content Include="js\console.js" />
     <Content Include="js\game.js" />
     <Content Include="js\globals.js" />
+    <Content Include="js\keycode.js" />
     <Content Include="js\level.js" />
+    <Content Include="js\lib\domReady.js" />
+    <Content Include="js\lib\SeXHR.js" />
+    <Content Include="js\lib\Stats.js" />
+    <Content Include="js\main.js" />
     <Content Include="js\player.js" />
     <Content Include="js\scene-manager.js" />
     <Content Include="app.css" />
-    <Content Include="js\app.js" />
     <Content Include="index.html" />
     <Content Include="js\input.js" />
-    <Content Include="lib\cannon.js" />
-    <Content Include="lib\cannon.min.js" />
+    <Content Include="js\lib\cannon.js" />
     <Content Include="js\settings.js" />
-    <Content Include="lib\require.js" />
-    <Content Include="lib\SeXHR.min.js" />
-    <Content Include="lib\signals.js" />
-    <Content Include="lib\signals.min.js" />
-    <Content Include="lib\stats.min.js" />
-    <Content Include="lib\three.js" />
-    <Content Include="lib\three.min.js" />
+    <Content Include="js\lib\require.js" />
+    <Content Include="js\lib\require.min.js" />
+    <Content Include="js\lib\signals.js" />
+    <Content Include="js\lib\three.js" />
     <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>

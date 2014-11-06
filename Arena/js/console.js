@@ -1,129 +1,130 @@
-﻿Arena.Console = (function () {
+﻿define(['lib/signals', 'keycode'], function (signals, keycode) {
     'use strict';
-    var Console = function () {
-        var self = this, dragging, offsetX, offsetY;
-        this.cvars = {};
-        this.funcs = {};
-        this.cvarChanged = new signals.Signal();
-        this.funcInvoked = new signals.Signal();
-        this.command = new signals.Signal();
+    var dragging, offsetX, offsetY, module,
+        cvars = {},
+        funcs = {},
+        domElement = document.createElement('div'),
+        inElement = document.createElement('input'),
+        outElement = document.createElement('div');
 
-        this.domElement = document.createElement('div');
-        this.inElement = document.createElement('input');
-        this.outElement = document.createElement('div');
+    domElement.style.position = "absolute";
+    domElement.style.left = "100px";
+    domElement.style.top = "100px";
+    domElement.style.backgroundColor = "#202020";
+    domElement.style.padding = "10px";
+    domElement.style.overflow = "hidden";
+    inElement.style.backgroundColor = "#505050";
+    inElement.style.borderWidth = "0px";
+    inElement.style.marginTop = "10px";
+    inElement.style.width = "100%";
+    outElement.style.backgroundColor = "#505050";
+    outElement.style.padding = "2px";
+    outElement.style.fontSize = "12px";
+    outElement.style.maxHeight = "350px";
+    outElement.style.overflowY = "scroll";
 
-        this.domElement.style.position = "absolute";
-        this.domElement.style.left = "100px";
-        this.domElement.style.top = "100px";
-        this.domElement.style.backgroundColor = "#202020";
-        this.domElement.style.padding = "10px";
-        this.domElement.style.overflow = "hidden";
-        this.inElement.style.backgroundColor = "#505050";
-        this.inElement.style.borderWidth = "0px";
-        this.inElement.style.marginTop = "10px";
-        this.inElement.style.width = "100%";
-        this.outElement.style.backgroundColor = "#505050";
-        this.outElement.style.padding = "2px";
-        this.outElement.style.fontSize = "12px";
-        this.outElement.style.maxHeight = "350px";
-        this.outElement.style.overflowY = "scroll";
+    domElement.insertAdjacentHTML('afterbegin', "Console<br>");
+    domElement.appendChild(outElement);
+    domElement.appendChild(inElement);
 
-        this.domElement.insertAdjacentHTML('afterbegin', "Console<br>");
-        this.domElement.appendChild(this.outElement);
-        this.domElement.appendChild(this.inElement);
+    inElement.addEventListener('keypress', function (e) {
+        var which = e.which || e.charCode || e.keyCode;
+        if (which === keycode.enter) {
+            module.execute(inElement.value);
+            inElement.value = "";
+        }
+    });
 
-        this.inElement.addEventListener('keypress', function (e) {
-            var which = e.which || e.charCode || e.keyCode;
-            if (which === keycode.enter) {
-                self.execute(self.inElement.value);
-                self.inElement.value = "";
-            }
-        });
+    // Make the console draggable
+    domElement.addEventListener('mousedown', function (e) {
+        var rect = domElement.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        if (offsetY <= 26) {
+            dragging = true;
+            domElement.style.cursor = "default";
+        }
+    });
 
-        // Make the console draggable
-        this.domElement.addEventListener('mousedown', function (e) {
-            var rect = self.domElement.getBoundingClientRect();
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
-            if (offsetY <= 26) {
-                dragging = true;
-                self.domElement.style.cursor = "default";
-            }
-        });
+    window.addEventListener('mousemove', function (e) {
+        if (dragging) {
+            domElement.style.left = (e.clientX - offsetX) + "px";
+            domElement.style.top = (e.clientY - offsetY) + "px";
+            e.preventDefault();
+        }
+    });
 
-        window.addEventListener('mousemove', function (e) {
-            if (dragging) {
-                self.domElement.style.left = (e.clientX - offsetX) + "px";
-                self.domElement.style.top = (e.clientY - offsetY) + "px";
-                e.preventDefault();
-            }
-        });
+    domElement.addEventListener('mouseup', function () {
+        dragging = false;
+        domElement.style.cursor = "";
+    });
 
-        this.domElement.addEventListener('mouseup', function () {
-            dragging = false;
-            self.domElement.style.cursor = "";
-        });
-    };
+    module = {
+        cvarChanged: new signals.Signal(),
+        funcInvoked: new signals.Signal(),
+        command: new signals.Signal(),
+        domElement: domElement,
 
-    Console.prototype.registerCvar = function (name, defVal) {
-        this.cvars[name] = defVal;
-    };
-
-    Console.prototype.setCvar = function (name, val) {
-        var oldVal = this.cvars[name];
-        this.cvars[name] = val;
-        this.cvarChanged.dispatch(name, oldVal, val);
-    };
-
-    Console.prototype.getCvar = function (name) {
-        return this.cvars[name];
-    };
-
-    Console.prototype.registerFunc = function (name, handler) {
-        this.funcs[name] = handler;
-    };
-
-    Console.prototype.execute = function (cmd) {
-        /// <param name="cmd" type="String"></param>
-        var args, name, val;
-        this.command.dispatch(cmd);
-        args = cmd.split(' ');
-        if (args.length < 1) { return; }
-        name = args[0];
-        if (this.funcs[name] !== undefined) {
-            this.funcs[name](cmd, args);
-            this.funcInvoked(name, args);
-        } else if (this.cvars[name] !== undefined) {
-            if (args.length === 1) {
-                this.writeLine(this.getCvar(name));
-            } else {
-                val = args[1];
-                if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(val)) {
-                    val = parseFloat(val);
+        execute: function (cmd) {
+            /// <param name="cmd" type="String"></param>
+            var args, name, val;
+            this.command.dispatch(cmd);
+            args = cmd.split(' ');
+            if (args.length < 1) { return; }
+            name = args[0];
+            if (funcs[name] !== undefined) {
+                funcs[name](cmd, args);
+                this.funcInvoked.dispatch(name, args);
+            } else if (cvars[name] !== undefined) {
+                if (args.length === 1) {
+                    this.writeLine(this.getCvar(name));
+                } else {
+                    val = args[1];
+                    if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(val)) {
+                        val = parseFloat(val);
+                    }
+                    this.setCvar(name, val);
                 }
-                this.setCvar(name, val);
+            } else {
+                this.writeLine("No such command: " + args[0], 'darkred');
             }
-        } else {
-            this.writeLine("No such command: " + args[0], 'darkred');
+        },
+
+        registerCvar: function (name, defVal) {
+            cvars[name] = defVal;
+        },
+
+        setCvar: function (name, val) {
+            var oldVal = cvars[name];
+            cvars[name] = val;
+            this.cvarChanged.dispatch(name, oldVal, val);
+        },
+
+        getCvar: function (name) {
+            return cvars[name];
+        },
+
+        registerFunc: function (name, handler) {
+            funcs[name] = handler;
+        },
+
+        write: function (str, color) {
+            if (color) {
+                str = '<span style="color: ' + color + '">' + str + '</span>';
+            }
+            outElement.insertAdjacentHTML('beforeend', str);
+            outElement.scrollTop = outElement.scrollHeight;
+        },
+
+        writeLine: function (str, color) {
+            str = str || "";
+            if (color) {
+                str = '<span style="color: ' + color + '">' + str + '</span>';
+            }
+            outElement.insertAdjacentHTML('beforeend', str + "<br>");
+            outElement.scrollTop = outElement.scrollHeight;
         }
     };
 
-    Console.prototype.write = function (str, color) {
-        if (color) {
-            str = '<span style="color: ' + color + '">' + str + '</span>';
-        }
-        this.outElement.insertAdjacentHTML('beforeend', str);
-        this.outElement.scrollTop = this.outElement.scrollHeight;
-    };
-
-    Console.prototype.writeLine = function (str, color) {
-        str = str || "";
-        if (color) {
-            str = '<span style="color: ' + color + '">' + str + '</span>';
-        }
-        this.outElement.insertAdjacentHTML('beforeend', str + "<br>");
-        this.outElement.scrollTop = this.outElement.scrollHeight;
-    };
-
-    return Console;
-}());
+    return module;
+});

@@ -1,38 +1,30 @@
-﻿Arena.Level = (function () {
+﻿define(['THREE'], function (THREE) {
     "use strict";
-    var Level = function (obj, manager) {
-        var i, geoArr;
-        this.idList = [];
-        this.objList = [];
-        this.scene = manager.scene;
-        //console.warn("Stub function called");
+    var scene,
+        idList = [],
+        objList = [],
+        // Functions
+        loadGeometry,
+        loadMaterial;
 
-        if (Array.isArray(obj.geometry)) {
-            geoArr = obj.geometry;
-            for (i = 0; i < geoArr.length; i++) {
-                this.loadGeometry(geoArr[i]);
-            }
-        }
-    };
-
-    Level.prototype.loadGeometry = function (geo) {
-        var type = geo.type, pos = geo.position, material = this.loadMaterial(geo.material), mesh, size;
+    loadGeometry = function (geo) {
+        var type = geo.type, pos = geo.position, material = loadMaterial(geo.material), mesh, size;
         switch (type) {
             case 'box':
                 size = geo.size;
                 mesh = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), material);
                 break;
             default:
-                console.warn("Unknown geometry type in map: " + type);
+                window.console.warn("Unknown geometry type in map: " + type);
                 break;
         }
         mesh.position.set(pos[0], pos[1], pos[2]);
-        this.scene.add(mesh);
-        this.idList.push(mesh.id);
-        this.objList.push(geo);
+        scene.add(mesh);
+        idList.push(mesh.id);
+        objList.push(geo);
     };
 
-    Level.prototype.loadMaterial = function (mat) {
+    loadMaterial = function (mat) {
         if (mat === undefined) {
             return new THREE.MeshBasicMaterial({ color: 0x0000ff });
         }
@@ -44,13 +36,26 @@
         }
     };
 
-    Level.prototype.addConstraints = function () {
-        console.warn("Stub function called");
-    };
+    return {
+        load: function (obj, manager) {
+            var i, geoArr;
+            idList = [];
+            objList = [];
+            scene = manager.scene;
 
-    Level.prototype.getJSON = function () {
-        console.warn("Stub function called");
-    };
+            if (Array.isArray(obj.geometry)) {
+                geoArr = obj.geometry;
+                for (i = 0; i < geoArr.length; i++) {
+                    loadGeometry(geoArr[i]);
+                }
+            }
+        },
 
-    return Level;
-}());
+        addConstraints: function () {
+            window.console.warn("Stub function called");
+        },
+        getJSON: function () {
+            window.console.warn("Stub function called");
+        }
+    };
+});

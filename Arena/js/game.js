@@ -1,188 +1,207 @@
-﻿Arena.ArenaGame = (function () {
-    "use strict";
-    var HALF_PI = Math.PI / 2,
-        ArenaGame = function () {
-            this.paused = true;
-            var self = this,
+﻿// TODO: Find out why nothing is rendering
+define(['THREE', 'CANNON', 'console', 'input', 'keycode', 'Stats', 'settings', 'scene-manager', 'level', 'player'],
+    function (THREE, CANNON, console, input, keycode, Stats, settings, scenemgr, level, player) {
+        "use strict";
+        var paused = true, world, scene, camera, renderer, renderStats, updateStats, timestamp, animId,
+            // Functions
+            tick, render, update, showDebugGrid, init,
             // Cannon
-                solver = new CANNON.GSSolver(),
-                split = true,
-                groundShape = new CANNON.Plane(),
-                groundBody = new CANNON.Body({ mass: 0 }),
-                geometry = new THREE.PlaneGeometry(300, 300, 50, 50),
+            solver = new CANNON.GSSolver(),
+            split = true,
+            groundShape = new CANNON.Plane(),
+            groundBody = new CANNON.Body({ mass: 0 }),
+            geometry = new THREE.PlaneGeometry(300, 300, 50, 50),
             // Internal
-                lvlUrl = 'maps/devtest.json';
+            lvlUrl = 'maps/devtest.json';
 
-            // -- Console --
-            this.console = new Arena.Console();
-            document.body.appendChild(this.console.domElement);
+        // -- Console --
+        document.body.appendChild(console.domElement);
+
+        init = function () {
 
             // ====== Cannon ======
 
-            this.world = new CANNON.World();
-            this.world.quatNormalizeSkip = 0;
-            this.world.quatNormalizeFast = false;
+            world = new CANNON.World();
+            world.quatNormalizeSkip = 0;
+            world.quatNormalizeFast = false;
 
-            this.world.defaultContactMaterial.contactEquationStiffness = 1e9;
-            this.world.defaultContactMaterial.contactEquationRegularizationTime = 4;
+            world.defaultContactMaterial.contactEquationStiffness = 1e9;
+            world.defaultContactMaterial.contactEquationRegularizationTime = 4;
 
             solver.iterations = 7;
             solver.tolerance = 0.1;
             if (split) {
-                this.world.solver = new CANNON.SplitSolver(solver);
+                world.solver = new CANNON.SplitSolver(solver);
             } else {
-                this.world.solver = solver;
+                world.solver = solver;
             }
 
-            this.world.gravity.set(0, -20, 0);
-            this.world.broadphase = new CANNON.NaiveBroadphase();
+            world.gravity.set(0, -20, 0);
+            world.broadphase = new CANNON.NaiveBroadphase();
 
             // Create a plane
             groundBody.addShape(groundShape);
             groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-            this.world.add(groundBody);
+            world.add(groundBody);
 
-            this.console.writeLine("Cannon initialized");
+            console.writeLine("Cannon initialized");
 
             // ====== Three ======
 
             // -- Scene --
-            this.scene = new THREE.Scene();
-            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight - 5), 0.1, 1000);
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight - 5), 0.1, 1000);
 
-            this.scene.add(new THREE.AmbientLight(0x111111));
+            scene.add(new THREE.AmbientLight(0x111111));
 
-            this.renderer = new THREE.WebGLRenderer();
+            renderer = new THREE.WebGLRenderer();
             // The -5 is to hide scrollbars
-            this.renderer.setSize(window.innerWidth, window.innerHeight - 5);
-            this.renderer.domElement.onclick = function () { self.input.trylockpointer(self.renderer.domElement); };
+            renderer.setSize(window.innerWidth, window.innerHeight - 5);
+            renderer.domElement.onclick = function () { input.trylockpointer(renderer.domElement); };
             window.onresize = function () {
-                self.renderer.setSize(window.innerWidth, window.innerHeight - 5);
-                self.camera.aspect = window.innerWidth / (window.innerHeight - 5);
-                self.camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight - 5);
+                camera.aspect = window.innerWidth / (window.innerHeight - 5);
+                camera.updateProjectionMatrix();
             };
-            document.body.appendChild(this.renderer.domElement);
+            document.body.appendChild(renderer.domElement);
 
             // -- Floor --
             geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 
             // ====== Internals ======
 
-            Arena.settings.init();
+            settings.init();
 
-            this.manager = new Arena.SceneManager(this.scene, this.world);
+            scenemgr.init(scene, world);
 
             // -- Level --
             window.xhr.req({
                 url: lvlUrl,
                 json: true,
-                success: function (res) {
-                    self.level = new Arena.Level(res.json, self.manager);
-                    self.console.writeLine("Level loaded");
-                },
-                error: function (err) { window.console.error(err); }
+                done: function (err, res) {
+                    if (err) { throw err; }
+                    level.load(res.json, scenemgr);
+                    console.writeLine("Level loaded");
+                }
             });
 
             // -- Input --
-            this.input = new Arena.Input();
-            this.input.onpointerlocked = function () {
-                self.paused = false;
-                self.input.prevent = true;
+            input.onpointerlocked = function () {
+                paused = false;
+                input.prevent = true;
             };
-            this.input.onpointerunlocked = function () { self.paused = true; self.input.prevent = false; };
-            this.input.onescape = function () { self.paused = true; self.input.prevent = false; };
+            input.onpointerunlocked = function () { paused = true; input.prevent = false; };
+            input.onescape = function () { paused = true; input.prevent = false; };
 
-            this.input.bind('mouseaxis', 2, 'lookx');
-            this.input.bind('mouseaxis', 3, 'looky');
-            this.input.bind('key', keycode.w, 'movf');
-            this.input.bind('key', keycode.a, 'movl');
-            this.input.bind('key', keycode.s, 'movb');
-            this.input.bind('key', keycode.d, 'movr');
-            this.input.bind('key', keycode.space, 'jump');
-            this.input.bind('mouse', 0, 'shoot');
+            input.bind('mouseaxis', 2, 'lookx');
+            input.bind('mouseaxis', 3, 'looky');
+            input.bind('key', keycode.w, 'movf');
+            input.bind('key', keycode.a, 'movl');
+            input.bind('key', keycode.s, 'movb');
+            input.bind('key', keycode.d, 'movr');
+            input.bind('key', keycode.space, 'jump');
+            input.bind('mouse', 0, 'shoot');
 
             // -- Player --
-            this.player = new Arena.Player(this.camera, this.input);
-            this.player.yawObj.position.set(0, 2, 0);
-            this.player.cannonBody.linearDamping = 0.95;
-            this.scene.add(this.player.yawObj);
-            this.world.add(this.player.cannonBody);
+            player.init(camera);
+            player.sceneObj.position.set(0, 2, 0);
+            player.physBody.linearDamping = 0.95;
+            scene.add(player.sceneObj);
+            world.add(player.physBody);
 
             // -- Debug --
-            if (Arena.settings.debug.showGrid === true) {
-                this.showDebugGrid();
+            if (settings.debug.showGrid === true) {
+                showDebugGrid();
             }
 
             // -- Stats --
-            this.renderStats = new Stats();
-            this.renderStats.domElement.style.position = 'absolute';
-            this.renderStats.domElement.style.left = '0px';
-            this.renderStats.domElement.style.top = '0px';
-            document.body.appendChild(this.renderStats.domElement);
-            this.updateStats = new Stats();
-            this.updateStats.domElement.style.position = 'absolute';
-            this.updateStats.domElement.style.left = '0px';
-            this.updateStats.domElement.style.top = '48px';
-            document.body.appendChild(this.updateStats.domElement);
+            renderStats = new Stats();
+            renderStats.domElement.style.position = 'absolute';
+            renderStats.domElement.style.left = '0px';
+            renderStats.domElement.style.top = '0px';
+            document.body.appendChild(renderStats.domElement);
+            updateStats = new Stats();
+            updateStats.domElement.style.position = 'absolute';
+            updateStats.domElement.style.left = '0px';
+            updateStats.domElement.style.top = '48px';
+            document.body.appendChild(updateStats.domElement);
 
-            this.timestamp = Date.now();
+            timestamp = Date.now();
 
-            window.requestAnimationFrame(function () { self.tick(); });
+            animId = window.requestAnimationFrame(tick);
 
-            this.console.writeLine("Initialization done");
+            console.writeLine("Initialization done");
         };
 
-    ArenaGame.prototype.tick = function () {
-        var self = this, now = new Date();
-        window.requestAnimationFrame(function () { self.tick(); });
-        this.updateStats.begin();
-        this.update((now - this.timestamp) / 1000.0);
-        this.updateStats.end();
-        this.timestamp = now;
-        this.renderStats.begin();
-        this.render();
-        this.renderStats.end();
-    };
+        tick = function () {
+            var now = Date.now();
+            animId = window.requestAnimationFrame(tick);
+            updateStats.begin();
+            update((now - timestamp) / 1000.0);
+            updateStats.end();
+            timestamp = now;
+            renderStats.begin();
+            render();
+            renderStats.end();
+        };
 
+        render = function () {
+            window.console.log(scene, camera);
+            renderer.render(scene, camera);
+        };
 
-    ArenaGame.prototype.render = function () {
-        this.renderer.render(this.scene, this.camera);
-    };
+        update = function (time) {
+            input.updateGamepad();
+            if (paused === true) {
+                input.resetDelta();
+                return;
+            }
 
-    ArenaGame.prototype.update = function (time) {
-        if (this.paused === true) {
-            this.input.resetDelta();
-            return;
-        }
+            world.step(1 / 60, time, 2);
 
-        this.world.step(1 / 60, time, 2);
+            player.update(time);
+            scenemgr.copyWorldToScene();
 
-        this.player.update(time);
-        this.manager.copyWorldToScene();
+            input.resetDelta();
+        };
 
-        this.input.resetDelta();
-    };
+        showDebugGrid = function () {
+            var gridXZ = new THREE.GridHelper(100, 1),
+                gridXY = new THREE.GridHelper(100, 1),
+                gridYZ = new THREE.GridHelper(100, 1);
 
-    ArenaGame.prototype.showDebugGrid = function () {
-        var gridXZ = new THREE.GridHelper(100, 1),
-            gridXY = new THREE.GridHelper(100, 1),
-            gridYZ = new THREE.GridHelper(100, 1);
+            gridXZ.setColors(0xf00000, 0xff0000);
+            gridXY.setColors(0x00f000, 0x00ff00);
+            gridYZ.setColors(0x0000f0, 0x0000ff);
 
-        gridXZ.setColors(0xf00000, 0xff0000);
-        gridXY.setColors(0x00f000, 0x00ff00);
-        gridYZ.setColors(0x0000f0, 0x0000ff);
+            gridXZ.position.set(100, 0, 100);
+            gridXY.position.set(100, 100, 0);
+            gridYZ.position.set(0, 100, 100);
 
-        gridXZ.position.set(100, 0, 100);
-        gridXY.position.set(100, 100, 0);
-        gridYZ.position.set(0, 100, 100);
+            gridXY.rotation.x = Math.HALF_PI;
+            gridYZ.rotation.z = Math.HALF_PI;
 
-        gridXY.rotation.x = HALF_PI;
-        gridYZ.rotation.z = HALF_PI;
+            scene.add(gridXZ);
+            scene.add(gridXY);
+            scene.add(gridYZ);
+        };
 
-        this.scene.add(gridXZ);
-        this.scene.add(gridXY);
-        this.scene.add(gridYZ);
-    };
+        return {
+            world: world,
+            scene: scene,
+            level: level,
 
-    return ArenaGame;
-}());
+            init: init,
+
+            pause: function () {
+                paused = true;
+            },
+
+            halt: function () {
+                window.console.warn("Stopping game!");
+                console.writeLine("Stopping game", 'yellow');
+                paused = true;
+                window.cancelAnimationFrame(animId);
+            }
+        };
+    });
