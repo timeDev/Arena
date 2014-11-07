@@ -164,6 +164,9 @@ define(['lib/signals'], function (signals) {
         unbind: unbind,
         unbindKey: unbindKey,
         check: check,
-        resetDelta: resetDelta
+        resetDelta: resetDelta,
+        escape: escape,
+        pointerlocked: pointerlocked,
+        pointerunlocked: pointerunlocked
     };
 });

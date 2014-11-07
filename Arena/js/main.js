@@ -2,7 +2,6 @@
     paths: {
         'THREE': 'lib/three',
         'Stats': 'lib/Stats',
-        'CANNON': 'lib/cannon',
         'SeXHR': 'lib/SeXHR'
     },
     shim: {
@@ -11,9 +10,6 @@
         },
         'Stats': {
             exports: 'Stats'
-        },
-        'CANNON': {
-            exports: 'CANNON'
         },
         'SeXHR': {
             exports: 'Sexhr'

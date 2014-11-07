@@ -1,4 +1,4 @@
-﻿define(['THREE', 'CANNON', 'input', 'settings'], function (THREE, CANNON, input, settings) {
+﻿define(['THREE', 'lib/cannon', 'input', 'settings'], function (THREE, CANNON, input, settings) {
     'use strict';
     var shape, physBody,
         onground = false,
@@ -39,7 +39,7 @@
             pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
             pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
 
-            vec3a.set((input.check('movr') - input.check('movl')) * settings.gameplay.moveSpeed, 0, (input.check('movb') - input.check('movf')) * settings.gameplay.moveSpeed);
+            vec3a.set((input.check('movr') - input.check('movl')) * settings.player.speed, 0, (input.check('movb') - input.check('movf')) * settings.player.speed);
             vec3a.applyQuaternion(yawObj.quaternion);
 
             var vel = physBody.velocity, changeVel = new THREE.Vector3().subVectors(vec3a, vel);

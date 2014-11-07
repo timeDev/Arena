@@ -6,9 +6,8 @@
 /// <reference path="js/player.js" />
 /// <reference path="js/console.js"/>
 /// <reference path="js/lib/cannon.js" />
-/// <reference path="js/lib/SeXHR.min.js" />
+/// <reference path="js/lib/SeXHR.js" />
 /// <reference path="js/lib/three.js" />
-/// <reference path="js/lib/stats.min.js" />
+/// <reference path="js/lib/Stats.js" />
 /// <reference path="js/lib/signals.js"/>
 /// <reference path="js/lib/require.js"/>
-// This file sux.

@@ -1,5 +1,4 @@
-﻿// TODO: Find out why nothing is rendering
-define(['THREE', 'CANNON', 'console', 'input', 'keycode', 'Stats', 'settings', 'scene-manager', 'level', 'player'],
+﻿define(['THREE', 'lib/cannon', 'console', 'input', 'keycode', 'Stats', 'settings', 'scene-manager', 'level', 'player'],
     function (THREE, CANNON, console, input, keycode, Stats, settings, scenemgr, level, player) {
         "use strict";
         var paused = true, world, scene, camera, renderer, renderStats, updateStats, timestamp, animId,
@@ -86,12 +85,12 @@ define(['THREE', 'CANNON', 'console', 'input', 'keycode', 'Stats', 'settings', '
             });
 
             // -- Input --
-            input.onpointerlocked = function () {
+            input.pointerlocked.add(function () {
                 paused = false;
                 input.prevent = true;
-            };
-            input.onpointerunlocked = function () { paused = true; input.prevent = false; };
-            input.onescape = function () { paused = true; input.prevent = false; };
+            });
+            input.pointerunlocked.add(function () { paused = true; input.prevent = false; });
+            input.escape.add(function () { paused = true; input.prevent = false; });
 
             input.bind('mouseaxis', 2, 'lookx');
             input.bind('mouseaxis', 3, 'looky');
@@ -146,7 +145,6 @@ define(['THREE', 'CANNON', 'console', 'input', 'keycode', 'Stats', 'settings', '
         };
 
         render = function () {
-            window.console.log(scene, camera);
             renderer.render(scene, camera);
         };
 

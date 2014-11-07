@@ -20,7 +20,6 @@
     <Content Include="js\arena.js" />
     <Content Include="js\console.js" />
     <Content Include="js\game.js" />
-    <Content Include="js\globals.js" />
     <Content Include="js\keycode.js" />
     <Content Include="js\level.js" />
     <Content Include="js\lib\domReady.js" />
@@ -35,9 +34,9 @@
     <Content Include="js\lib\cannon.js" />
     <Content Include="js\settings.js" />
     <Content Include="js\lib\require.js" />
-    <Content Include="js\lib\require.min.js" />
     <Content Include="js\lib\signals.js" />
     <Content Include="js\lib\three.js" />
+    <None Include="Scripts\_references.js" />
     <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>

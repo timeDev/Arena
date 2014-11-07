@@ -13,7 +13,7 @@
         mass: 80,
         radius: 1.3,
         speed: 5.0,
-        maxAcc: 8.0,
+        maxAcc: 10.0,
         jumpVel: 12.0
     },
     graphics: {
