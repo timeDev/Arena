@@ -5,8 +5,8 @@
         pitchObj = new THREE.Object3D(), yawObj = new THREE.Object3D(),
         vec3a = new THREE.Vector3(), contactNormal = new CANNON.Vec3(), upAxis = new CANNON.Vec3(0, 1, 0);
 
-    physBody = new CANNON.Body({ mass: settings.gameplay.playerMass });
-    shape = new CANNON.Sphere(settings.gameplay.playerRadius);
+    physBody = new CANNON.Body({ mass: settings.player.mass });
+    shape = new CANNON.Sphere(settings.player.radius);
     physBody.addShape(shape);
 
     physBody.addEventListener('collide', function (e) {
