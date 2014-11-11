@@ -17,6 +17,7 @@
     <IISExpressUseClassicPipelineMode />
   </PropertyGroup>
   <ItemGroup>
+    <None Include="asset\model\woodCrate.json" />
     <Content Include="js\arena.js" />
     <Content Include="js\console.js" />
     <Content Include="js\game.js" />
@@ -26,7 +27,9 @@
     <Content Include="js\lib\SeXHR.js" />
     <Content Include="js\lib\Stats.js" />
     <Content Include="js\main.js" />
+    <Content Include="js\ocl.js" />
     <Content Include="js\player.js" />
+    <Content Include="js\prop.js" />
     <Content Include="js\scene-manager.js" />
     <Content Include="app.css" />
     <Content Include="index.html" />
@@ -36,6 +39,10 @@
     <Content Include="js\lib\require.js" />
     <Content Include="js\lib\signals.js" />
     <Content Include="js\lib\three.js" />
+    <Content Include="maps\example.json" />
+    <Content Include="js\.jshintrc" />
+    <Content Include="js\.jshintignore" />
+    <Content Include="asset\prop\woodCrate.json" />
     <None Include="Scripts\_references.js" />
     <Content Include="web.config" />
   </ItemGroup>
@@ -50,9 +57,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="assets\models\" />
-    <Folder Include="assets\props\" />
-    <Folder Include="assets\textures\" />
+    <Folder Include="asset\texture\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -79,7 +84,7 @@
           <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
         </WebProjectProperties>
       </FlavorProperties>
-      <UserProperties maps_2devtest_1json__JSONSchema="" />
+      <UserProperties maps_2example_1json__JSONSchema="" maps_2devtest_1json__JSONSchema="" />
     </VisualStudio>
   </ProjectExtensions>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

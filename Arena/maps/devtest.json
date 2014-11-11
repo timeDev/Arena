@@ -1,19 +1,18 @@
-﻿{
-    "geometry": [
-        {
-            "type": "box",
-            "size": [ 5, 5, 5 ],
-            "position": [ 20, 2.5, 20 ],
-            "mass": 10,
-            "material": { "type": "basic", "color": 255 }
-        },
-        {
-            "type": "box",
-            "size": [ 100, 1, 100 ],
-            "position": [ 50, -1, 50 ],
-            "mass": 0,
-            "material": { "type": "basic", "color": 8421504 }
-        }
-    ],
-    "objects": [ ]
-}
+﻿[
+    {
+        "class": [ "obj", "rbox", "matbasic", "mesh", "cbox", "body", "compound" ],
+        "obj": { "pos": [ 5, 2.5, 5 ] },
+        "rbox": [ 2, 2, 2 ],
+        "cbox": [ 2, 2, 2 ],
+        "body": { "mass": 10 },
+        "matbasic": { "color": 255 }
+    },
+    {
+        "class": [ "obj", "rbox", "matbasic", "mesh", "cbox", "body", "compound" ],
+        "obj": { "pos": [ 50, -0.011, 50 ] },
+        "rbox": [ 100, 0.01, 100 ],
+        "cbox": [ 100, 0.01, 100 ],
+        "body": { "mass": 0 },
+        "matbasic": { "color": 8421504 }
+    }
+]

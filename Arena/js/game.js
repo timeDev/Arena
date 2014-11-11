@@ -7,8 +7,6 @@
             // Cannon
             solver = new CANNON.GSSolver(),
             split = true,
-            groundShape = new CANNON.Plane(),
-            groundBody = new CANNON.Body({ mass: 0 }),
             geometry = new THREE.PlaneGeometry(300, 300, 50, 50),
             // Internal
             lvlUrl = 'maps/devtest.json';
@@ -38,11 +36,6 @@
             world.gravity.set(0, -20, 0);
             world.broadphase = new CANNON.NaiveBroadphase();
 
-            // Create a plane
-            groundBody.addShape(groundShape);
-            groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-            world.add(groundBody);
-
             console.writeLine("Cannon initialized");
 
             // ====== Three ======
@@ -50,8 +43,6 @@
             // -- Scene --
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight - 5), 0.1, 1000);
-
-            scene.add(new THREE.AmbientLight(0x111111));
 
             renderer = new THREE.WebGLRenderer();
             // The -5 is to hide scrollbars
@@ -79,7 +70,7 @@
                 json: true,
                 done: function (err, res) {
                     if (err) { throw err; }
-                    level.load(res.json, scenemgr);
+                    level.load(res.text, scenemgr);
                     console.writeLine("Level loaded");
                 }
             });
