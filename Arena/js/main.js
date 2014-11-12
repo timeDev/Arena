@@ -35,9 +35,17 @@ require(['SeXHR'], function (Sexhr) {
 });
 
 // Entry point
-require(['lib/domReady', 'arena'], function (domReady, arena) {
+require(['lib/domReady', 'arena', 'game', 'console'], function (domReady, arena, game, console) {
     'use strict';
     domReady(function () {
-        arena.init();
+        window.console.log("Playing Arena version", arena.version);
+        console.writeLine("Playing Arena version " + arena.version);
+        if (arena.debug) {
+            window.console.warn("Debug mode is enabled");
+            console.writeLine("Debug mode is enabled", 'yellow');
+            window.game = game;
+            window.debugging = true;
+        }
+        game.init();
     });
 });
