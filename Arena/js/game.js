@@ -1,5 +1,5 @@
-﻿define(['THREE', 'lib/cannon', 'console', 'input', 'keycode', 'Stats', 'settings', 'scene-manager', 'level', 'player'],
-    function (THREE, CANNON, console, input, keycode, Stats, settings, scenemgr, level, player) {
+﻿define(['THREE', 'lib/cannon', 'console', 'input', 'keycode', 'Stats', 'settings', 'scene-manager', 'level', 'player', 'SeXHR'],
+    function (THREE, CANNON, console, input, keycode, Stats, settings, scenemgr, level, player, Sexhr) {
         "use strict";
         var paused = true, world, scene, camera, renderer, renderStats, updateStats, timestamp, animId,
             // Functions
@@ -65,13 +65,11 @@
             scenemgr.init(scene, world);
 
             // -- Level --
-            window.xhr.req({
+            new Sexhr().req({
                 url: lvlUrl,
-                json: true,
                 done: function (err, res) {
                     if (err) { throw err; }
-                    level.load(res.text, scenemgr);
-                    console.writeLine("Level loaded");
+                    level.load(res.text);
                 }
             });
 

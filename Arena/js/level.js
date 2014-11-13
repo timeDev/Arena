@@ -1,4 +1,4 @@
-﻿define(['THREE', 'lib/cannon', 'scene-manager', 'console', 'ocl'], function (THREE, CANNON, scenemgr, console, ocl) {
+﻿define(['THREE', 'lib/cannon', 'scene-manager', 'console', 'ocl', 'arena', 'props'], function (THREE, CANNON, scenemgr, console, ocl, arena, props) {
     "use strict";
     ocl.define('obj', function (params) {
         if (params.pos) { this.pos = new THREE.Vector3(params.pos[0], params.pos[1], params.pos[2]); }
@@ -11,7 +11,16 @@
     });
 
     ocl.define('prop', function (name) {
-        this.name = name;
+        var ctx = this;
+        this.propName = name;
+        props.load(name, function (prop) {
+            ctx.prop = prop;
+            ctx.mesh = prop.mesh;
+            ctx.body = prop.body;
+            ctx.link = prop.link;
+            ctx.ocl.resume();
+        });
+        this.ocl.suspend();
     });
 
     ocl.define('compound', function () {
@@ -29,6 +38,19 @@
         }
     });
 
+    ocl.define('model', function (modelName) {
+        var ctx = this;
+        var cb = function (geometry, materials) {
+            ctx.geo = geometry;
+            if (materials.length) {
+                ctx.mat = materials[0];
+            }
+            ctx.ocl.resume();
+        };
+        (new THREE.JSONLoader()).load(arena.modelDir + modelName + ".json", cb, arena.textureDir);
+        this.ocl.suspend();
+    });
+
     // Geometry
 
     ocl.define('rbox', function (x, y, z) {
@@ -36,23 +58,23 @@
     });
 
     ocl.define('rcyl', function (radiusTop, radiusBottom, height, radiusSegments, heightSegments, openEnded) {
-        return new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radiusSegments, heightSegments, openEnded);
+        this.geo = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radiusSegments, heightSegments, openEnded);
     });
 
     ocl.define('rico', function (radius, detail) {
-        return new THREE.IcosahedronGeometry(radius, detail);
+        this.geo = new THREE.IcosahedronGeometry(radius, detail);
     });
 
     ocl.define('rpla', function (width, height, wSeg, hSeg) {
-        return new THREE.PlaneGeometry(width, height, wSeg, hSeg);
+        this.geo = new THREE.PlaneGeometry(width, height, wSeg, hSeg);
     });
 
     ocl.define('rsph', function (params) {
-        return new THREE.SphereGeometry(params.radius, params.widthSegments, params.heightSegments, params.phiStart, params.phiLength, params.thetaStart, params.thetaLength);
+        this.geo = new THREE.SphereGeometry(params.radius, params.widthSegments, params.heightSegments, params.phiStart, params.phiLength, params.thetaStart, params.thetaLength);
     });
 
     ocl.define('rcir', function (params) {
-        return new THREE.CircleGeometry(params.radius, params.segmetns, params.thetaStart, params.thetaLength);
+        this.geo = new THREE.CircleGeometry(params.radius, params.segmetns, params.thetaStart, params.thetaLength);
     });
 
     // Collision objects
@@ -109,25 +131,29 @@
 
     return {
         load: function (str) {
-            var i, objList = ocl.load(str);
-            for (i = 0; i < objList.length; i++) {
-                var obj = objList[i];
-                if (!obj.pos) {
-                    console.writeLine("Skipping map object without position.", 'yellow');
-                    continue;
+            ocl.load(str, function (objList) {
+                var i;
+                for (i = 0; i < objList.length; i++) {
+                    var obj = objList[i];
+                    if (!obj.pos) {
+                        console.writeLine("Skipping map object without position.", 'yellow');
+                        continue;
+                    }
+                    if (obj.mesh) {
+                        obj.mesh.position.copy(obj.pos);
+                        scenemgr.addToScene(obj.mesh);
+                    }
+                    if (obj.body) {
+                        obj.body.position.copy(obj.pos);
+                        scenemgr.addToWorld(obj.body);
+                    }
+                    if (obj.link) {
+                        scenemgr.link(obj.mesh, obj.body);
+                    }
                 }
-                if (obj.mesh) {
-                    obj.mesh.position.copy(obj.pos);
-                    scenemgr.addToScene(obj.mesh);
-                }
-                if (obj.body) {
-                    obj.body.position.copy(obj.pos);
-                    scenemgr.addToWorld(obj.body);
-                }
-                if (obj.link) {
-                    scenemgr.link(obj.mesh, obj.body);
-                }
-            }
+
+                console.writeLine("Level loaded");
+            });
         }
     };
 });

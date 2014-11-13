@@ -29,11 +29,6 @@ if (Math.HALF_PI === undefined) {
     Math.HALF_PI = Math.PI / 2;
 }
 
-require(['SeXHR'], function (Sexhr) {
-    'use strict';
-    window.xhr = new Sexhr();
-});
-
 // Entry point
 require(['lib/domReady', 'arena', 'game', 'console'], function (domReady, arena, game, console) {
     'use strict';

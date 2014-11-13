@@ -6832,6 +6832,13 @@ Box.prototype = new Shape();
 Box.prototype.constructor = Box;
 
 /**
+ * Clone function added for compatibility by timedt.
+ */
+Box.prototype.clone = function () {
+    return new Box(this.halfExtents);
+};
+
+/**
  * Updates the local convex polyhedron representation used for some collisions.
  * @method updateConvexPolyhedronRepresentation
  */
