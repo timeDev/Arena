@@ -54,6 +54,8 @@
             };
             document.body.appendChild(renderer.domElement);
 
+            scene.add(new THREE.AmbientLight());
+
             // ====== Internals ======
 
             settings.init();
