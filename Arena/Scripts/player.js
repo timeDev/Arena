@@ -9,6 +9,8 @@
     shape = new CANNON.Sphere(settings.player.radius);
     physBody.addShape(shape);
 
+    yawObj.rotation.y = Math.PI * 1.25;
+
     physBody.addEventListener('collide', function (e) {
         var contact = e.contact;
 
