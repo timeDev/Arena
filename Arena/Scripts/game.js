@@ -7,7 +7,6 @@
             // Cannon
             solver = new CANNON.GSSolver(),
             split = true,
-            geometry = new THREE.PlaneGeometry(300, 300, 50, 50),
             // Internal
             lvlUrl = 'maps/devtest.json';
 
@@ -54,9 +53,6 @@
                 camera.updateProjectionMatrix();
             };
             document.body.appendChild(renderer.domElement);
-
-            // -- Floor --
-            geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 
             // ====== Internals ======
 

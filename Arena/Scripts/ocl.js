@@ -13,7 +13,7 @@ define([], function () {
         var value, callback = function () {
             callback.i--;
             if (value !== undefined && callback.i <= 0) {
-                if (cb) { cb(value); };
+                if (cb) { cb(value); }
             }
         };
         callback.i = 0;

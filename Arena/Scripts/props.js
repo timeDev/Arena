@@ -1,7 +1,7 @@
-﻿define(['ocl', 'arena', 'SeXHR'], function (ocl, arena, SeXHR) {
+﻿define(['ocl', 'arena', 'SeXHR'], function (ocl, arena, Sexhr) {
     var propList = {},
         // Functions
-        clone, load, getProp, addPropFromJSON;
+        clone, load, getProp;
 
     clone = function (obj) {
         /// <summary>Makes an instance copy of an object by calling 

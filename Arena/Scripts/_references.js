@@ -1,1 +1,20 @@
-﻿/// <reference path="/js/lib/require.js"/>
+﻿/// <reference path="lib/require.js"/>
+/// <reference path="lib/cannon.js"/>
+/// <reference path="lib/domReady.js"/>
+/// <reference path="lib/SeXHR.js"/>
+/// <reference path="lib/signals.js"/>
+/// <reference path="lib/Stats.js"/>
+/// <reference path="lib/three.js"/>
+
+/// <reference path="arena.js"/>
+/// <reference path="console.js"/>
+/// <reference path="game.js"/>
+/// <reference path="input.js"/>
+/// <reference path="keycode.js"/>
+/// <reference path="level.js"/>
+/// <reference path="main.js"/>
+/// <reference path="ocl.js"/>
+/// <reference path="player.js"/>
+/// <reference path="props.js"/>
+/// <reference path="scene-manager.js"/>
+/// <reference path="settings.js"/>
