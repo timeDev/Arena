@@ -70,7 +70,7 @@ define(['lib/signals'], function (signals) {
     };
 
     lockErrorCb = function () {
-        window.console.log('Error requesting pointer lock! Please report this issue.');
+        window.console.error('Error requesting pointer lock! Please report this issue.');
     };
 
     window.addEventListener('keydown', handlers.keydown, false);

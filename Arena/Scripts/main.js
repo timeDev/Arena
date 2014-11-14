@@ -29,15 +29,26 @@ if (Math.HALF_PI === undefined) {
     Math.HALF_PI = Math.PI / 2;
 }
 
+// Thanks to Stackoverflow user fearphage
+if (!String.format) {
+    String.format = function (format) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return format.replace(/{(\d+)}/g, function (match, number) {
+            return typeof args[number] != 'undefined'
+              ? args[number]
+              : match
+            ;
+        });
+    };
+}
+
 // Entry point
 require(['lib/domReady', 'arena', 'game', 'console'], function (domReady, arena, game, console) {
     'use strict';
     domReady(function () {
-        window.console.log("Playing Arena version", arena.version);
-        console.writeLine("Playing Arena version " + arena.version);
+        console.log("Playing Arena version", arena.version);
         if (arena.debug) {
-            window.console.warn("Debug mode is enabled");
-            console.writeLine("Debug mode is enabled", 'yellow');
+            console.warn("Debug mode is enabled");
             window.game = game;
             window.debugging = true;
         }

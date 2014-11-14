@@ -64,6 +64,8 @@
         funcInvoked: new signals.Signal(),
         command: new signals.Signal(),
         domElement: domElement,
+        // Shorthand for window.console
+        w: window.console,
 
         execute: function (cmd) {
             /// <param name="cmd" type="String"></param>
@@ -106,6 +108,27 @@
 
         registerFunc: function (name, handler) {
             funcs[name] = handler;
+        },
+
+        log: function () {
+            var str = String.format.apply(null, arguments);
+            this.writeLine(str);
+            // Mirror output to web console
+            window.console.log(str);
+        },
+
+        warn: function () {
+            var str = String.format.apply(null, arguments);
+            this.writeLine(str, 'yellow');
+            // Mirror output to web console
+            window.console.warn(str);
+        },
+
+        error: function () {
+            var str = String.format.apply(null, arguments);
+            this.writeLine(str, 'red');
+            // Mirror console output to web console
+            window.console.error(str);
         },
 
         write: function (str, color) {

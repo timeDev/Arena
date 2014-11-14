@@ -136,7 +136,7 @@
                 for (i = 0; i < objList.length; i++) {
                     var obj = objList[i];
                     if (!obj.pos) {
-                        console.writeLine("Skipping map object without position.", 'yellow');
+                        console.warn("Skipping map object without position.");
                         continue;
                     }
                     if (obj.mesh) {
@@ -152,7 +152,7 @@
                     }
                 }
 
-                console.writeLine("Level loaded");
+                console.log("Level loaded");
             });
         }
     };

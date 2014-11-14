@@ -35,7 +35,7 @@
             world.gravity.set(0, -20, 0);
             world.broadphase = new CANNON.NaiveBroadphase();
 
-            console.writeLine("Cannon initialized");
+            console.log("Cannon initialized");
 
             // ====== Three ======
 
@@ -116,7 +116,7 @@
 
             animId = window.requestAnimationFrame(tick);
 
-            console.writeLine("Initialization done");
+            console.log("Initialization done");
         };
 
         tick = function () {
@@ -183,8 +183,7 @@
             },
 
             halt: function () {
-                window.console.warn("Stopping game!");
-                console.writeLine("Stopping game", 'yellow');
+                console.warn("Stopping game!");
                 paused = true;
                 window.cancelAnimationFrame(animId);
             }
