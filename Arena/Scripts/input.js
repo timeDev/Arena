@@ -157,16 +157,30 @@ define(['lib/signals'], function (signals) {
     };
 
     return {
+        /// <summary>Exits the pointer lock and returns full control to the user.</summary>
         exitPointerLock: exitPointerLock,
+        /// <summary>Updates gamepad state.</summary>
         updateGamepad: updateGamepad,
+        /// <summary>Attempts to aquire a pointer lock.</summary>
+        /// <returns type="Boolean">true, if successful, false if API is not available,
+        /// undefined if pointer is already locked.</returns>
         trylockpointer: trylockpointer,
+        /// <summary>Creates a new keybinding.</summary>
         bind: bind,
+        /// <summary>Deletes a keybinding by name.</summary>
         unbind: unbind,
+        /// <summary>Deletes a keybinding by key.</summary>
         unbindKey: unbindKey,
+        /// <summary>Checks the state of a keybinding.</summary>
         check: check,
+        /// <summary>Resets mouse-delta values.</summary>
         resetDelta: resetDelta,
+        
+        /// <field name="escape" type="signals.Signal">Dispatched, when the escape button is pressed.</field>
         escape: escape,
+        /// <field name="pointerlocked" type="signals.Signal">Dispatched, when a pointer lock is aquired.</field>
         pointerlocked: pointerlocked,
+        /// <field name="pointerunlocked" type="signals.Signal">Dispatched, when a pointer lock is lost.</field>
         pointerunlocked: pointerunlocked
     };
 });

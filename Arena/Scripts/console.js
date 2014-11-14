@@ -60,15 +60,19 @@
     });
 
     module = {
+        /// <field name="cvarChanged" type="signals.Signal">Dispatched when any cvar is changed. Arguments: name, old value, new value</field>
         cvarChanged: new signals.Signal(),
+        /// <field name="funcInvoced" type="signals.Signal">Dispatched when any command function is invoked. Arguments: name, args array</field>
         funcInvoked: new signals.Signal(),
+        /// <field name="command" type="signals.Signal">Dispatched when any command is executed. Args: command string</field>
         command: new signals.Signal(),
+        /// <field name="domElement" type="HTMLDivElement">The DOM display element for the console.</field>
         domElement: domElement,
-        // Shorthand for window.console
+        /// <field name="w" type="Console">Shorthand for window.console</field>
         w: window.console,
 
         execute: function (cmd) {
-            /// <param name="cmd" type="String"></param>
+            /// <param name="cmd" type="String">The command to execute. Multiple commands can be executed, seperated by semicolons.</param>
             if (cmd.indexOf(';') >= 0) {
                 var cmdList = cmd.split(';');
                 cmdList.forEach(this.execute, this);
@@ -98,10 +102,23 @@
         },
 
         registerCvar: function (name, value) {
+            /// <summary>Registers a console variable (cvar) with the given name and value.</summary>
+            /// <signature>
+            /// <param name="name" type="String">The identifier of the cvar.</param>
+            /// <param name="value" type="Object">The initial value of the cvar.</param>
+            /// </signature>
+            /// <signature>
+            /// <param name="name" type="String">The identifier of the cvar.</param>
+            /// <param name="value" type="Function">A function that will get the cvar when called
+            /// without arguments and set the cvar when called with the value as the only argument.</param>
+            /// </signature>
             cvars[name] = value;
         },
 
         setCvar: function (name, val) {
+            /// <summary>Sets the cvar with the given name to the given value.</summary>
+            /// <param name="name" type="String">The identifier of the cvar.</param>
+            /// <param name="val" type="Object">The new value to assign to the cvar.</param>
             if (typeof cvars[name] === 'function') {
                 var fn = cvars[name];
                 var oldVal = fn();
@@ -116,14 +133,21 @@
         },
 
         getCvar: function (name) {
+            /// <summary>Returns the value of the cvar with the given name.</summary>
+            /// <param name="name" type="String">The identifier of the cvar.</param>
+            /// <returns type="Object">The value of the cvar with the given name.</returns>
             return typeof cvars[name] === 'function' ? cvars[name]() : cvars[name];
         },
 
         registerFunc: function (name, handler) {
+            /// <summary>Registers a console command.</summary>
+            /// <param name="name" type="String">The command name.</param>
+            /// <param name="handler" type="Function">A function that will be called when the command is executed.</param>
             funcs[name] = handler;
         },
 
         log: function () {
+            /// <summary>Logs a formatted string to the console.</summary>
             var str = String.format.apply(null, arguments);
             this.writeLine(str);
             // Mirror output to web console
@@ -131,6 +155,7 @@
         },
 
         warn: function () {
+            /// <summary>Writes a formatted warning string to the console in yellow.</summary>
             var str = String.format.apply(null, arguments);
             this.writeLine(str, 'yellow');
             // Mirror output to web console
@@ -138,6 +163,7 @@
         },
 
         error: function () {
+            /// <summary>Writes a formatted error string to the console in red.</summary>
             var str = String.format.apply(null, arguments);
             this.writeLine(str, 'red');
             // Mirror console output to web console
@@ -145,6 +171,9 @@
         },
 
         write: function (str, color) {
+            /// <summary>Writes a colored string to the console.</summary>
+            /// <param name="str" type="String">A string.</param>
+            /// <param name="color" type="String" optional="true">A css color.</param>
             if (color) {
                 str = '<span style="color: ' + color + '">' + str + '</span>';
             }
@@ -153,6 +182,9 @@
         },
 
         writeLine: function (str, color) {
+            /// <summary>Writes a colored string to the console, followed by a line break.</summary>
+            /// <param name="str" type="String">A string.</param>
+            /// <param name="color" type="String" optional="true">A css color.</param>
             str = str || "";
             if (color) {
                 str = '<span style="color: ' + color + '">' + str + '</span>';

@@ -131,6 +131,8 @@
 
     return {
         load: function (str) {
+            /// <summary>Loads a level from JSON.</summary>
+            /// <param name="str" type="String">A string in JSON format.</param>
             ocl.load(str, function (objList) {
                 var i;
                 for (i = 0; i < objList.length; i++) {

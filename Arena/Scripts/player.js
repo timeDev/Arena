@@ -28,7 +28,9 @@
     });
 
     return {
+        /// <field name="physBody" type="CANNON.Body">The physics body this player represents.</field>
         physBody: physBody,
+        /// <field name="sceneObj" type="THREE.Object3D">The scene graph object containing the camera.</field>
         sceneObj: yawObj,
 
         init: function (camera) {
@@ -37,6 +39,7 @@
         },
 
         update: function () {
+            /// <summary>Updates the player's position and camera rotation.</summary>
             yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
             pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
             pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
