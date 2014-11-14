@@ -69,6 +69,11 @@
 
         execute: function (cmd) {
             /// <param name="cmd" type="String"></param>
+            if (cmd.indexOf(';') >= 0) {
+                var cmdList = cmd.split(';');
+                cmdList.forEach(this.execute, this);
+                return;
+            }
             var args, name, val;
             this.command.dispatch(cmd);
             args = cmd.split(' ');
