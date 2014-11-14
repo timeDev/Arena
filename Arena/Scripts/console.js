@@ -159,6 +159,17 @@
             }
             outElement.insertAdjacentHTML('beforeend', str + "<br>");
             outElement.scrollTop = outElement.scrollHeight;
+        },
+
+        getCfgString: function () {
+            /// <summary>Returns a command string that will set
+            /// all cvars to the current values when executed.</summary>
+            var str = "";
+            for (var key in cvars) {
+                if (cvars.hasOwnProperty(key)) {
+                    str = str.concat(key, " ", this.getCvar(key), ";");
+                }
+            }
         }
     };
 
