@@ -92,18 +92,26 @@
             }
         },
 
-        registerCvar: function (name, defVal) {
-            cvars[name] = defVal;
+        registerCvar: function (name, value) {
+            cvars[name] = value;
         },
 
         setCvar: function (name, val) {
-            var oldVal = cvars[name];
-            cvars[name] = val;
-            this.cvarChanged.dispatch(name, oldVal, val);
+            if (typeof cvars[name] === 'function') {
+                var fn = cvars[name];
+                var oldVal = fn();
+                fn(val);
+                var newVal = fn();
+                this.cvarChanged.dispatch(name, oldVal, newVal);
+            } else {
+                var oldVal = cvars[name];
+                cvars[name] = val;
+                this.cvarChanged.dispatch(name, oldVal, val);
+            }
         },
 
         getCvar: function (name) {
-            return cvars[name];
+            return typeof cvars[name] === 'function' ? cvars[name]() : cvars[name];
         },
 
         registerFunc: function (name, handler) {
