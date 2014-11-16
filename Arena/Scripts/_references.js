@@ -7,6 +7,7 @@
 /// <reference path="lib/three.js"/>
 
 /// <reference path="arena.js"/>
+/// <reference path="commands.js"/>
 /// <reference path="console.js"/>
 /// <reference path="game.js"/>
 /// <reference path="input.js"/>

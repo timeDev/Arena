@@ -74,6 +74,16 @@
                     }
                 }
             }
+        },
+
+        remove: function (id) {
+            var obj = objects[id];
+            if (obj.tracker.type === "scene") {
+                scene.remove(obj);
+            } else {
+                world.remove(obj);
+            }
+            delete objects[id];
         }
     };
 });

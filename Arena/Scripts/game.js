@@ -1,5 +1,5 @@
-﻿define(['THREE', 'lib/cannon', 'console', 'input', 'keycode', 'Stats', 'settings', 'scene-manager', 'level', 'player', 'SeXHR'],
-    function (THREE, CANNON, console, input, keycode, Stats, settings, scenemgr, level, player, Sexhr) {
+﻿define(['THREE', 'lib/cannon', 'console', 'input', 'keycode', 'Stats', 'settings', 'scene-manager', 'level', 'player', 'SeXHR', 'commands'],
+    function (THREE, CANNON, console, input, keycode, Stats, settings, scenemgr, level, player, Sexhr, commands) {
         "use strict";
         var paused = true, world, scene, camera, renderer, renderStats, updateStats, timestamp, animId,
             // Functions
@@ -41,7 +41,7 @@
 
             // -- Scene --
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight - 5), 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight - 5), 0.1, 1000);
 
             renderer = new THREE.WebGLRenderer();
             // The -5 is to hide scrollbars
@@ -186,6 +186,18 @@
                 console.warn("Stopping game!");
                 paused = true;
                 window.cancelAnimationFrame(animId);
+            },
+
+            conReg: function () {
+                console.registerFunc('cl_refresh_vp', function (c, args) {
+                    commands.validate([], args);
+                    renderer.setSize(window.innerWidth, window.innerHeight - 5);
+                    camera.aspect = window.innerWidth / (window.innerHeight - 5);
+                    camera.fov = settings.graphics.fov;
+                    camera.updateProjectionMatrix();
+                });
+
+                level.conReg();
             }
         };
     });

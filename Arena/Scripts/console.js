@@ -119,14 +119,15 @@
             /// <summary>Sets the cvar with the given name to the given value.</summary>
             /// <param name="name" type="String">The identifier of the cvar.</param>
             /// <param name="val" type="Object">The new value to assign to the cvar.</param>
+            var fn, oldVal, newVal;
             if (typeof cvars[name] === 'function') {
-                var fn = cvars[name];
-                var oldVal = fn();
+                fn = cvars[name];
+                oldVal = fn();
                 fn(val);
-                var newVal = fn();
+                newVal = fn();
                 this.cvarChanged.dispatch(name, oldVal, newVal);
             } else {
-                var oldVal = cvars[name];
+                oldVal = cvars[name];
                 cvars[name] = val;
                 this.cvarChanged.dispatch(name, oldVal, val);
             }
