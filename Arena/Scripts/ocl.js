@@ -10,14 +10,22 @@ define([], function () {
     };
 
     load = function (str, cb) {
-        var value, callback = function () {
+        var value, called = false, callback = function () {
+            console.log(callback.i);
             callback.i--;
             if (value !== undefined && callback.i <= 0) {
-                if (cb) { cb(value); }
+                if (cb && !called) {
+                    cb(value);
+                    called = true;
+                }
             }
         };
         callback.i = 0;
         value = JSON.parse(str, function (k, v) { return reviver(k, v, callback); });
+        if (callback.i <= 0 && cb && !called) {
+            cb(value);
+            called = true;
+        }
         return value;
     };
 
@@ -48,12 +56,14 @@ define([], function () {
 
     run = function (obj) {
         var params, cl;
-        for (; obj.ocl.i < obj.ocl.classes.length && !obj.ocl.suspended; obj.ocl.i++) {
-            cl = obj.ocl.classes[obj.ocl.i];
+        for (; obj.ocl.i < obj.ocl.classes.length && !obj.ocl.suspended;) {
+            cl = obj.ocl.classes[obj.ocl.i++];
             params = obj.ocl.value[cl] === undefined ? [] : Array.isArray(obj.ocl.value[cl]) ? obj.ocl.value[cl] : [obj.ocl.value[cl]];
             classes[cl].apply(obj, params);
         }
-        obj.ocl.done();
+        if (obj.ocl.i >= obj.ocl.classes.length && !obj.ocl.suspended) {
+            obj.ocl.done();
+        }
     };
 
     suspend = function () {
@@ -61,8 +71,13 @@ define([], function () {
     };
 
     resume = function () {
-        this.suspended = false;
-        this.run();
+        if (this.suspended) {
+            this.suspended = false;
+            this.run();
+        } else {
+            console.log('resume not suspended');
+            console.trace();
+        }
     };
 
     return {

@@ -35,6 +35,9 @@
                     });
                 }
             });
+        } else {
+            // Make sure the call is delayed
+            setTimeout(cb(getProp(name)), 1);
         }
     };
 

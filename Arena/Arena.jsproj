@@ -41,7 +41,6 @@
     <Content Include="Scripts\lib\require.js" />
     <Content Include="Scripts\lib\signals.js" />
     <Content Include="Scripts\lib\three.js" />
-    <Content Include="maps\example.json" />
     <Content Include="Scripts\.jshintrc" />
     <Content Include="Scripts\.jshintignore" />
     <Content Include="asset\prop\woodCrate.json" />
@@ -84,7 +83,7 @@
           <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
         </WebProjectProperties>
       </FlavorProperties>
-      <UserProperties maps_2example_1json__JSONSchema="" maps_2devtest_1json__JSONSchema="" />
+      <UserProperties maps_2devtest_1json__JSONSchema="" maps_2example_1json__JSONSchema="" />
     </VisualStudio>
   </ProjectExtensions>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
