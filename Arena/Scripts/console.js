@@ -1,4 +1,4 @@
-﻿define(['lib/signals', 'keycode'], function (signals, keycode) {
+﻿define(['vendor/signals', 'keycode'], function (signals, keycode) {
     'use strict';
     var dragging, offsetX, offsetY, module,
         cvars = {},

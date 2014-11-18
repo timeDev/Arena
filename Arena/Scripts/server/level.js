@@ -1,4 +1,4 @@
-﻿define(['THREE', 'lib/cannon', 'scene-manager', 'console', 'ocl', 'arena', 'props', 'commands', 'SeXHR'],
+﻿define(['THREE', 'vendor/cannon', 'scene-manager', 'console', 'ocl', 'arena', 'server/props', 'commands', 'SeXHR'],
     function (THREE, CANNON, scenemgr, console, ocl, arena, props, commands, Sexhr) {
         "use strict";
         var ids = [],

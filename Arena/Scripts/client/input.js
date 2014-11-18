@@ -1,4 +1,4 @@
-define(['lib/signals'], function (signals) {
+define(['vendor/signals'], function (signals) {
     "use strict";
     var gamepad, pointerLockElmt, handlers,
         keybinds = {},

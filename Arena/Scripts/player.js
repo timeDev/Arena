@@ -1,4 +1,4 @@
-﻿define(['THREE', 'lib/cannon', 'input', 'settings'], function (THREE, CANNON, input, settings) {
+﻿define(['THREE', 'vendor/cannon', 'client/input', 'settings'], function (THREE, CANNON, input, settings) {
     'use strict';
     var shape, physBody,
         onground = false,

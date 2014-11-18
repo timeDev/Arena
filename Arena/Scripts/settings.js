@@ -1,14 +1,14 @@
 ﻿define(['console'], function (console) {
     'use strict';
-    var values, module, keys,
+    var module, keys,
         // Function
         reg;
     reg = function (name, primary, secondary) {
         console.registerCvar(name, function (val) {
             if (val !== undefined) {
-                values[primary][secondary] = val;
+                module[primary][secondary] = val;
             }
-            return values[primary][secondary];
+            return module[primary][secondary];
         });
     };
 
@@ -34,7 +34,7 @@
         }
     };
 
-    module = values = {
+    module = {
         mouse: {
             sensitivityX: 2.0 / 1000,
             sensitivityY: 2.0 / 1000
@@ -53,29 +53,28 @@
         },
         debug: {
             showGrid: true
-        }
-    };
-
-    module.init = function () {
-        for (var kp in keys) {
-            if (keys.hasOwnProperty(kp)) {
-                for (var ks in keys[kp]) {
-                    if (typeof keys[kp][ks] === 'string') {
-                        reg(keys[kp][ks], kp, ks);
+        },
+        api: {
+            init: function () {
+                for (var kp in keys) {
+                    if (keys.hasOwnProperty(kp)) {
+                        for (var ks in keys[kp]) {
+                            if (typeof keys[kp][ks] === 'string') {
+                                reg(keys[kp][ks], kp, ks);
+                            }
+                        }
                     }
                 }
+            },
+            loadCfg: function () {
+                var cfg = window.localStorage.getItem('arena_settings');
+                console.execute(cfg);
+            },
+            writeCfg: function () {
+                window.localStorage.setItem('arena_settings', console.getCfgString());
             }
         }
     };
 
-    module.loadCfg = function () {
-        var cfg = window.localStorage.getItem('arena_settings');
-        console.execute(cfg);
-    };
-
-    module.writeCfg = function () {
-        window.localStorage.setItem('arena_settings', console.getCfgString());
-    };
-
-    return values;
+    return module;
 });

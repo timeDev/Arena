@@ -1,6 +1,6 @@
 ﻿define(['console'], function (console) {
     'use strict';
-    var
+    var module,
         // Function
         validate;
 
@@ -21,7 +21,18 @@
         return result;
     };
 
-    return {
-        validate: validate
+    module = {
+        api: {
+            validate: validate,
+            register: function () {
+                for (var key in module) {
+                    if (module.hasOwnProperty(key) && key !== 'api') {
+                        console.registerFunc(key, module[key]);
+                    }
+                }
+            }
+        }
     };
+
+    return module;
 });

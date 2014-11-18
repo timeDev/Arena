@@ -1,8 +1,8 @@
 ﻿requirejs.config({
     paths: {
-        'THREE': 'lib/three',
-        'Stats': 'lib/Stats',
-        'SeXHR': 'lib/SeXHR'
+        'THREE': 'vendor/three',
+        'Stats': 'vendor/Stats',
+        'SeXHR': 'vendor/SeXHR'
     },
     shim: {
         'THREE': {
@@ -43,7 +43,7 @@ if (!String.format) {
 }
 
 // Entry point
-require(['lib/domReady', 'arena', 'game', 'console'], function (domReady, arena, game, console) {
+require(['vendor/domReady', 'arena', 'game', 'console'], function (domReady, arena, game, console) {
     'use strict';
     domReady(function () {
         console.log("Playing Arena version", arena.version);

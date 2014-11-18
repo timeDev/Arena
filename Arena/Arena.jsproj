@@ -20,27 +20,34 @@
     <None Include="asset\model\woodCrate.json" />
     <Content Include="asset\texture\wood.jpg" />
     <Content Include="Scripts\arena.js" />
+    <Content Include="Scripts\client\controls.js" />
+    <Content Include="Scripts\client\display.js" />
     <Content Include="Scripts\commands.js" />
     <Content Include="Scripts\console.js" />
     <Content Include="Scripts\game.js" />
-    <Content Include="Scripts\keycode.js" />
-    <Content Include="Scripts\level.js" />
-    <Content Include="Scripts\lib\domReady.js" />
-    <Content Include="Scripts\lib\SeXHR.js" />
-    <Content Include="Scripts\lib\Stats.js" />
+    <Content Include="Scripts\client\keycode.js" />
+    <Content Include="Scripts\loop.js" />
+    <Content Include="Scripts\manager.js" />
+    <Content Include="Scripts\server\host.js" />
+    <Content Include="Scripts\server\level.js" />
+    <Content Include="Scripts\server\local.js" />
+    <Content Include="Scripts\server\remote.js" />
+    <Content Include="Scripts\vendor\domReady.js" />
+    <Content Include="Scripts\vendor\SeXHR.js" />
+    <Content Include="Scripts\vendor\Stats.js" />
     <Content Include="Scripts\main.js" />
     <Content Include="Scripts\ocl.js" />
     <Content Include="Scripts\player.js" />
-    <Content Include="Scripts\props.js" />
+    <Content Include="Scripts\server\props.js" />
     <Content Include="Scripts\scene-manager.js" />
     <Content Include="app.css" />
     <Content Include="index.html" />
-    <Content Include="Scripts\input.js" />
-    <Content Include="Scripts\lib\cannon.js" />
+    <Content Include="Scripts\client\input.js" />
+    <Content Include="Scripts\vendor\cannon.js" />
     <Content Include="Scripts\settings.js" />
-    <Content Include="Scripts\lib\require.js" />
-    <Content Include="Scripts\lib\signals.js" />
-    <Content Include="Scripts\lib\three.js" />
+    <Content Include="Scripts\vendor\require.js" />
+    <Content Include="Scripts\vendor\signals.js" />
+    <Content Include="Scripts\vendor\three.js" />
     <Content Include="Scripts\.jshintrc" />
     <Content Include="Scripts\.jshintignore" />
     <Content Include="asset\prop\woodCrate.json" />
@@ -83,7 +90,7 @@
           <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
         </WebProjectProperties>
       </FlavorProperties>
-      <UserProperties maps_2devtest_1json__JSONSchema="" maps_2example_1json__JSONSchema="" />
+      <UserProperties maps_2example_1json__JSONSchema="" maps_2devtest_1json__JSONSchema="" />
     </VisualStudio>
   </ProjectExtensions>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
