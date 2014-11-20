@@ -35,7 +35,7 @@ module.exports={
     "engine",
     "3d"
   ],
-  "main": "./build/cannon.js",
+  "main": "./gulp/cannon.js",
   "engines": {
     "node": "*"
   },
@@ -7968,7 +7968,7 @@ var ConvexPolyhedron = _dereq_('./ConvexPolyhedron');
  * @param {Number} radiusTop
  * @param {Number} radiusBottom
  * @param {Number} height
- * @param {Number} numSegments The number of segments to build the cylinder out of
+ * @param {Number} numSegments The number of segments to gulp the cylinder out of
  */
 function Cylinder( radiusTop, radiusBottom, height , numSegments ) {
     var N = numSegments,

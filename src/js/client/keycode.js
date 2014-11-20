@@ -1,4 +1,5 @@
-﻿define({
+﻿/*global require, module, exports */
+module.exports = {
     backspace: 8,
     tab: 9,
     enter: 13,
@@ -98,4 +99,4 @@
     backslash: 220,
     closeparen: 221,
     singleqoute: 222
-});
+};
