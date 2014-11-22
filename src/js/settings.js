@@ -9,9 +9,9 @@ var // Module
 reg = function (name, primary, secondary) {
     console.registerCvar(name, function (val) {
         if (val !== undefined) {
-            module[primary][secondary] = val;
+            module.exports[primary][secondary] = val;
         }
-        return module[primary][secondary];
+        return module.exports[primary][secondary];
     });
 };
 

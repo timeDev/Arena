@@ -1,5 +1,5 @@
 ﻿/*global require, module, exports */
-exports.version = '0.1.1';
+exports.version = require('./version').versionString;
 exports.debug = true;
 exports.assetDir = 'asset/';
 exports.modelDir = exports.assetDir + 'model/';

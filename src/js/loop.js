@@ -16,7 +16,7 @@ renderloop = function () {
 
 updateloop = function () {
     var now = Date.now();
-    render.dispatch((now - utime) / 1000.0);
+    update.dispatch((now - utime) / 1000.0);
     utime = now;
 };
 

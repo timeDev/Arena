@@ -8,9 +8,10 @@ var // Module
     props = require('./props'),
     commands = require('../commands'),
     Sexhr = require('../vendor/SeXHR'),
-    // Local
+    scenemgr = require('../scene-manager'),
+// Local
     ids = [],
-    // Function
+// Function
     spawn, clear, load;
 
 ocl.define('obj', function (params) {
@@ -93,7 +94,7 @@ ocl.define('rsph', function (params) {
 });
 
 ocl.define('rcir', function (params) {
-    this.geo = new THREE.CircleGeometry(params.radius, params.segmetns, params.thetaStart, params.thetaLength);
+    this.geo = new THREE.CircleGeometry(params.radius, params.segments, params.thetaStart, params.thetaLength);
 });
 
 // Collision objects
@@ -118,7 +119,7 @@ ocl.define('cpla', function () {
 
 ocl.define('matbasic', function (params) {
     if (typeof params.texture === 'string') {
-        params.map = THREE.TextureUtils.loadTexture(params.texture);
+        params.map = THREE.ImageUtils.loadTexture(params.texture);
     }
     this.mat = new THREE.MeshBasicMaterial(params);
 });
@@ -129,26 +130,26 @@ ocl.define('matdepth', function (params) {
 
 ocl.define('matlambert', function (params) {
     if (typeof params.texture === 'string') {
-        params.map = THREE.TextureUtils.loadTexture(params.texture);
+        params.map = THREE.ImageUtils.loadTexture(params.texture);
     }
     this.mat = new THREE.MeshLambertMaterial(params);
 });
 
 ocl.define('matnormal', function (params) {
     if (typeof params.texture === 'string') {
-        params.map = THREE.TextureUtils.loadTexture(params.texture);
+        params.map = THREE.ImageUtils.loadTexture(params.texture);
     }
     this.mat = new THREE.MeshNormalMaterial(params);
 });
 
 ocl.define('matphong', function (params) {
     if (typeof params.texture === 'string') {
-        params.map = THREE.TextureUtils.loadTexture(params.texture);
+        params.map = THREE.ImageUtils.loadTexture(params.texture);
     }
     this.mat = new THREE.MeshPhongMaterial(params);
 });
 
-spawn = function (obj) {
+exports.spawn = function (obj) {
     if (!obj.pos) {
         console.warn("Skipping map object without position.");
         return;
@@ -166,55 +167,50 @@ spawn = function (obj) {
     }
 };
 
-clear = function () {
+exports.clear = function () {
     ids.forEach(scenemgr.remove);
     ids = [];
 };
 
-load = function (str) {
+exports.load = function (str) {
     /// <summary>Loads a level from JSON.</summary>
     /// <param name="str" type="String">A string in JSON format.</param>
     ocl.load(str, function (objList) {
-        objList.forEach(spawn);
+        objList.forEach(exports.spawn);
         console.log("Level loaded");
     });
 };
 
-module.exports = {
-    load: load,
 
-    spawn: spawn,
+exports.commands = {};
 
-    clear: clear,
+exports.commands.lv_clear = function (c, args) {
+    commands.validate([], args);
+    clear();
+};
 
-    conReg: function () {
-        console.registerFunc('lv_clear', function (c, args) {
-            commands.validate([], args);
-            clear();
-        });
-        console.registerFunc('lv_load', function (c, args) {
-            if (!commands.validate(['string'], args)) {
-                return;
+exports.commands.lv_load = function (c, args) {
+    if (!commands.validate(['string'], args)) {
+        return;
+    }
+    new Sexhr().req({
+        url: args[1],
+        done: function (err, res) {
+            if (err) {
+                throw err;
             }
-            new Sexhr().req({
-                url: args[1],
-                done: function (err, res) {
-                    if (err) {
-                        throw err;
-                    }
-                    load(res.text);
-                }
-            });
-        });
-        console.registerFunc('lv_spawn', function (c, args) {
-            if (!commands.validate(['string'], args)) {
-                return;
-            }
-            try {
-                ocl.load(args[1], spawn);
-            } catch (e) {
-                console.error("Error parsing JSON!");
-            }
-        });
+            exports.load(res.text);
+        }
+    });
+};
+
+exports.commands.lv_spawn = function (c, args) {
+    if (!commands.validate(['string'], args)) {
+        return;
+    }
+    try {
+        ocl.load(args[1], spawn);
+    } catch (e) {
+        console.error("Error parsing JSON!");
     }
 };

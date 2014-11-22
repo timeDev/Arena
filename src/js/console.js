@@ -1,6 +1,6 @@
 ﻿/*global require, module, exports */
 var // Module
-    signals = require('./vendor/signals'),
+    Signal = require('./vendor/signals'),
     keycode = require('./client/keycode'),
     // Local
     dragging, offsetX, offsetY,
@@ -33,7 +33,7 @@ domElement.appendChild(inElement);
 inElement.addEventListener('keypress', function (e) {
     var which = e.which || e.charCode || e.keyCode;
     if (which === keycode.enter) {
-        module.execute(inElement.value);
+        module.exports.execute(inElement.value);
         inElement.value = "";
     }
 });
@@ -63,9 +63,9 @@ domElement.addEventListener('mouseup', function () {
 });
 
 module.exports = {
-    cvarChanged: new signals.Signal(),
-    funcInvoked: new signals.Signal(),
-    command: new signals.Signal(),
+    cvarChanged: new Signal(),
+    funcInvoked: new Signal(),
+    command: new Signal(),
     domElement: domElement,
     w: window.console,
 

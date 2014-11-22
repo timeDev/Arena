@@ -1,7 +1,7 @@
 ﻿/*global require, module, exports */
-
 var // Module
     CANNON = require('../vendor/cannon'),
+    console = require('../console'),
     // Local
     world,
     solver = new CANNON.GSSolver(),
@@ -27,3 +27,7 @@ world.gravity.set(0, -20, 0);
 world.broadphase = new CANNON.NaiveBroadphase();
 
 exports.world = world;
+
+exports.update = function (time) {
+    world.step(1 / 60, time, 2);
+};

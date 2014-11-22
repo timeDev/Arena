@@ -33,19 +33,16 @@ scene.add(new THREE.AmbientLight());
 document.body.appendChild(console.domElement);
 
 // -- Stats --
-renderStats = new Stats();
+var renderStats = new Stats();
 renderStats.domElement.style.position = 'absolute';
 renderStats.domElement.style.left = '0px';
 renderStats.domElement.style.top = '0px';
 document.body.appendChild(renderStats.domElement);
-updateStats = new Stats();
-updateStats.domElement.style.position = 'absolute';
-updateStats.domElement.style.left = '0px';
-updateStats.domElement.style.top = '48px';
-document.body.appendChild(updateStats.domElement);
 
 render = function () {
+    renderStats.begin();
     renderer.render(scene, camera);
+    renderStats.end();
 };
 
 if (settings.debug.showGrid) {
@@ -69,16 +66,18 @@ if (settings.debug.showGrid) {
     scene.add(gridYZ);
 }
 
+module.exports = {
+    scene: scene,
+    render: render,
+    camera: camera
+};
+
 // -- Commands --
-commands.cl_refresh_vp = function (c, args) {
+module.exports.commands = {};
+module.exports.commands.cl_refresh_vp = function (c, args) {
     commands.api.validate([], args);
     renderer.setSize(window.innerWidth, window.innerHeight - 5);
     camera.aspect = window.innerWidth / (window.innerHeight - 5);
     camera.fov = settings.graphics.fov;
     camera.updateProjectionMatrix();
-};
-
-modeule.exports = {
-    scene: scene,
-    render: render
 };
