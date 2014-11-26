@@ -23,8 +23,8 @@ if (!String.format) {
 // Entry point
 function entrypoint() {
     var manager = require('./manager'),
-        arena = require('./arena'),
-        console = require('./console');
+        arena = require('./common/arena'),
+        console = require('./common/console');
 
     console.log("Playing Arena version {0}", arena.version);
     if (arena.debug) {

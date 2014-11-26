@@ -2,13 +2,13 @@
 var // Module
     THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
-    console = require('../console'),
-    ocl = require('../ocl'),
-    arena = require('../arena'),
+    console = require('./console'),
+    ocl = require('./ocl'),
+    arena = require('./arena'),
     props = require('./props'),
-    commands = require('../commands'),
+    commands = require('./commands'),
     Sexhr = require('../vendor/SeXHR'),
-    scenemgr = require('../scene-manager'),
+    scenemgr = require('../client/scene-manager'),
 // Local
     ids = [],
 // Function

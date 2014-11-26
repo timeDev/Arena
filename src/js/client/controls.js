@@ -4,8 +4,8 @@ var // Module
     keycode = require('./keycode'),
     THREE = require('../vendor/THREE'),
     CANNON = require('../vendor/CANNON'),
-    settings = require('../settings'),
-    commands = require('../commands'),
+    settings = require('../common/settings'),
+    commands = require('../common/commands'),
 //Local
     paused = true, shape, physBody,
     onground = false,

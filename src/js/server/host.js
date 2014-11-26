@@ -1,1 +1,0 @@
-﻿/*global require, module, exports */

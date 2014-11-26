@@ -71,8 +71,16 @@ gulp.task('version-time', function () {
 
 gulp.task('javascript', ['clean'], function () {
     var bundler, bundle;
-    bundler = watchify(browserify('../src/js/main.js', {
-        cache: {}, packageCache: {}, fullPaths: true, debug: true
+    bundler = watchify(browserify({
+        entries: ['../src/js/main.js'],
+        baseDir: './../src/js',
+        noParse: [
+            require.resolve('./../src/js/vendor/three.js'),
+            require.resolve('./../src/js/vendor/Stats.js'),
+            require.resolve('./../src/js/vendor/cannon.js')
+        ],
+        debug: true,
+        cache: {}, packageCache: {}
     }));
 
     bundle = function () {

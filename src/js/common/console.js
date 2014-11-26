@@ -1,7 +1,7 @@
 ﻿/*global require, module, exports */
 var // Module
-    Signal = require('./vendor/signals'),
-    keycode = require('./client/keycode'),
+    Signal = require('../vendor/signals'),
+    keycode = require('../client/keycode'),
     // Local
     dragging, offsetX, offsetY,
     cvars = {},

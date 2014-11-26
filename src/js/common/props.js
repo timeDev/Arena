@@ -1,7 +1,7 @@
 ﻿/*global require, module, exports */
 var // Module
-    ocl = require('../ocl'),
-    arena = require('../arena'),
+    ocl = require('./ocl'),
+    arena = require('./arena'),
     Sexhr = require('../vendor/SeXHR'),
     // Local
     propList = {},

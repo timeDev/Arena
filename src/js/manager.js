@@ -1,23 +1,23 @@
 ﻿/*global require, module, exports */
 var // Module
-    loop = require('./loop'),
-    settings = require('./settings'),
+    loop = require('./client/loop'),
+    settings = require('./common/settings'),
     display = require('./client/display'),
     controls = require('./client/controls'),
-    local = require('./server/local'),
-    commands = require('./commands'),
-    console = require('./console'),
-    level = require('./server/level'),
-    scenemgr = require('./scene-manager'),
+    simulator = require('./common/simulator').make(),
+    commands = require('./common/commands'),
+    console = require('./common/console'),
+    level = require('./common/level'),
+    scenemgr = require('./client/scene-manager'),
     // Function
     update;
 
 settings.api.init();
-scenemgr.init(display.scene, local.world);
+scenemgr.init(display.scene, simulator.world);
 
 update = function (time) {
     controls.update(time);
-    local.update(time);
+    simulator.update(time);
     scenemgr.copyWorldToScene();
 };
 
@@ -33,7 +33,7 @@ controls.sceneObj.position.set(0, 2, 0);
 controls.physBody.position.set(0, 2, 0);
 controls.physBody.linearDamping = 0.95;
 display.scene.add(controls.sceneObj);
-local.world.addBody(controls.physBody);
+simulator.world.addBody(controls.physBody);
 
 commands.register(level.commands);
 commands.register(display.commands);

@@ -2,9 +2,9 @@
 var // Module
     THREE = require('../vendor/THREE'),
     Stats = require('../vendor/Stats'),
-    commands = require('../commands'),
-    console = require('../console'),
-    settings = require('../settings'),
+    commands = require('../common/commands'),
+    console = require('../common/console'),
+    settings = require('../common/settings'),
     input = require('./input'),
     // Local
     scene, camera, renderer,

@@ -1,6 +1,6 @@
 ﻿/*global require, module, exports */
 var // Module
-    signals = require('./vendor/signals'),
+    signals = require('./../vendor/signals'),
     // Local
     rtime, rid, render,
     utime, uid, update,
