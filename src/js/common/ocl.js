@@ -1,15 +1,39 @@
-﻿// Object class Loader
+﻿/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+// Object class Loader
 /*global require, module, exports */
-var // Local
+var
+// Local
     classes = {},
-    // Function
-    define, load, reviver, suspend, resume, run;
+// Function
+    suspend, resume, run;
 
-define = function (name, fun) {
+exports.define = function (name, fun) {
     classes[name] = fun;
 };
 
-load = function (str, cb) {
+exports.load = function (str, cb) {
     var value, called = false, callback = function () {
         callback.i--;
         if (value !== undefined && callback.i <= 0) {
@@ -21,7 +45,7 @@ load = function (str, cb) {
     };
     callback.i = 0;
     value = JSON.parse(str, function (k, v) {
-        return reviver(k, v, callback);
+        return exports.reviver(k, v, callback);
     });
     if (callback.i <= 0 && cb && !called) {
         cb(value);
@@ -30,7 +54,7 @@ load = function (str, cb) {
     return value;
 };
 
-reviver = function (key, value, cb) {
+exports.reviver = function (key, value, cb) {
     var result = {};
     if (typeof value !== 'object') {
         return value;
@@ -87,10 +111,4 @@ resume = function () {
         console.log('resume not suspended');
         console.trace();
     }
-};
-
-module.exports = {
-    reviver: reviver,
-    define: define,
-    load: load
 };

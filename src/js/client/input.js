@@ -1,20 +1,45 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 /*global require, module, exports */
-var // Module
+var
+// Module
     Signal = require('../vendor/signals'),
-    // Local
+// Local
     gamepad, pointerLockElmt, handlers,
     keybinds = {},
     registry = {key: {}, mouse: {}},
     pointerLocked = false,
     prevent = false,
     mousepos = [0, 0, 0, 0],
-    // Functions
-    updateMouseMoveHandler, exitPointerLock, lockChangeCb, lockErrorCb, updateGamepad,
-    trylockpointer, bind, unbind, unbindKey, check, resetDelta,
-    // Signals
-    escape = new Signal(),
-    pointerlocked = new Signal(),
-    pointerunlocked = new Signal();
+// Functions
+    updateMouseMoveHandler, lockChangeCb, lockErrorCb,
+    bind, unbind, check;
+
+// Signals
+exports.escape = new Signal();
+exports.pointerlocked = new Signal();
+exports.pointerunlocked = new Signal();
 
 handlers = {
     keydown: function (e) {
@@ -23,7 +48,7 @@ handlers = {
         }
         var which = e.which || e.charCode || e.keyCode;
         if (e === 27) {
-            escape.dispatch();
+            exports.escape.dispatch();
         }
         registry.key[which] = 1.0;
     },
@@ -71,10 +96,10 @@ updateMouseMoveHandler = function () {
 lockChangeCb = function () {
     if (document.pointerLockElement === pointerLockElmt || document.mozPointerLockElement === pointerLockElmt || document.webkitPointerLockElement === pointerLockElmt) {
         pointerLocked = true;
-        pointerlocked.dispatch();
+        exports.pointerlocked.dispatch();
     } else {
         pointerLocked = false;
-        pointerunlocked.dispatch();
+        exports.pointerunlocked.dispatch();
     }
     updateMouseMoveHandler();
 };
@@ -103,7 +128,7 @@ navigator.getGamepads = navigator.getGamepads || navigator.webkitGetGamepads || 
     return [];
 };
 
-updateGamepad = function () {
+exports.updateGamepad = function () {
     var pads = navigator.getGamepads(), pad;
     if (!pads || pads.length === 0 || !pads[0]) {
         return;
@@ -117,12 +142,12 @@ updateGamepad = function () {
     }
 };
 
-trylockpointer = function (element) {
+exports.trylockpointer = function (element) {
     if (pointerLocked) {
         return;
     }
     element.requestPointerLock = element.requestPointerLock || element.webkitRequestPointerLock || element.mozRequestPointerLock;
-    exitPointerLock = document.exitPointerLock || document.webkitExitPointerLock || document.mozExitPointerLock;
+    exports.exitPointerLock = document.exitPointerLock || document.webkitExitPointerLock || document.mozExitPointerLock;
     if (!element.requestPointerLock) {
         return false;
     }
@@ -131,7 +156,7 @@ trylockpointer = function (element) {
     return true;
 };
 
-bind = function (what, key, name) {
+exports.bind = function (what, key, name) {
     keybinds[name] = {what: what, key: key};
 
     // Init keys so that they don't have to be pressed once
@@ -140,11 +165,11 @@ bind = function (what, key, name) {
     }
 };
 
-unbind = function (name) {
+exports.unbind = function (name) {
     delete keybinds[name];
 };
 
-unbindKey = function (what, key) {
+exports.unbindKey = function (what, key) {
     var bindings = keybinds, prop;
     for (prop in bindings) {
         if (bindings.hasOwnProperty(prop) && bindings[prop].what === what && bindings[prop].key === key) {
@@ -153,7 +178,7 @@ unbindKey = function (what, key) {
     }
 };
 
-check = function (name) {
+exports.check = function (name) {
     var binding = keybinds[name], what = binding.what, key = binding.key;
     if (what === "key" || what === "mouse") {
         return registry[what][key];
@@ -169,22 +194,7 @@ check = function (name) {
     }
 };
 
-resetDelta = function () {
+exports.resetDelta = function () {
     mousepos[2] = 0.0;
     mousepos[3] = 0.0;
-};
-
-module.exports = {
-    exitPointerLock: exitPointerLock,
-    updateGamepad: updateGamepad,
-    trylockpointer: trylockpointer,
-    bind: bind,
-    unbind: unbind,
-    unbindKey: unbindKey,
-    check: check,
-    resetDelta: resetDelta,
-
-    escape: escape,
-    pointerlocked: pointerlocked,
-    pointerunlocked: pointerunlocked
 };

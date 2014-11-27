@@ -1,8 +1,32 @@
-﻿/*global require, module, exports */
-var // Module
+﻿/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+// Module
     Signal = require('../vendor/signals'),
     keycode = require('../client/keycode'),
-    // Local
+// Local
     dragging, offsetX, offsetY,
     cvars = {},
     funcs = {},
@@ -62,115 +86,112 @@ domElement.addEventListener('mouseup', function () {
     domElement.style.cursor = "";
 });
 
-module.exports = {
-    cvarChanged: new Signal(),
-    funcInvoked: new Signal(),
-    command: new Signal(),
-    domElement: domElement,
-    w: window.console,
+exports.cvarChanged = new Signal();
+exports.funcInvoked = new Signal();
+exports.domElement = domElement;
+exports.w = window.console;
 
-    execute: function (cmd) {
-        if (cmd.indexOf(';') >= 0) {
-            var cmdList = cmd.split(';');
-            cmdList.forEach(this.execute, this);
-            return;
-        }
-        var args, name, val;
-        this.command.dispatch(cmd);
-        args = cmd.split(' ');
-        if (args.length < 1) {
-            return;
-        }
-        name = args[0];
-        if (funcs[name] !== undefined) {
-            funcs[name](cmd, args);
-            this.funcInvoked.dispatch(name, args);
-        } else if (cvars[name] !== undefined) {
-            if (args.length === 1) {
-                this.writeLine(this.getCvar(name));
-            } else {
-                val = args[1];
-                if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(val)) {
-                    val = parseFloat(val);
-                }
-                this.setCvar(name, val);
-            }
+exports.execute = function (cmd) {
+    if (cmd.indexOf(';') >= 0) {
+        var cmdList = cmd.split(';');
+        cmdList.forEach(this.execute, this);
+        return;
+    }
+    var args, name, val;
+    this.command.dispatch(cmd);
+    args = cmd.split(' ');
+    if (args.length < 1) {
+        return;
+    }
+    name = args[0];
+    if (funcs[name] !== undefined) {
+        funcs[name](cmd, args);
+        this.funcInvoked.dispatch(name, args);
+    } else if (cvars[name] !== undefined) {
+        if (args.length === 1) {
+            this.writeLine(this.getCvar(name));
         } else {
-            this.writeLine("No such command: " + args[0], 'darkred');
-        }
-    },
-
-    registerCvar: function (name, value) {
-        cvars[name] = value;
-    },
-
-    setCvar: function (name, val) {
-        var fn, oldVal, newVal;
-        if (typeof cvars[name] === 'function') {
-            fn = cvars[name];
-            oldVal = fn();
-            fn(val);
-            newVal = fn();
-            this.cvarChanged.dispatch(name, oldVal, newVal);
-        } else {
-            oldVal = cvars[name];
-            cvars[name] = val;
-            this.cvarChanged.dispatch(name, oldVal, val);
-        }
-    },
-
-    getCvar: function (name) {
-        return typeof cvars[name] === 'function' ? cvars[name]() : cvars[name];
-    },
-
-    registerFunc: function (name, handler) {
-        funcs[name] = handler;
-    },
-
-    log: function () {
-        var str = String.format.apply(null, arguments);
-        this.writeLine(str);
-        // Mirror output to web console
-        window.console.log(str);
-    },
-
-    warn: function () {
-        var str = String.format.apply(null, arguments);
-        this.writeLine(str, 'yellow');
-        // Mirror output to web console
-        window.console.warn(str);
-    },
-
-    error: function () {
-        var str = String.format.apply(null, arguments);
-        this.writeLine(str, 'red');
-        // Mirror console output to web console
-        window.console.error(str);
-    },
-
-    write: function (str, color) {
-        if (color) {
-            str = '<span style="color: ' + color + '">' + str + '</span>';
-        }
-        outElement.insertAdjacentHTML('beforeend', str);
-        outElement.scrollTop = outElement.scrollHeight;
-    },
-
-    writeLine: function (str, color) {
-        str = str || "";
-        if (color) {
-            str = '<span style="color: ' + color + '">' + str + '</span>';
-        }
-        outElement.insertAdjacentHTML('beforeend', str + "<br>");
-        outElement.scrollTop = outElement.scrollHeight;
-    },
-
-    getCfgString: function () {
-        var str = "";
-        for (var key in cvars) {
-            if (cvars.hasOwnProperty(key)) {
-                str = str.concat(key, " ", this.getCvar(key), ";");
+            val = args[1];
+            if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(val)) {
+                val = parseFloat(val);
             }
+            this.setCvar(name, val);
+        }
+    } else {
+        this.writeLine("No such command: " + args[0], 'darkred');
+    }
+};
+
+exports.registerCvar = function (name, value) {
+    cvars[name] = value;
+};
+
+exports.setCvar = function (name, val) {
+    var fn, oldVal, newVal;
+    if (typeof cvars[name] === 'function') {
+        fn = cvars[name];
+        oldVal = fn();
+        fn(val);
+        newVal = fn();
+        this.cvarChanged.dispatch(name, oldVal, newVal);
+    } else {
+        oldVal = cvars[name];
+        cvars[name] = val;
+        this.cvarChanged.dispatch(name, oldVal, val);
+    }
+};
+
+exports.getCvar = function (name) {
+    return typeof cvars[name] === 'function' ? cvars[name]() : cvars[name];
+};
+
+exports.registerFunc = function (name, handler) {
+    funcs[name] = handler;
+};
+
+exports.log = function () {
+    var str = String.format.apply(null, arguments);
+    this.writeLine(str);
+    // Mirror output to web console
+    window.console.log(str);
+};
+
+exports.warn = function () {
+    var str = String.format.apply(null, arguments);
+    this.writeLine(str, 'yellow');
+    // Mirror output to web console
+    window.console.warn(str);
+};
+
+exports.error = function () {
+    var str = String.format.apply(null, arguments);
+    this.writeLine(str, 'red');
+    // Mirror console output to web console
+    window.console.error(str);
+};
+
+exports.write = function (str, color) {
+    if (color) {
+        str = '<span style="color: ' + color + '">' + str + '</span>';
+    }
+    outElement.insertAdjacentHTML('beforeend', str);
+    outElement.scrollTop = outElement.scrollHeight;
+};
+
+exports.writeLine = function (str, color) {
+    str = str || "";
+    if (color) {
+        str = '<span style="color: ' + color + '">' + str + '</span>';
+    }
+    outElement.insertAdjacentHTML('beforeend', str + "<br>");
+    outElement.scrollTop = outElement.scrollHeight;
+};
+
+exports.getCfgString = function () {
+    var str = "";
+    for (var key in cvars) {
+        if (cvars.hasOwnProperty(key)) {
+            str = str.concat(key, " ", this.getCvar(key), ";");
         }
     }
 };

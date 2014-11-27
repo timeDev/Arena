@@ -1,14 +1,38 @@
-﻿/*global require, module, exports */
-var // Module
+﻿/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+// Module
     THREE = require('../vendor/THREE'),
     Stats = require('../vendor/Stats'),
     commands = require('../common/commands'),
     console = require('../common/console'),
     settings = require('../common/settings'),
     input = require('./input'),
-    // Local
+// Local
     scene, camera, renderer,
-    // Function
+// Function
     render, start;
 
 // -- Setup --
@@ -67,16 +91,13 @@ if (settings.debug.showGrid) {
     scene.add(gridYZ);
 }
 
-module.exports = {
-    scene: scene,
-    render: render,
-    camera: camera,
-    start: start
-};
+exports.scene = scene;
+exports.render = render;
+exports.camera = camera;
 
 // -- Commands --
-module.exports.commands = {};
-module.exports.commands.cl_refresh_vp = function (c, args) {
+exports.commands = {};
+exports.commands.cl_refresh_vp = function (c, args) {
     commands.api.validate([], args);
     renderer.setSize(window.innerWidth, window.innerHeight - 5);
     camera.aspect = window.innerWidth / (window.innerHeight - 5);
