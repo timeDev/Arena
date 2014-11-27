@@ -1,6 +1,6 @@
 ﻿/*global require, module, exports */
 var // Module
-    loop = require('./client/loop'),
+    Clock = require('./common/clock'),
     settings = require('./common/settings'),
     display = require('./client/display'),
     controls = require('./client/controls'),
@@ -21,11 +21,9 @@ update = function (time) {
     scenemgr.copyWorldToScene();
 };
 
-loop.render.add(display.render);
-loop.update.add(update);
-
 exports.start = function () {
-    loop.start();
+    display.render();
+    Clock.startNew(16, update);
 };
 
 controls.firstPersonCam(display.camera);

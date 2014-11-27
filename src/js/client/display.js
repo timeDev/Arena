@@ -9,7 +9,7 @@ var // Module
     // Local
     scene, camera, renderer,
     // Function
-    render;
+    render, start;
 
 // -- Setup --
 scene = new THREE.Scene();
@@ -40,6 +40,7 @@ renderStats.domElement.style.top = '0px';
 document.body.appendChild(renderStats.domElement);
 
 render = function () {
+    window.requestAnimationFrame(render);
     renderStats.begin();
     renderer.render(scene, camera);
     renderStats.end();
@@ -69,7 +70,8 @@ if (settings.debug.showGrid) {
 module.exports = {
     scene: scene,
     render: render,
-    camera: camera
+    camera: camera,
+    start: start
 };
 
 // -- Commands --
