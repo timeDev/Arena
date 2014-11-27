@@ -27,9 +27,13 @@ exports.make = function () {
     world.gravity.set(0, -20, 0);
     world.broadphase = new CANNON.NaiveBroadphase();
 
-    exports.world = world;
+    var simulator = {};
 
-    exports.update = function (time) {
+    simulator.world = world;
+
+    simulator.update = function (time) {
         world.step(1 / 60, time, 2);
     };
+
+    return simulator;
 };
