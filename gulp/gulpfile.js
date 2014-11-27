@@ -28,28 +28,30 @@ gulp.task('clean', function (cb) {
     del(['../build'], {force: true}, cb);
 });
 
-gulp.task('increment-major', ['version-time'], function () {
+gulp.task('increment-major', ['increment-minor'], function () {
     return gulp.src('../src/js/version.js', {base: './'})
         .pipe(replace(/exports.major = (\d+);/, function (match, ver) {
             return 'exports.major = ' + (parseInt(ver, 10) + 1) + ';';
         }))
+        .pipe(replace(/exports.minor = (\d+);/, "exports.minor = 0;"))
         .pipe(gulp.dest('./'));
 });
 
-gulp.task('increment-minor', ['version-time'], function () {
+gulp.task('increment-minor', ['increment-revision'], function () {
     return gulp.src('../src/js/version.js', {base: './'})
         .pipe(replace(/exports.minor = (\d+);/, function (match, ver) {
             return 'exports.minor = ' + (parseInt(ver, 10) + 1) + ';';
         }))
+        .pipe(replace(/exports.revision = (\d+);/, "exports.revision = 0;"))
         .pipe(gulp.dest('./'));
 });
 
-gulp.task('increment-revision', ['version-time'], function () {
+gulp.task('increment-revision', ['increment-build'], function () {
     return gulp.src('../src/js/version.js', {base: './'})
         .pipe(replace(/exports.revision = (\d+);/, function (match, ver) {
-            var version = parseInt(ver, 10) + 1;
-            return 'exports.revision = ' + version + ';';
+            return 'exports.revision = ' + (parseInt(ver, 10) + 1) + ';';
         }))
+        .pipe(replace(/exports.build = (\d+);/, "exports.build = 0;"))
         .pipe(gulp.dest('./'));
 });
 
