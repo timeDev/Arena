@@ -21,12 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-/*global require, module, exports */
-exports.major = 0;
-exports.minor = 1;
-exports.revision = 0;
-exports.build = 42;
-exports.timestamp = "2014-12-27T11:31:53.733Z";
 
-exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
-exports.versionString = exports.versionArray.join(".");
+/*global require, module, exports */
+var
+// Module
+    CANNON = require('../vendor/cannon'),
+    settings = require('../common/settings');
+
+function Player(connection, simulator) {
+    this.connection = connection;
+    this.name = "Bob";
+    this.data = {};
+    this.simulator = simulator;
+    this.entityId = 1;
+
+    this.body = new CANNON.Body({mass: settings.player.mass});
+    this.body.addShape(new CANNON.Sphere(settings.player.radius));
+}
+
+Player.prototype.updateBody = function (state) {
+    this.simulator.updateBody(this.entityId, state);
+};
+
+module.exports = Player;

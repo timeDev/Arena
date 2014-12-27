@@ -24,43 +24,24 @@
 /*global require, module, exports */
 var
 // Local
-    objects = {},
-    idtracker = 0,
-// Functions
-    newId;
+    sceneObjects = [],
+    worldObjects = [];
 
-newId = function () {
-    return idtracker++;
+exports.init = function (scene, simulator) {
+    exports.scene = scene;
+    exports.simu = simulator;
 };
 
-exports.init = function (sc, wo) {
-    exports.scene = sc;
-    exports.world = wo;
-};
-
-exports.addToScene = function (obj) {
-    var id = newId();
+exports.addToScene = function (obj, id) {
     obj.tracker = {id: id, type: "scene"};
     exports.scene.add(obj);
-    objects[id] = obj;
-    return id;
+    sceneObjects[id] = obj;
 };
 
-exports.addToWorld = function (obj) {
-    var id = newId();
+exports.addToWorld = function (obj, id) {
     obj.tracker = {id: id, type: "world"};
-    exports.world.add(obj);
-    objects[id] = obj;
-    return id;
-};
-
-exports.link = function (a, b) {
-    if (typeof a === "number") {
-        a = objects[a];
-        b = objects[b];
-    }
-    a.tracker.link = b;
-    b.tracker.link = a;
+    exports.simu.add(obj, id);
+    worldObjects[id] = obj;
 };
 
 exports.addLink = function (s, w) {
@@ -70,37 +51,33 @@ exports.addLink = function (s, w) {
 };
 
 exports.copyWorldToScene = function () {
-    var i, obj;
-    for (i = 0; i < idtracker; i++) {
-        if (objects[i] !== undefined) {
-            obj = objects[i];
-            if (obj.tracker.type === "scene" && obj.tracker.link !== undefined) {
-                obj.position.copy(obj.tracker.link.position);
-                obj.quaternion.copy(obj.tracker.link.quaternion);
-            }
+    var i, w, s;
+    for (i = 0; i < worldObjects.length; i++) {
+        if (worldObjects[i] !== undefined && sceneObjects[i] !== undefined) {
+            w = worldObjects[i];
+            s = sceneObjects[i];
+            s.position.copy(w.position);
+            s.quaternion.copy(w.quaternion);
         }
     }
 };
 
 exports.copySceneToWorld = function () {
-    var i, obj;
-    for (i = 0; i < idtracker; i++) {
-        if (objects[i] !== undefined) {
-            obj = objects[i];
-            if (obj.tracker.type === "world" && obj.tracker.link !== undefined) {
-                obj.position.copy(obj.link.position);
-                obj.quaternion.copy(obj.link.quaternion);
-            }
+    var i, s, w;
+    for (i = 0; i < sceneObjects.length; i++) {
+        if (sceneObjects[i] !== undefined && worldObjects[i] !== undefined) {
+            s = worldObjects[i];
+            w = sceneObjects[i];
+            w.position.copy(s.position);
+            w.quaternion.copy(s.quaternion);
         }
     }
 };
 
 exports.remove = function (id) {
-    var obj = objects[id];
-    if (obj.tracker.type === "scene") {
-        exports.scene.remove(obj);
-    } else {
-        exports.world.remove(obj);
-    }
-    delete objects[id];
+    var s = sceneObjects[id];
+    exports.scene.remove(s);
+    exports.simu.remove(id);
+    delete sceneObjects[id];
+    delete worldObjects[id];
 };

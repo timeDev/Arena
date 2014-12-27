@@ -23,8 +23,7 @@
  */
 /*global require, module, exports */
 var Signal = require('../vendor/signals'),
-    key = require('./arena').peerJsKey,
-    console = require('./console');
+    key = require('./arena').peerJsKey;
 
 require('../vendor/peer');
 
@@ -46,7 +45,7 @@ function ConnectionInterface(remote, connection) {
 }
 
 ConnectionInterface.prototype.send = function (data) {
-    this.connection.receive(data);
+    this.remote.receive(data);
 };
 
 

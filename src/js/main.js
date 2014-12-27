@@ -47,13 +47,16 @@ if (!String.format) {
 function entrypoint() {
     var manager = require('./manager'),
         arena = require('./common/arena'),
-        console = require('./common/console');
+        console = require('./client/console');
 
     console.log("Playing Arena version {0}", arena.version);
     if (arena.debug) {
         console.warn("Debug mode is enabled");
         window.debugging = true;
     }
+    manager.initClient();
+    manager.initServer();
+    manager.connectLocal();
     manager.start();
 }
 

@@ -23,15 +23,13 @@
  */
 /*global require, module, exports */
 var
-// Module
-    console = require('./console'),
 // Local
-    keys,
+    keys, cmdCtx,
 // Function
     reg;
 
 reg = function (name, primary, secondary) {
-    console.registerCvar(name, function (val) {
+    cmdCtx.registerCvar(name, function (val) {
         if (val !== undefined) {
             module.exports[primary][secondary] = val;
         }
@@ -93,10 +91,19 @@ module.exports = {
         },
         loadCfg: function () {
             var cfg = window.localStorage.getItem('arena_settings');
-            console.execute(cfg);
+            cmdCtx.execute(cfg);
         },
         writeCfg: function () {
-            window.localStorage.setItem('arena_settings', console.getCfgString());
+            window.localStorage.setItem('arena_settings', cmdCtx.getCfgString());
         }
     }
 };
+
+Object.defineProperty(module.exports, 'commandCtx', {
+    get: function () {
+        return cmdCtx;
+    },
+    set: function (val) {
+        cmdCtx = val;
+    }
+});

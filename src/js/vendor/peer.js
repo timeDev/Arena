@@ -1,4 +1,4 @@
-/*! peerjs build:0.3.14, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/*! peerjs build:0.3.14, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(__dereq__,module,exports){
 module.exports.RTCSessionDescription = window.RTCSessionDescription ||
 	window.mozRTCSessionDescription;
 module.exports.RTCPeerConnection = window.RTCPeerConnection ||
@@ -6,11 +6,11 @@ module.exports.RTCPeerConnection = window.RTCPeerConnection ||
 module.exports.RTCIceCandidate = window.RTCIceCandidate ||
 	window.mozRTCIceCandidate;
 
-},{}],2:[function(require,module,exports){
-var util = require('./util');
-var EventEmitter = require('eventemitter3');
-var Negotiator = require('./negotiator');
-var Reliable = require('reliable');
+},{}],2:[function(__dereq__,module,exports){
+var util = __dereq__('./util');
+var EventEmitter = __dereq__('eventemitter3');
+var Negotiator = __dereq__('./negotiator');
+var Reliable = __dereq__('reliable');
 
 /**
  * Wraps a DataChannel between two Peers.
@@ -275,22 +275,22 @@ DataConnection.prototype.handleMessage = function(message) {
 
 module.exports = DataConnection;
 
-},{"./negotiator":5,"./util":8,"eventemitter3":9,"reliable":12}],3:[function(require,module,exports){
-window.Socket = require('./socket');
-window.MediaConnection = require('./mediaconnection');
-window.DataConnection = require('./dataconnection');
-window.Peer = require('./peer');
-window.RTCPeerConnection = require('./adapter').RTCPeerConnection;
-window.RTCSessionDescription = require('./adapter').RTCSessionDescription;
-window.RTCIceCandidate = require('./adapter').RTCIceCandidate;
-window.Negotiator = require('./negotiator');
-window.util = require('./util');
-window.BinaryPack = require('js-binarypack');
+},{"./negotiator":5,"./util":8,"eventemitter3":9,"reliable":12}],3:[function(__dereq__,module,exports){
+window.Socket = __dereq__('./socket');
+window.MediaConnection = __dereq__('./mediaconnection');
+window.DataConnection = __dereq__('./dataconnection');
+window.Peer = __dereq__('./peer');
+window.RTCPeerConnection = __dereq__('./adapter').RTCPeerConnection;
+window.RTCSessionDescription = __dereq__('./adapter').RTCSessionDescription;
+window.RTCIceCandidate = __dereq__('./adapter').RTCIceCandidate;
+window.Negotiator = __dereq__('./negotiator');
+window.util = __dereq__('./util');
+window.BinaryPack = __dereq__('js-binarypack');
 
-},{"./adapter":1,"./dataconnection":2,"./mediaconnection":4,"./negotiator":5,"./peer":6,"./socket":7,"./util":8,"js-binarypack":10}],4:[function(require,module,exports){
-var util = require('./util');
-var EventEmitter = require('eventemitter3');
-var Negotiator = require('./negotiator');
+},{"./adapter":1,"./dataconnection":2,"./mediaconnection":4,"./negotiator":5,"./peer":6,"./socket":7,"./util":8,"js-binarypack":10}],4:[function(__dereq__,module,exports){
+var util = __dereq__('./util');
+var EventEmitter = __dereq__('eventemitter3');
+var Negotiator = __dereq__('./negotiator');
 
 /**
  * Wraps the streaming interface between two Peers.
@@ -384,11 +384,11 @@ MediaConnection.prototype.close = function() {
 
 module.exports = MediaConnection;
 
-},{"./negotiator":5,"./util":8,"eventemitter3":9}],5:[function(require,module,exports){
-var util = require('./util');
-var RTCPeerConnection = require('./adapter').RTCPeerConnection;
-var RTCSessionDescription = require('./adapter').RTCSessionDescription;
-var RTCIceCandidate = require('./adapter').RTCIceCandidate;
+},{"./negotiator":5,"./util":8,"eventemitter3":9}],5:[function(__dereq__,module,exports){
+var util = __dereq__('./util');
+var RTCPeerConnection = __dereq__('./adapter').RTCPeerConnection;
+var RTCSessionDescription = __dereq__('./adapter').RTCSessionDescription;
+var RTCIceCandidate = __dereq__('./adapter').RTCIceCandidate;
 
 /**
  * Manages all negotiations between Peers.
@@ -695,12 +695,12 @@ Negotiator.handleCandidate = function(connection, ice) {
 
 module.exports = Negotiator;
 
-},{"./adapter":1,"./util":8}],6:[function(require,module,exports){
-var util = require('./util');
-var EventEmitter = require('eventemitter3');
-var Socket = require('./socket');
-var MediaConnection = require('./mediaconnection');
-var DataConnection = require('./dataconnection');
+},{"./adapter":1,"./util":8}],6:[function(__dereq__,module,exports){
+var util = __dereq__('./util');
+var EventEmitter = __dereq__('eventemitter3');
+var Socket = __dereq__('./socket');
+var MediaConnection = __dereq__('./mediaconnection');
+var DataConnection = __dereq__('./dataconnection');
 
 /**
  * A peer who can initiate connections with other peers.
@@ -1194,9 +1194,9 @@ Peer.prototype.listAllPeers = function(cb) {
 
 module.exports = Peer;
 
-},{"./dataconnection":2,"./mediaconnection":4,"./socket":7,"./util":8,"eventemitter3":9}],7:[function(require,module,exports){
-var util = require('./util');
-var EventEmitter = require('eventemitter3');
+},{"./dataconnection":2,"./mediaconnection":4,"./socket":7,"./util":8,"eventemitter3":9}],7:[function(__dereq__,module,exports){
+var util = __dereq__('./util');
+var EventEmitter = __dereq__('eventemitter3');
 
 /**
  * An abstraction on top of WebSockets and XHR streaming to provide fastest
@@ -1410,12 +1410,12 @@ Socket.prototype.close = function() {
 
 module.exports = Socket;
 
-},{"./util":8,"eventemitter3":9}],8:[function(require,module,exports){
+},{"./util":8,"eventemitter3":9}],8:[function(__dereq__,module,exports){
 var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
 var dataCount = 1;
 
-var BinaryPack = require('js-binarypack');
-var RTCPeerConnection = require('./adapter').RTCPeerConnection;
+var BinaryPack = __dereq__('js-binarypack');
+var RTCPeerConnection = __dereq__('./adapter').RTCPeerConnection;
 
 var util = {
   noop: function() {},
@@ -1726,7 +1726,7 @@ var util = {
 
 module.exports = util;
 
-},{"./adapter":1,"js-binarypack":10}],9:[function(require,module,exports){
+},{"./adapter":1,"js-binarypack":10}],9:[function(__dereq__,module,exports){
 'use strict';
 
 /**
@@ -1932,9 +1932,9 @@ if ('object' === typeof module && module.exports) {
   module.exports = EventEmitter;
 }
 
-},{}],10:[function(require,module,exports){
-var BufferBuilder = require('./bufferbuilder').BufferBuilder;
-var binaryFeatures = require('./bufferbuilder').binaryFeatures;
+},{}],10:[function(__dereq__,module,exports){
+var BufferBuilder = __dereq__('./bufferbuilder').BufferBuilder;
+var binaryFeatures = __dereq__('./bufferbuilder').binaryFeatures;
 
 var BinaryPack = {
   unpack: function(data){
@@ -2453,7 +2453,7 @@ function utf8Length(str){
   }
 }
 
-},{"./bufferbuilder":11}],11:[function(require,module,exports){
+},{"./bufferbuilder":11}],11:[function(__dereq__,module,exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
   try {
@@ -2519,8 +2519,8 @@ BufferBuilder.prototype.getBuffer = function() {
 
 module.exports.BufferBuilder = BufferBuilder;
 
-},{}],12:[function(require,module,exports){
-var util = require('./util');
+},{}],12:[function(__dereq__,module,exports){
+var util = __dereq__('./util');
 
 /**
  * Reliable transfer for Chrome Canary DataChannel impl.
@@ -2839,8 +2839,8 @@ Reliable.prototype.onmessage = function(msg) {};
 
 module.exports.Reliable = Reliable;
 
-},{"./util":13}],13:[function(require,module,exports){
-var BinaryPack = require('js-binarypack');
+},{"./util":13}],13:[function(__dereq__,module,exports){
+var BinaryPack = __dereq__('js-binarypack');
 
 var util = {
   debug: false,

@@ -22,59 +22,60 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
+
 var
 // Module
-    Connection = require('../common/connection'),
-    protocol = require('./protocol'),
-    simulator = require('../common/simulator').make(),
-    commands = require('../common/commands'),
-    Clock = require('../common/clock'),
-    Player = require('./player'),
     arena = require('../common/arena'),
     level = require('./level'),
 // Local
-    conListener, svCmdCtx,
-    players = [],
-    idCounter = 1;
+    receivers = [], c, s;
 
-exports.newId = function () {
-    return idCounter++;
-};
-
-level.simulator = simulator;
-level.newIdFn = exports.newId;
-
-protocol.players = players;
-
-svCmdCtx = commands.makeContext();
-
-commands.register(svCmdCtx, level.commands);
-
-exports.connect = function (c) {
-    var player = new Player(c, simulator);
-    if (arena.debug) {
-        console.log('[server]', 'player connected:', player);
+Object.defineProperty(exports, 'connection', {
+    get: function () {
+        return c;
+    },
+    set: function (val) {
+        c = val;
+        c.message.add(exports.receive);
     }
-    players.push(player);
-    c.message.add(protocol.receive.bind(null, player));
-    simulator.add(player.body, player.entityId);
+});
+
+Object.defineProperty(exports, 'simulator', {
+    get: function () {
+        return s;
+    },
+    set: function (val) {
+        s = val;
+    }
+});
+
+exports.receive = function (d) {
+    if (arena.debug) {
+        console.log('[client]', d);
+    }
+    var type = d[0];
+    receivers[type](d);
 };
 
-exports.update = function (time) {
-    simulator.update(time);
+// KeepAlive 0 num S<>C
+
+receivers[0] = exports.receiveKeepAlive = function (d) {
+    // Send it right back
+    c.send(d);
 };
 
-exports.execute = function (cmd) {
-    svCmdCtx.execute(cmd);
+// UpdatePlayer 1 state S<>C
+
+exports.sendUpdatePlayer = function (state) {
+    c.send([1, state]);
 };
 
-exports.start = function () {
-    conListener = Connection.listen('id', exports.connect);
-    Clock.startNew(16, exports.update);
+receivers[1] = exports.receiveUpdatePlayer = function (d) {
+    s.updateBody(0, d[1]);
 };
 
-exports.shutdown = function () {
-    players = [];
-    conListener.destroy();
-    conListener = null;
+// SpawnObject 2 desc id S>C
+
+receivers[2] = exports.receiveSpawnObject = function (d) {
+    level.spawnFromDesc(d[1], d[2]);
 };

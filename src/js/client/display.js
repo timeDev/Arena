@@ -27,7 +27,7 @@ var
     THREE = require('../vendor/THREE'),
     Stats = require('../vendor/Stats'),
     commands = require('../common/commands'),
-    console = require('../common/console'),
+    console = require('./console'),
     settings = require('../common/settings'),
     input = require('./input'),
 // Local

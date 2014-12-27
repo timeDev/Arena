@@ -25,13 +25,16 @@
 /*global require, module, exports */
 var
 // Module
-    CANNON = require('../vendor/cannon');
+    CANNON = require('../vendor/cannon'),
+    ocl = require('./ocl');
 
 exports.make = function () {
     var  // Local
         world,
         solver = new CANNON.GSSolver(),
         split = true;
+
+    var idLookup = [];
 
     // -- Setup --
     world = new CANNON.World();
@@ -58,6 +61,28 @@ exports.make = function () {
 
     simulator.update = function (time) {
         world.step(1 / 60, time, 2);
+    };
+
+    simulator.updateBody = function (id, desc) {
+        var body = idLookup[id];
+        if (desc.v) {
+            body.velocity.set(desc.v[0], desc.v[1], desc.v[2]);
+        }
+        if (desc.p) {
+            body.position.set(desc.p[0], desc.p[1], desc.p[2])
+        }
+    };
+
+    simulator.add = function (body, id) {
+        idLookup[id] = body;
+        body.id = id;
+        world.add(body);
+    };
+
+    simulator.remove = function (id) {
+        world.remove(idLookup[id]);
+        delete idLookup[id].id;
+        delete idLookup[id];
     };
 
     return simulator;

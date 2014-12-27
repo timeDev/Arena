@@ -30,6 +30,7 @@ var
     CANNON = require('../vendor/CANNON'),
     settings = require('../common/settings'),
     commands = require('../common/commands'),
+    protocol = require('./protocol'),
 // Local
     paused = true, shape, physBody,
     onground = false,
@@ -91,6 +92,7 @@ exports.update = function () {
     }
 
     physBody.velocity.vadd(changeVel, physBody.velocity);
+    protocol.sendUpdatePlayer({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
     yawObj.position.copy(physBody.position);
 
     input.resetDelta();

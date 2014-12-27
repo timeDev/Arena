@@ -30,14 +30,45 @@ var
     controls = require('./client/controls'),
     simulator = require('./common/simulator').make(),
     commands = require('./common/commands'),
-    console = require('./common/console'),
-    level = require('./common/level'),
+    console = require('./client/console'),
+    level = require('./client/level'),
     scenemgr = require('./client/scene-manager'),
+    protocol = require('./client/protocol'),
+    server = require('./server/server'),
+    Connection = require('./common/connection'),
+// Local
+    clCmdCtx,
 // Function
     update;
 
-settings.api.init();
-scenemgr.init(display.scene, simulator.world);
+exports.initClient = function () {
+    clCmdCtx = commands.makeContext();
+    settings.commandCtx = clCmdCtx;
+    settings.api.init();
+    scenemgr.init(display.scene, simulator);
+
+    controls.firstPersonCam(display.camera);
+    controls.sceneObj.position.set(0, 2, 0);
+    controls.physBody.position.set(0, 2, 0);
+    controls.physBody.linearDamping = 0.95;
+    display.scene.add(controls.sceneObj);
+    simulator.add(controls.physBody, 0);
+
+    commands.register(clCmdCtx, level.commands);
+    commands.register(clCmdCtx, display.commands);
+    commands.register(clCmdCtx, controls.commands);
+};
+
+exports.initServer = function () {
+    // Nothing, handled by sv/server module
+};
+
+exports.connectLocal = function () {
+    protocol.connection = new Connection();
+    var svCon = new Connection();
+    protocol.connection.connect(svCon);
+    server.connect(svCon);
+};
 
 update = function (time) {
     controls.update(time);
@@ -47,17 +78,10 @@ update = function (time) {
 
 exports.start = function () {
     display.render();
+    protocol.simulator = simulator;
     Clock.startNew(16, update);
-    console.execute("lv_load maps/devtest.json");
+
+    server.start();
+
+    server.execute("lv_load maps/devtest.json");
 };
-
-controls.firstPersonCam(display.camera);
-controls.sceneObj.position.set(0, 2, 0);
-controls.physBody.position.set(0, 2, 0);
-controls.physBody.linearDamping = 0.95;
-display.scene.add(controls.sceneObj);
-simulator.world.addBody(controls.physBody);
-
-commands.register(level.commands);
-commands.register(display.commands);
-commands.register(controls.commands);

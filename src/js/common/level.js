@@ -26,17 +26,12 @@ var
 // Module
     THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
-    console = require('./console'),
     ocl = require('./ocl'),
     arena = require('./arena'),
     props = require('./props'),
     commands = require('./commands'),
-    Sexhr = require('../vendor/SeXHR'),
-    scenemgr = require('../client/scene-manager'),
 // Local
-    ids = [],
-// Function
-    spawn, clear, load;
+    ids = [];
 
 ocl.define('obj', function (params) {
     if (params.pos) {
@@ -172,69 +167,3 @@ ocl.define('matphong', function (params) {
     }
     this.mat = new THREE.MeshPhongMaterial(params);
 });
-
-exports.spawn = function (obj) {
-    if (!obj.pos) {
-        console.warn("Skipping map object without position.");
-        return;
-    }
-    if (obj.mesh) {
-        obj.mesh.position.copy(obj.pos);
-        ids.push(scenemgr.addToScene(obj.mesh));
-    }
-    if (obj.body) {
-        obj.body.position.copy(obj.pos);
-        ids.push(scenemgr.addToWorld(obj.body));
-    }
-    if (obj.link) {
-        scenemgr.link(obj.mesh, obj.body);
-    }
-};
-
-exports.clear = function () {
-    ids.forEach(scenemgr.remove);
-    ids = [];
-};
-
-exports.load = function (str) {
-    /// <summary>Loads a level from JSON.</summary>
-    /// <param name="str" type="String">A string in JSON format.</param>
-    ocl.load(str, function (objList) {
-        objList.forEach(exports.spawn);
-        console.log("Level loaded");
-    });
-};
-
-
-exports.commands = {};
-
-exports.commands.lv_clear = function (c, args) {
-    commands.validate([], args);
-    clear();
-};
-
-exports.commands.lv_load = function (c, args) {
-    if (!commands.validate(['string'], args)) {
-        return;
-    }
-    new Sexhr().req({
-        url: args[1],
-        done: function (err, res) {
-            if (err) {
-                throw err;
-            }
-            exports.load(res.text);
-        }
-    });
-};
-
-exports.commands.lv_spawn = function (c, args) {
-    if (!commands.validate(['string'], args)) {
-        return;
-    }
-    try {
-        ocl.load(args[1], spawn);
-    } catch (e) {
-        console.error("Error parsing JSON!");
-    }
-};
