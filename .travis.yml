@@ -1,0 +1,16 @@
+language: node_js
+node_js:
+- '0.10'
+before_install:
+- export TRAVIS_COMMIT_MSG="$(git log --format=%B --no-merges -n 1)"
+- export REPO_URL=https://$GH_TOKEN@github.com/timedev/Arena.git
+- echo $TRAVIS_COMMIT_MSG
+- chmod +x build/publish-ghpages.sh
+install:
+- npm install
+script:
+- npm run make
+after_success: build/publish-ghpages.sh
+env:
+  global:
+    secure: UVRspJAkwEsjo3EsVjef+xXU2b7f9nIIfmdsj9nxVzGqMkAZ2WvmgsNlPE3MW2ejhA88O9d1ppI7yYGg/Egw3rRZQlTr1BzYT05TMVlE73+NK/gjMGMmFxzUx06F73skFPcqzLK5WA1iBl2u7bKg8hOhl9NEYBMUiA+Db+6iEtw=
