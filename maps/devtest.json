@@ -1,0 +1,23 @@
+[
+    {
+        "class": [ "obj", "rbox", "matbasic", "mesh", "cbox", "body", "compound" ],
+        "obj": { "pos": [ 15, 12.5, 15 ] },
+        "rbox": [ 2, 2, 2 ],
+        "cbox": [ 2, 2, 2 ],
+        "body": { "mass": 10 },
+        "matbasic": { "color": 255 }
+    },
+    {
+        "class": [ "obj", "rbox", "matbasic", "mesh", "cbox", "body", "compound" ],
+        "obj": { "pos": [ 50, -0.011, 50 ] },
+        "rbox": [ 100, 0.01, 100 ],
+        "cbox": [ 100, 0.01, 100 ],
+        "body": { "mass": 0 },
+        "matbasic": { "color": 8421504 }
+    },
+    {
+        "class": [ "obj", "prop" ],
+        "obj": { "pos": [ 5, 2.5, 5 ] },
+        "prop": "woodCrate"
+    }
+]
