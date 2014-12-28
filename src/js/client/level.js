@@ -29,7 +29,7 @@ var
     ocl = require('../common/ocl'),
     scenemgr = require('./scene-manager'),
     commands = require('../common/commands'),
-    Sexhr = require('../vendor/sexhr'),
+    Sexhr = require('../vendor/SeXHR'),
 // Local
     ids = [];
 

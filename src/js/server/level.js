@@ -27,7 +27,7 @@ var
     level = require('../common/level'),
     commands = require('../common/commands'),
     ocl = require('../common/ocl'),
-    Sexhr = require('../vendor/sexhr'),
+    Sexhr = require('../vendor/SeXHR'),
     protocol = require('./protocol'),
 // Local
     sim, ids = [];
