@@ -13,4 +13,4 @@ script:
 after_success: build/publish-ghpages.sh
 env:
   global:
-    secure: UVRspJAkwEsjo3EsVjef+xXU2b7f9nIIfmdsj9nxVzGqMkAZ2WvmgsNlPE3MW2ejhA88O9d1ppI7yYGg/Egw3rRZQlTr1BzYT05TMVlE73+NK/gjMGMmFxzUx06F73skFPcqzLK5WA1iBl2u7bKg8hOhl9NEYBMUiA+Db+6iEtw=
+    secure: edp11Xdo4ShO8e5NFU0OzLlgoJckHQcI29rAM3gI0TeM5vWyGjiarX+XLCOIYHzFQm6Hubh01X3vVxS4O4IlSWMUCkPXHoaIWienVtvmzD9RlD1VUQv/DeBCRP3k1v2wQcidRA2sSwR5V6EbmzIqMWgEguzjRXRl3EFxWsA0h7Q=
