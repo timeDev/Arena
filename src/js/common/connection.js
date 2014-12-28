@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-var Signal = require('../vendor/signals'),
+var Signal = require('signals'),
     key = require('./arena').peerJsKey;
 
 require('../vendor/peer');

@@ -24,9 +24,9 @@
 /*global require, module, exports */
 exports.major = 0;
 exports.minor = 1;
-exports.revision = 1;
+exports.revision = 2;
 exports.build = 0;
-exports.timestamp = "2014-12-28T01:01:02.194Z";
+exports.timestamp = "2014-12-28T01:16:20.326Z";
 
 exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
 exports.versionString = exports.versionArray.join(".");
