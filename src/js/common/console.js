@@ -24,12 +24,9 @@
 /*global require, module, exports */
 var
 // Module
-    Signal = require('signals'),
     keycode = require('../client/keycode'),
 // Local
     dragging, offsetX, offsetY,
-    cvars = {},
-    funcs = {},
     domElement = document.createElement('div'),
     inElement = document.createElement('input'),
     outElement = document.createElement('div');
@@ -86,68 +83,8 @@ domElement.addEventListener('mouseup', function () {
     domElement.style.cursor = "";
 });
 
-exports.cvarChanged = new Signal();
-exports.funcInvoked = new Signal();
 exports.domElement = domElement;
 exports.w = window.console;
-
-exports.execute = function (cmd) {
-    if (cmd.indexOf(';') >= 0) {
-        var cmdList = cmd.split(';');
-        cmdList.forEach(this.execute, this);
-        return;
-    }
-    var args, name, val;
-    this.command.dispatch(cmd);
-    args = cmd.split(' ');
-    if (args.length < 1) {
-        return;
-    }
-    name = args[0];
-    if (funcs[name] !== undefined) {
-        funcs[name](cmd, args);
-        this.funcInvoked.dispatch(name, args);
-    } else if (cvars[name] !== undefined) {
-        if (args.length === 1) {
-            this.writeLine(this.getCvar(name));
-        } else {
-            val = args[1];
-            if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(val)) {
-                val = parseFloat(val);
-            }
-            this.setCvar(name, val);
-        }
-    } else {
-        this.writeLine("No such command: " + args[0], 'darkred');
-    }
-};
-
-exports.registerCvar = function (name, value) {
-    cvars[name] = value;
-};
-
-exports.setCvar = function (name, val) {
-    var fn, oldVal, newVal;
-    if (typeof cvars[name] === 'function') {
-        fn = cvars[name];
-        oldVal = fn();
-        fn(val);
-        newVal = fn();
-        this.cvarChanged.dispatch(name, oldVal, newVal);
-    } else {
-        oldVal = cvars[name];
-        cvars[name] = val;
-        this.cvarChanged.dispatch(name, oldVal, val);
-    }
-};
-
-exports.getCvar = function (name) {
-    return typeof cvars[name] === 'function' ? cvars[name]() : cvars[name];
-};
-
-exports.registerFunc = function (name, handler) {
-    funcs[name] = handler;
-};
 
 exports.log = function () {
     var str = String.format.apply(null, arguments);
@@ -185,13 +122,4 @@ exports.writeLine = function (str, color) {
     }
     outElement.insertAdjacentHTML('beforeend', str + "<br>");
     outElement.scrollTop = outElement.scrollHeight;
-};
-
-exports.getCfgString = function () {
-    var str = "";
-    for (var key in cvars) {
-        if (cvars.hasOwnProperty(key)) {
-            str = str.concat(key, " ", this.getCvar(key), ";");
-        }
-    }
 };

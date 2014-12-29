@@ -43,7 +43,6 @@ var
 
 exports.initClient = function () {
     clCmdCtx = commands.makeContext();
-    settings.commandCtx = clCmdCtx;
     settings.api.init();
     scenemgr.init(display.scene, simulator);
 

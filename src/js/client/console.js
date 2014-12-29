@@ -21,25 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 /*global require, module, exports */
 var
 // Module
     keycode = require('./keycode'),
+    commands = require('../common/commands'),
 // Local
-    dragging, offsetX, offsetY, commandCtx,
+    dragging, offsetX, offsetY,
     domElement = document.createElement('div'),
     inElement = document.createElement('input'),
     outElement = document.createElement('div');
-
-Object.defineProperty(exports, 'commandContext', {
-    get: function () {
-        return commandCtx;
-    },
-    set: function (val) {
-        commandCtx = val;
-    }
-});
 
 domElement.style.position = "absolute";
 domElement.style.left = "100px";
@@ -65,7 +56,7 @@ inElement.addEventListener('keypress', function (e) {
     var which = e.which || e.charCode || e.keyCode;
     if (which === keycode.enter) {
         try {
-            var result= commandCtx.execute(inElement.value);
+            var result = commands.execute(inElement.value);
             if(result !== undefined) {
                 exports.log(result);
             }

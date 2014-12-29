@@ -28,10 +28,7 @@ var
     CANNON = require('../vendor/cannon'),
     ocl = require('./ocl'),
     arena = require('./arena'),
-    props = require('./props'),
-    commands = require('./commands'),
-// Local
-    ids = [];
+    props = require('./props');
 
 ocl.define('obj', function (params) {
     if (params.pos) {

@@ -24,7 +24,10 @@
 /*global require, module, exports */
 var
 // Module
-    Signal = require('signals');
+    Signal = require('signals'),
+// Local
+    funcs = {},
+    cvars = {};
 
 exports.validate = function (expected, args) {
     var i, result = true;
@@ -49,87 +52,97 @@ exports.validate = function (expected, args) {
 exports.register = function (ctx, list) {
     for (var key in list) {
         if (list.hasOwnProperty(key)) {
+            exports.registerFunc(key, list[key], ctx);
             ctx.registerFunc(key, list[key]);
         }
     }
 };
 
+exports.registerFunc = function (key, handler, ctx) {
+    if (ctx) {
+        handler.ctx = ctx;
+    }
+    funcs[key] = handler;
+};
+
+exports.registerCvar = function (name, value, ctx) {
+    cvars[name] = {value: value, ctx: ctx};
+};
+
+exports.setCvar = function (name, value) {
+    var fn, oldVal, newVal;
+    if (cvars[name] === undefined) {
+        return;
+    }
+    var cvar = cvars[name];
+    if (cvar.value === 'function') {
+        fn = cvar.value;
+        oldVal = fn();
+        fn(value);
+        newVal = fn();
+        cvar.ctx.cvarChanged.dispatch(name, oldVal, newVal);
+    } else {
+        oldVal = cvar.value;
+        cvar.value = value;
+        cvar.ctx.cvarChanged.dispatch(name, oldVal, value);
+    }
+};
+
+exports.getCvar = function (name) {
+    if (cvars[name] === undefined) {
+        return;
+    }
+    return typeof cvars[name].value === 'function' ? cvars[name].value.call() : cvars[name].value;
+};
+
+exports.execute = function (cmd) {
+    if (cmd.indexOf(';') >= 0) {
+        var cmdList = cmd.split(';');
+        return cmdList.map(exports.execute);
+    }
+    var args, name, val;
+    args = cmd.split(' ');
+    if (args.length < 1) {
+        return undefined;
+    }
+    name = args[0];
+    if (funcs[name] !== undefined) {
+        funcs[name].ctx.command.dispatch(cmd);
+        var res = funcs[name].call(null, cmd, args);
+        funcs[name].ctx.funcInvoked.dispatch(name, args);
+        return res;
+    } else if (cvars[name] !== undefined) {
+        if (args.length === 1) {
+            return commands.getCvar(name);
+        } else {
+            val = args[1];
+            if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(val)) {
+                val = parseFloat(val);
+            }
+            commands.setCvar(name, val);
+            return undefined;
+        }
+    } else {
+        throw "No such command: " + args[0];
+    }
+};
+
+exports.getCfgString = function () {
+    var str = "";
+    for (var key in cvars) {
+        if (cvars.hasOwnProperty(key)) {
+            str = str.concat(key, " ", exports.getCvar(key), ";");
+        }
+    }
+    return str;
+};
+
 exports.makeContext = function () {
-    var ctx = {},
-        funcs = {},
-        cvars = {};
+    var ctx = {};
 
     ctx.cvarChanged = new Signal();
     ctx.funcInvoked = new Signal();
     ctx.command = new Signal();
-
-    ctx.registerCvar = function (name, value) {
-        cvars[name] = value;
-    };
-
-    ctx.setCvar = function (name, val) {
-        var fn, oldVal, newVal;
-        if (typeof cvars[name] === 'function') {
-            fn = cvars[name];
-            oldVal = fn();
-            fn(val);
-            newVal = fn();
-            ctx.cvarChanged.dispatch(name, oldVal, newVal);
-        } else {
-            oldVal = cvars[name];
-            cvars[name] = val;
-            ctx.cvarChanged.dispatch(name, oldVal, val);
-        }
-    };
-
-    ctx.getCvar = function (name) {
-        return typeof cvars[name] === 'function' ? cvars[name]() : cvars[name];
-    };
-
-    ctx.registerFunc = function (name, handler) {
-        funcs[name] = handler;
-    };
-
-    ctx.execute = function (cmd) {
-        if (cmd.indexOf(';') >= 0) {
-            var cmdList = cmd.split(';');
-            return cmdList.map(ctx.execute);
-        }
-        var args, name, val;
-        ctx.command.dispatch(cmd);
-        args = cmd.split(' ');
-        if (args.length < 1) {
-            return undefined;
-        }
-        name = args[0];
-        if (funcs[name] !== undefined) {
-            var res = funcs[name](cmd, args);
-            ctx.funcInvoked.dispatch(name, args);
-            return res;
-        } else if (cvars[name] !== undefined) {
-            if (args.length === 1) {
-                return ctx.getCvar(name);
-            } else {
-                val = args[1];
-                if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(val)) {
-                    val = parseFloat(val);
-                }
-                ctx.setCvar(name, val);
-                return undefined;
-            }
-        } else {
-            throw "No such command: " + args[0];
-        }
-    };
-
-    ctx.getCfgString = function () {
-        var str = "";
-        for (var key in cvars) {
-            if (cvars.hasOwnProperty(key)) {
-                str = str.concat(key, " ", this.getCvar(key), ";");
-            }
-        }
-    };
 
     return ctx;
 };

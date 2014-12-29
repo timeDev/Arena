@@ -59,7 +59,7 @@ exports.spawnObj = function (obj, id) {
 
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
-    protocol.sendAllSpawnObject(str, id);
+    protocol.broadcast(protocol.spawnObject(str, id));
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
     });

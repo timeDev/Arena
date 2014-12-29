@@ -39,6 +39,16 @@ Object.defineProperty(exports, 'players', {
     }
 });
 
+var send = exports.send = function (p, d) {
+    p.connection.send(d);
+};
+
+exports.broadcast = function (d) {
+    for (var i = 0; i < players.length; i++) {
+        send(players[i], d);
+    }
+};
+
 exports.receive = function (p, d) {
     if (arena.debug) {
         console.log('[server]', p, d);
@@ -53,7 +63,7 @@ exports.receive = function (p, d) {
 exports.sendKeepAlive = function (p) {
     var num = Math.random();
     p.data.lastKeepAlive = num;
-    p.connection.send(0, num);
+    send(p, [0, num]);
 };
 
 receivers[0] = exports.receiveKeepAlive = function (p, d) {
@@ -66,7 +76,7 @@ receivers[0] = exports.receiveKeepAlive = function (p, d) {
 // UpdatePlayer 1 state S<>C
 
 exports.sendUpdatePlayer = function (p, state) {
-    p.connection.send([1, state]);
+    send(p, [1, state]);
 };
 
 receivers[1] = exports.receiveUpdatePlayer = function (p, d) {
@@ -76,11 +86,9 @@ receivers[1] = exports.receiveUpdatePlayer = function (p, d) {
 // SpawnObject 2 desc id S>C
 
 exports.sendSpawnObject = function (p, str, id) {
-    p.connection.send([2, str, id]);
+    send(p, [2, str, id]);
 };
 
-exports.sendAllSpawnObject = function (str, id) {
-    for (var i = 0; i < players.length; i++) {
-        exports.sendSpawnObject(players[i], str, id);
-    }
+exports.spawnObject = function (str, id) {
+    return [2, str, id];
 };

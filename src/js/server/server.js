@@ -65,7 +65,7 @@ exports.update = function (time) {
 };
 
 exports.execute = function (cmd) {
-    svCmdCtx.execute(cmd);
+    commands.execute(cmd);
 };
 
 exports.start = function () {

@@ -33,14 +33,8 @@ var
 // Local
     ids = [];
 
-exports.load = function (str) {
+exports.load = function () {
     throw "deprecated";
-    /*
-     ocl.load(str, function (objList) {
-     objList.forEach(exports.spawn);
-     console.log("Level loaded");
-     });
-     */
 };
 
 exports.spawn = function (obj, id) {
