@@ -23,8 +23,6 @@
  */
 /*global require, module, exports */
 var
-// Module
-    Signal = require('signals'),
 // Local
     funcs = {},
     cvars = {};
@@ -49,89 +47,86 @@ exports.validate = function (expected, args) {
     return result;
 };
 
-exports.register = function (ctx, list) {
+exports.register = function (list) {
     for (var key in list) {
         if (list.hasOwnProperty(key)) {
-            exports.registerFunc(key, list[key], ctx);
-            ctx.registerFunc(key, list[key]);
+            var cmd = list[key];
+            if (cmd.isCvar) {
+                exports.registerCvar(cmd.name, cmd.value, cmd.ctx);
+            } else {
+                exports.registerFunc(cmd.name, cmd.handler, cmd.ctx);
+            }
         }
     }
 };
 
 exports.registerFunc = function (key, handler, ctx) {
-    if (ctx) {
-        handler.ctx = ctx;
+    var cmd = {name: key, handler: handler};
+    for (var k in ctx) {
+        if (ctx.hasOwnProperty(k)) {
+            cmd[k] = ctx[k];
+        }
     }
-    funcs[key] = handler;
+    funcs[key] = cmd;
 };
 
 exports.registerCvar = function (name, value, ctx) {
-    cvars[name] = {value: value, ctx: ctx};
+    var cv = {name: name, value: value};
+    for (var k in ctx) {
+        if (ctx.hasOwnProperty(k)) {
+            cv[k] = ctx[k];
+        }
+    }
+    cvars[name] = cv;
 };
 
-exports.setCvar = function (name, value) {
-    var fn, oldVal, newVal;
-    if (cvars[name] === undefined) {
-        return;
-    }
-    var cvar = cvars[name];
-    if (cvar.value === 'function') {
-        fn = cvar.value;
-        oldVal = fn();
-        fn(value);
-        newVal = fn();
-        cvar.ctx.cvarChanged.dispatch(name, oldVal, newVal);
-    } else {
-        oldVal = cvar.value;
-        cvar.value = value;
-        cvar.ctx.cvarChanged.dispatch(name, oldVal, value);
-    }
-};
-
-exports.getCvar = function (name) {
-    if (cvars[name] === undefined) {
-        return;
-    }
-    return typeof cvars[name].value === 'function' ? cvars[name].value.call() : cvars[name].value;
-};
-
-exports.execute = function (cmd) {
+exports.execute = function (cmd, context) {
     if (cmd.indexOf(';') >= 0) {
         var cmdList = cmd.split(';');
-        return cmdList.map(exports.execute);
+        return cmdList.map(function (c) {
+            exports.execute(c, context);
+        });
     }
-    var args, name, val;
+    var args, name, val, ctx;
     args = cmd.split(' ');
     if (args.length < 1) {
         return undefined;
     }
     name = args[0];
     if (funcs[name] !== undefined) {
-        funcs[name].ctx.command.dispatch(cmd);
-        var res = funcs[name].call(null, cmd, args);
-        funcs[name].ctx.funcInvoked.dispatch(name, args);
-        return res;
+        var command = funcs[name];
+        ctx = command[context] || command.ctx;
+        return ctx.execute(command, args);
     } else if (cvars[name] !== undefined) {
+        ctx = cvars[name][context] || cvars[name].ctx;
         if (args.length === 1) {
-            return commands.getCvar(name);
+            return ctx.getCvar(name);
         } else {
             val = args[1];
             if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(val)) {
                 val = parseFloat(val);
             }
-            commands.setCvar(name, val);
-            return undefined;
+            ctx.setCvar(name, val);
         }
     } else {
         throw "No such command: " + args[0];
     }
 };
 
-exports.getCfgString = function () {
+exports.getCvar = function (name, context) {
+    var ctx = cvars[name][context] || cvars[name].ctx;
+    return ctx.getCvar(name);
+};
+
+exports.getCvars = function () {
+    return cvars;
+};
+
+exports.getCfgString = function (context) {
     var str = "";
     for (var key in cvars) {
         if (cvars.hasOwnProperty(key)) {
-            str = str.concat(key, " ", exports.getCvar(key), ";");
+            str = str.concat(key, " ", exports.getCvar(key, context), ";");
         }
     }
     return str;
@@ -140,9 +135,40 @@ exports.getCfgString = function () {
 exports.makeContext = function () {
     var ctx = {};
 
-    ctx.cvarChanged = new Signal();
-    ctx.funcInvoked = new Signal();
-    ctx.command = new Signal();
+    var notImplFn = function () {
+        throw "Not implemented!";
+    };
+
+    ctx.execute = notImplFn;
+    ctx.getCvar = notImplFn;
+    ctx.setCvar = notImplFn;
 
     return ctx;
+};
+
+exports.contexts = {};
+
+exports.contexts.host = exports.makeContext();
+
+exports.contexts.host.execute = function (cmd, args) {
+    cmd.handler(args);
+};
+
+exports.contexts.host.getCvar = function (name) {
+    if (cvars[name] === undefined) {
+        return;
+    }
+    return typeof cvars[name].value === 'function' ? cvars[name].value.call() : cvars[name].value;
+};
+
+exports.contexts.host.setCvar = function (name, value) {
+    if (cvars[name] === undefined) {
+        return;
+    }
+    var cvar = cvars[name];
+    if (cvar.value === 'function') {
+        cvar.value(value);
+    } else {
+        cvar.value = value;
+    }
 };

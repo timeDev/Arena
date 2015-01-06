@@ -97,10 +97,15 @@ exports.camera = camera;
 
 // -- Commands --
 exports.commands = {};
-exports.commands.cl_refresh_vp = function (c, args) {
-    commands.api.validate([], args);
-    renderer.setSize(window.innerWidth, window.innerHeight - 5);
-    camera.aspect = window.innerWidth / (window.innerHeight - 5);
-    camera.fov = settings.graphics.fov;
-    camera.updateProjectionMatrix();
+exports.commands.cl_refresh_vp = {
+    isCvar: false,
+    name: 'cl_refresh_vp',
+    ctx: {cl: commands.contexts.host},
+    handler: function (args) {
+        commands.api.validate([], args);
+        renderer.setSize(window.innerWidth, window.innerHeight - 5);
+        camera.aspect = window.innerWidth / (window.innerHeight - 5);
+        camera.fov = settings.graphics.fov;
+        camera.updateProjectionMatrix();
+    }
 };

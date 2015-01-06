@@ -56,12 +56,13 @@ inElement.addEventListener('keypress', function (e) {
     var which = e.which || e.charCode || e.keyCode;
     if (which === keycode.enter) {
         try {
-            var result = commands.execute(inElement.value);
-            if(result !== undefined) {
+            var result = commands.execute(inElement.value, 'cl');
+            if (result !== undefined) {
                 exports.log(result);
             }
         } catch (e) {
-            exports.error(e);
+            exports.error(e.toString());
+            throw e;
         }
         inElement.value = "";
     }

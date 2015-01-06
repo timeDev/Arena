@@ -27,7 +27,7 @@ var
 // Module
     arena = require('../common/arena'),
 // Local
-    players,
+    players, svi,
     receivers = [];
 
 Object.defineProperty(exports, 'players', {
@@ -36,6 +36,15 @@ Object.defineProperty(exports, 'players', {
     },
     set: function (val) {
         players = val;
+    }
+});
+
+Object.defineProperty(exports, 'serverInterface', {
+    get: function () {
+        return svi;
+    },
+    set: function (val) {
+        svi = val;
     }
 });
 
@@ -91,4 +100,48 @@ exports.sendSpawnObject = function (p, str, id) {
 
 exports.spawnObject = function (str, id) {
     return [2, str, id];
+};
+
+// RCON protocol
+// rcon status 200 - C>S | msg S>C
+// rcon error 201 msg S>C
+// rcon command 202 cmd args C>S requires authorization
+// rcon query 203 cvarname C>S
+// rcon cvar 204 cvarname value S>C
+// rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
+// rcon authorize 206 password C>S
+// rcon queryall 207 C>S
+// Important: messages are not encrypted! Do not reuse the rcon password
+// for things like email and stuff! Someone getting into your server
+// should not be a big deal, as you can easily restart it via ssh or whatever
+
+receivers[200] = exports.receiveRconStatus = function (p, d) {
+    send(p, [200, svi.getServerStatusMsg()]);
+};
+
+receivers[202] = exports.receiveRconCmd = function (p, d) {
+    if (!p.data.rconAuthorized) {
+        send(p, [201, "not authorized"]);
+        return;
+    }
+    svi.executeCommand(d[1], d[2]);
+};
+
+receivers[203] = exports.receiveRconQuery = function (p, d) {
+    var response = svi.getCvar(d[1], p.data.rconAuthorized);
+    send(p, [204, d[1], response]);
+};
+
+receivers[206] = exports.receiveRconAuthorize = function (p, d) {
+    if (svi.matchesRconPassword(d[1])) {
+        p.data.rconAuthorized = true;
+    }
+};
+
+receivers[207] = exports.receiveRconQueryAll = function (p, d) {
+    var responseList = svi.getCvarList(p.data.rconAuthorized);
+    for (var i = 0; i < responseList.length; i++) {
+        var res = responseList[i];
+        send(p, [204, res[0], res[1]]);
+    }
 };

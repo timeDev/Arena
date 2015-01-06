@@ -32,17 +32,16 @@ var
     commands = require('./common/commands'),
     console = require('./client/console'),
     level = require('./client/level'),
+// Load rcon after level to avoid issues with cyclic deps
+    rcon = require('./client/rcon'),
     scenemgr = require('./client/scene-manager'),
     protocol = require('./client/protocol'),
     server = require('./server/server'),
     Connection = require('./common/connection'),
-// Local
-    clCmdCtx,
 // Function
     update;
 
 exports.initClient = function () {
-    clCmdCtx = commands.makeContext();
     settings.api.init();
     scenemgr.init(display.scene, simulator);
 
@@ -53,9 +52,19 @@ exports.initClient = function () {
     display.scene.add(controls.sceneObj);
     simulator.add(controls.physBody, 0);
 
-    commands.register(clCmdCtx, level.commands);
-    commands.register(clCmdCtx, display.commands);
-    commands.register(clCmdCtx, controls.commands);
+    protocol.clientInterface = {
+        spawnFromDesc: level.spawnFromDesc
+    };
+
+    // Add command shorthand
+    window.c = function (str) {
+        return commands.execute(str, 'cl');
+    };
+
+    commands.register(level.commands);
+    commands.register(display.commands);
+    commands.register(controls.commands);
+    commands.register(rcon.commands);
 };
 
 exports.initServer = function () {
@@ -67,6 +76,7 @@ exports.connectLocal = function () {
     var svCon = new Connection();
     protocol.connection.connect(svCon);
     server.connect(svCon);
+    rcon.cacheCvars();
 };
 
 update = function (time) {

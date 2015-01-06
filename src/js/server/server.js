@@ -33,7 +33,7 @@ var
     arena = require('../common/arena'),
     level = require('./level'),
 // Local
-    conListener, svCmdCtx,
+    conListener,
     players = [],
     idCounter = 1;
 
@@ -45,10 +45,37 @@ level.simulator = simulator;
 level.newIdFn = exports.newId;
 
 protocol.players = players;
+protocol.serverInterface = {
+    getServerStatusMsg: function () {
+        return String.format("Running version {0} | " +
+        "{1} players", arena.version, players.length);
+    },
+    executeCommand: function (cmd, args) {
+        commands.execute(args.join(" "), 'sv');
+    },
+    matchesRconPassword: function (pwd) {
+        // TODO: Make password configurable
+        return pwd === "banana";
+    },
+    getCvarList: function (admin) {
+        var cvars = commands.getCvars();
+        var list = [];
+        for (var k in cvars) {
+            if (cvars.hasOwnProperty(k)) {
+                list.push(cvars[k]);
+            }
+        }
+        list = list.map(function (c) {
+            return [c.name, typeof c.value === 'function' ? c.value.call() : c.value];
+        });
+        return list;
+    },
+    getCvar: function (name) {
 
-svCmdCtx = commands.makeContext();
+    }
+};
 
-commands.register(svCmdCtx, level.commands);
+commands.register(level.commands);
 
 exports.connect = function (c) {
     var player = new Player(c, simulator);
@@ -65,7 +92,7 @@ exports.update = function (time) {
 };
 
 exports.execute = function (cmd) {
-    commands.execute(cmd);
+    commands.execute(cmd, 'sv');
 };
 
 exports.start = function () {

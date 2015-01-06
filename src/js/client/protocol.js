@@ -26,9 +26,9 @@
 var
 // Module
     arena = require('../common/arena'),
-    level = require('./level'),
 // Local
-    receivers = [], c, s;
+    c, s, cli,
+    receivers = [];
 
 Object.defineProperty(exports, 'connection', {
     get: function () {
@@ -49,9 +49,18 @@ Object.defineProperty(exports, 'simulator', {
     }
 });
 
+Object.defineProperty(exports, 'clientInterface', {
+    get: function () {
+        return cli;
+    },
+    set: function (val) {
+        cli = val;
+    }
+});
+
 exports.receive = function (d) {
     if (arena.debug) {
-        console.log('[client]', d);
+        console.log('[cl]', d);
     }
     var type = d[0];
     receivers[type](d);
@@ -77,5 +86,70 @@ receivers[1] = exports.receiveUpdatePlayer = function (d) {
 // SpawnObject 2 desc id S>C
 
 receivers[2] = exports.receiveSpawnObject = function (d) {
-    level.spawnFromDesc(d[1], d[2]);
+    cli.spawnFromDesc(d[1], d[2]);
+};
+
+// RCON protocol
+// rcon status 200 - C>S | msg S>C
+// rcon error 201 msg S>C
+// rcon command 202 cmd args C>S
+// rcon query 203 cvarname C>S
+// rcon cvar 204 cvarname value S>C
+// rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
+// rcon authorize 206 password C>S
+// rcon queryall 207 C>S
+// Important: messages are not encrypted! Do not reuse the rcon password
+// for things like email and stuff! Someone getting into your server
+// should not be a big deal, as you can easily restart it via ssh or whatever
+
+var rconHandler;
+Object.defineProperty(exports, 'rconHandler', {
+    get: function () {
+        return rconHandler;
+    },
+    set: function (val) {
+        rconHandler = val;
+    }
+});
+
+receivers[200] = exports.receiveRconStatus = function (d) {
+    rconHandler.status(d[1]);
+};
+
+receivers[201] = exports.receiveRconError = function (d) {
+    rconHandler.error(d[1]);
+};
+
+receivers[204] = exports.receiveRconCvar = function (d) {
+    if (arena.debug) {
+        console.log("[cl] RCON response:", d[1], d[2]);
+    }
+    rconHandler.cvar(d[1], d[2]);
+};
+
+receivers[205] = exports.receiveRconRevCmd = function (d) {
+    if (arena.debug) {
+        console.log("[cl] Server command:", d[1]);
+    }
+    rconHandler.command(d[1]);
+};
+
+exports.sendRconStatus = function () {
+    c.send([200]);
+};
+
+exports.sendRconCommand = function (cmd, args) {
+    c.send([202, cmd, args]);
+};
+
+exports.sendRconQuery = function (cvar) {
+    c.send([203, cvar]);
+};
+
+exports.sendRconAuthorize = function (pwd) {
+    c.send([206, pwd]);
+};
+
+exports.sendRconQueryAll = function () {
+    c.send([207]);
 };

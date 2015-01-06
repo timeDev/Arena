@@ -21,17 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 /*global require, module, exports */
 var
 // Module
-    level = require('../common/level'),
     ocl = require('../common/ocl'),
     scenemgr = require('./scene-manager'),
     commands = require('../common/commands'),
     Sexhr = require('../vendor/SeXHR'),
 // Local
     ids = [];
+
+require('../common/level');
+require('./rcon');
 
 exports.load = function () {
     throw "deprecated";
@@ -67,33 +68,46 @@ exports.load = function (str) {
 
 exports.commands = {};
 
-exports.commands.lv_clear = function (c, args) {
-    commands.validate([], args);
-    exports.clear();
+exports.commands.lv_clear = {
+    isCvar: false,
+    name: 'lv_clear',
+    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
+    handler: function (args) {
+        commands.validate([], args);
+        exports.clear();
+    }
 };
 
-exports.commands.lv_load = function (c, args) {
-    if (!commands.validate(['string'], args)) {
-        return;
-    }
-    new Sexhr().req({
-        url: args[1],
-        done: function (err, res) {
-            if (err) {
-                throw err;
+exports.commands.lv_load = {
+    isCvar: false,
+    name: 'lv_load',
+    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
+    handler: function (args) {
+        commands.validate(['string'], args);
+        new Sexhr().req({
+            url: args[1],
+            done: function (err, res) {
+                if (err) {
+                    throw err;
+                }
+                exports.load(res.text);
             }
-            exports.load(res.text);
-        }
-    });
+        });
+    }
 };
 
-exports.commands.lv_spawn = function (c, args) {
-    if (!commands.validate(['string'], args)) {
-        return;
-    }
-    try {
-        ocl.load(args[1], exports.spawn);
-    } catch (e) {
-        console.error("Error parsing JSON!");
+exports.commands.lv_spawn = {
+    isCvar: false,
+    name: 'lv_spawn',
+    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
+    handler: function (args) {
+        commands.validate(['string'], args);
+        try {
+            ocl.load(args[1], exports.spawn);
+        } catch (e) {
+            console.error("Error parsing JSON!");
+        }
     }
 };
+
+console.log(commands, exports);
