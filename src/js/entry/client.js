@@ -22,26 +22,55 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-var
-// Module
-    Clock = require('./common/clock'),
-    settings = require('./common/settings'),
-    display = require('./client/display'),
-    controls = require('./client/controls'),
-    simulator = require('./common/simulator').make(),
-    commands = require('./common/commands'),
-    console = require('./client/console'),
-    level = require('./client/level'),
-// Load rcon after level to avoid issues with cyclic deps
-    rcon = require('./client/rcon'),
-    scenemgr = require('./client/scene-manager'),
-    protocol = require('./client/protocol'),
-    server = require('./server/server'),
-    Connection = require('./common/connection'),
-// Function
-    update;
+// Polyfill and globals
+if (Math.clamp === undefined) {
+    Math.clamp = function (n, min, max) {
+        return Math.min(Math.max(n, min), max);
+    };
+}
 
-exports.initClient = function () {
+if (Math.HALF_PI === undefined) {
+    Math.HALF_PI = Math.PI / 2;
+}
+
+// Thanks to Stackoverflow user fearphage
+if (!String.format) {
+    String.format = function (format) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return format.replace(/\{(\d+)\}/g, function (match, number) {
+            return args[number] !== undefined ? args[number] : match;
+        });
+    };
+}
+
+var Clock = require('../common/clock'),
+    settings = require('../common/settings'),
+    controls = require('../client/controls'),
+    simulator = require('../common/simulator').make(),
+    commands = require('../common/commands'),
+    level = require('../client/level'),
+// Load rcon after level to avoid issues with cyclic deps
+    rcon = require('../client/rcon'),
+    scenemgr = require('../client/scene-manager'),
+    protocol = require('../client/protocol'),
+    arena = require('../common/arena'),
+    console = require('../client/console');
+
+// Entry point
+function entrypoint() {
+    var display = require('../client/display');
+    console.log("Playing Arena version {0}", arena.version);
+    if (arena.debug) {
+        console.warn("Debug mode is enabled");
+        window.debugging = true;
+    }
+
+    function update(time) {
+        controls.update(time);
+        simulator.update(time);
+        scenemgr.copyWorldToScene();
+    }
+
     settings.api.init();
     scenemgr.init(display.scene, simulator);
 
@@ -65,32 +94,14 @@ exports.initClient = function () {
     commands.register(display.commands);
     commands.register(controls.commands);
     commands.register(rcon.commands);
-};
 
-exports.initServer = function () {
-    // Nothing, handled by sv/server module
-};
-
-exports.connectLocal = function () {
-    protocol.connection = new Connection();
-    var svCon = new Connection();
-    protocol.connection.connect(svCon);
-    server.connect(svCon);
-    rcon.cacheCvars();
-};
-
-update = function (time) {
-    controls.update(time);
-    simulator.update(time);
-    scenemgr.copyWorldToScene();
-};
-
-exports.start = function () {
     display.render();
     protocol.simulator = simulator;
     Clock.startNew(16, update);
+}
 
-    server.start();
-
-    server.execute("lv_load maps/devtest.json");
-};
+if (document.readyState === 'interactive') {
+    entrypoint();
+} else {
+    document.addEventListener('DOMContentLoaded', entrypoint);
+}

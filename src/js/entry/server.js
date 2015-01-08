@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,8 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-exports.major = 0;
-exports.minor = 1;
-exports.revision = 3;
-exports.build = 8;
-exports.timestamp = "2015-01-08T22:40:59.031Z";
+var
+// Module
+    server = require('../server/server');
 
-exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
-exports.versionString = exports.versionArray.join(".");
+server.start();

@@ -31,7 +31,13 @@ var
 gulp.task('default', ['build'], function () {
     connect.server({
         root: '../out'
-    })
+    });
+});
+
+gulp.task('server', function () {
+    connect.server({
+        root: '../out'
+    });
 });
 
 // ====== Clean task ======
@@ -89,16 +95,26 @@ var
     source = require('vinyl-source-stream'),
     buffer = require('vinyl-buffer'),
     uglify = require('gulp-uglify'),
-    watchify = require('watchify');
+    watchify = require('watchify'),
+    factor = require('factor-bundle');
 
-gulp.task('watchify', ['clean', 'increment-build'], function () {
-    var bundler = watchify(browserify({
-        entries: ['../src/js/main.js'],
+gulp.task('copy-assets', ['clean'], function () {
+    // We have to copy assets before running browserify,
+    // because factor-bundle doesn't create its output directory
+    return gulp.src(['../src/**', '!../src/{js,js/**}'])
+        .pipe(gulp.dest('../out'));
+});
+
+gulp.task('build', ['copy-assets', 'increment-build'], function () {
+    var bundler = browserify({
+        entries: ['../src/js/entry/client.js', '../src/js/entry/server.js'],
         baseDir: './../src/js',
         debug: true,
         cache: {},
         packageCache: {}
-    }));
+    });
+    bundler.plugin(factor, {o: ['../out/game.js', '../out/server.js']});
+    bundler = watchify(bundler);
 
     function bundle() {
         gutil.log('Rebundling');
@@ -106,36 +122,29 @@ gulp.task('watchify', ['clean', 'increment-build'], function () {
             // log errors if they happen
             .on('error', gutil.log.bind(gutil, 'Browserify Error'))
             .on('log', console.error)
-            .pipe(source('bundle.js'))
+            .pipe(source('common.js'))
             .pipe(buffer())
             .pipe(gulp.dest('../out'));
     }
 
-    gulp.watch('../src/js/**/!(version).js',  ['increment-build']);
+    gulp.watch('../src/js/**/!(version).js', ['increment-build']);
     gulp.watch('../src/js/version.js', bundle);
 
     return bundle();
 });
 
-gulp.task('build', ['clean', 'watchify'], function () {
-    return gulp.src(['../src/**', '!../src/{js,js/**}'])
-        .pipe(gulp.dest('../out'));
-});
-
-gulp.task('make', ['clean', 'increment-revision'], function () {
+gulp.task('make', ['copy-assets'], function () {
     browserify({
-        entries: ['../src/js/main.js'],
+        entries: ['../src/js/entry/client.js', '../src/js/entry/server.js'],
         baseDir: './../src/js',
         debug: false,
         cache: {},
         packageCache: {}
     })
+        .plugin(factor, {o: ['../out/game.js', '../out/server.js']})
         .bundle()
-        .pipe(source('bundle.js'))
+        .pipe(source('common.js'))
         .pipe(buffer())
         .pipe(uglify())
-        .pipe(gulp.dest('../out'));
-
-    gulp.src(['../src/**', '!../src/{js,js/**}'])
         .pipe(gulp.dest('../out'));
 });
