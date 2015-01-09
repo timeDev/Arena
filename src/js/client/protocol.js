@@ -26,19 +26,10 @@
 var
 // Module
     arena = require('../common/arena'),
+    client = require('./client'),
 // Local
-    c, s, cli,
+    s, cli,
     receivers = [];
-
-Object.defineProperty(exports, 'connection', {
-    get: function () {
-        return c;
-    },
-    set: function (val) {
-        c = val;
-        c.message.add(exports.receive);
-    }
-});
 
 Object.defineProperty(exports, 'simulator', {
     get: function () {
@@ -66,17 +57,21 @@ exports.receive = function (d) {
     receivers[type](d);
 };
 
+function sendRaw(d) {
+    client.connection.send(d);
+}
+
 // KeepAlive 0 num S<>C
 
 receivers[0] = exports.receiveKeepAlive = function (d) {
     // Send it right back
-    c.send(d);
+    sendRaw(d);
 };
 
 // UpdatePlayer 1 state S<>C
 
 exports.sendUpdatePlayer = function (state) {
-    c.send([1, state]);
+    sendRaw([1, state]);
 };
 
 receivers[1] = exports.receiveUpdatePlayer = function (d) {
@@ -135,21 +130,21 @@ receivers[205] = exports.receiveRconRevCmd = function (d) {
 };
 
 exports.sendRconStatus = function () {
-    c.send([200]);
+    sendRaw([200]);
 };
 
 exports.sendRconCommand = function (cmd, args) {
-    c.send([202, cmd, args]);
+    sendRaw([202, cmd, args]);
 };
 
 exports.sendRconQuery = function (cvar) {
-    c.send([203, cvar]);
+    sendRaw([203, cvar]);
 };
 
 exports.sendRconAuthorize = function (pwd) {
-    c.send([206, pwd]);
+    sendRaw([206, pwd]);
 };
 
 exports.sendRconQueryAll = function () {
-    c.send([207]);
+    sendRaw([207]);
 };

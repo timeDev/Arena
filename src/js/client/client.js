@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,26 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-exports.major = 0;
-exports.minor = 1;
-exports.revision = 3;
-exports.build = 33;
-exports.timestamp = "2015-01-09T17:50:53.498Z";
+var
+// Module
+    commands = require('../common/commands'),
+    Connection = require('../common/connection');
 
-exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
-exports.versionString = exports.versionArray.join(".");
+exports.connection = null;
+
+exports.connect = function (address) {
+    exports.connection = new Connection();
+    exports.connection.connect(address);
+};
+
+exports.commands = {};
+
+exports.commands.connect = {
+    isCvar: false,
+    name: 'connect',
+    ctx: {cl: commands.contexts.host},
+    handler: function (args) {
+        commands.validate(['string'], args);
+        exports.connect(args[1]);
+    }
+};

@@ -30,11 +30,11 @@ require('../vendor/peer');
 function PeerInterface(peer, connection) {
     this.peer = peer;
     this.connection = connection;
-    peer.on('data', this.connection.receive);
+    peer.on('data', this.connection.receive.bind(this.connection));
 }
 
 PeerInterface.prototype.send = function (data) {
-    this.connection.send(data);
+    this.peer.send(data);
 };
 
 
@@ -60,9 +60,6 @@ Connection.prototype.connect = function (target) {
         target.accept(this);
     } else if (typeof target === 'string') {
         this.peer = new Peer({key: key});
-        this.peer.on('open', function (id) {
-            console.log("Connection id (client): {0}", id);
-        });
         this.target = new PeerInterface(this.peer.connect(target), this);
     }
 };
@@ -87,10 +84,8 @@ Connection.prototype.receive = function (data) {
     this.message.dispatch(data);
 };
 
-Connection.listen = function (id, cb) {
+Connection.listen = function (cb, id) {
     var host = id === undefined ? new Peer({key: key}) : new Peer(id, {key: key});
-    host.on('open', function (_id) {
-    });
     host.on('connection', function (connection) {
         var conn = new Connection();
         conn.accept(connection);

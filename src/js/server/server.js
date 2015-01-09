@@ -96,7 +96,10 @@ exports.execute = function (cmd) {
 };
 
 exports.start = function () {
-    conListener = Connection.listen('id', exports.connect);
+    conListener = Connection.listen(exports.connect);
+    conListener.on('open', function (id) {
+        console.log("Server connection id:", id);
+    });
     Clock.startNew(16, exports.update);
 };
 

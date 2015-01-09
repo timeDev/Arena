@@ -54,6 +54,7 @@ var Clock = require('../common/clock'),
     scenemgr = require('../client/scene-manager'),
     protocol = require('../client/protocol'),
     arena = require('../common/arena'),
+    client = require('../client/client'),
     console = require('../client/console');
 
 // Entry point
@@ -94,6 +95,7 @@ function entrypoint() {
     commands.register(display.commands);
     commands.register(controls.commands);
     commands.register(rcon.commands);
+    commands.register(client.commands);
 
     display.render();
     protocol.simulator = simulator;
