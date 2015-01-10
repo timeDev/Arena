@@ -109,5 +109,3 @@ exports.commands.lv_spawn = {
         }
     }
 };
-
-console.log(commands, exports);

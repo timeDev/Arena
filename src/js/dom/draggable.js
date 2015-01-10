@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,34 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-exports.major = 0;
-exports.minor = 2;
-exports.revision = 0;
-exports.build = 0;
-exports.timestamp = "2015-01-10T15:33:27.574Z";
 
-exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
-exports.versionString = exports.versionArray.join(".");
+module.exports = function (domElement) {
+    domElement.style.position = "absolute";
+    domElement.style.left = "100px";
+    domElement.style.top = "100px";
+
+    var dragging, offsetX, offsetY;
+
+    domElement.addEventListener('mousedown', function (e) {
+        var rect = domElement.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        if (offsetY <= 26) {
+            dragging = true;
+            domElement.style.cursor = "default";
+        }
+    });
+
+    window.addEventListener('mousemove', function (e) {
+        if (dragging) {
+            domElement.style.left = (e.clientX - offsetX) + "px";
+            domElement.style.top = (e.clientY - offsetY) + "px";
+            e.preventDefault();
+        }
+    });
+
+    domElement.addEventListener('mouseup', function () {
+        dragging = false;
+        domElement.style.cursor = "";
+    });
+};

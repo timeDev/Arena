@@ -27,9 +27,10 @@ var
     THREE = require('three'),
     Stats = require('../vendor/Stats'),
     commands = require('../common/commands'),
-    console = require('./console'),
+    console = require('../dom/console'),
     settings = require('../common/settings'),
     input = require('./input'),
+    makeDraggable = require('../dom/draggable'),
 // Local
     scene, camera, renderer,
 // Function
@@ -54,6 +55,7 @@ document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.AmbientLight());
 
+makeDraggable(console.domElement);
 document.body.appendChild(console.domElement);
 
 // -- Stats --

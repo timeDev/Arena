@@ -26,12 +26,11 @@ var
 // Module
     commands = require('../common/commands'),
     protocol = require('./protocol'),
-    console = require('./console'),
+    console = require('../dom/console'),
 // Local
     cvarCache;
 
 commands.contexts.rcon = exports = module.exports = commands.makeContext();
-console.log("rcon context made");
 
 protocol.rconHandler = {
     status: function (msg) {

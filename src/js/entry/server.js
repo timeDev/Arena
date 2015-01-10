@@ -22,8 +22,46 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
+// Polyfill and globals
+if (Math.clamp === undefined) {
+    Math.clamp = function (n, min, max) {
+        return Math.min(Math.max(n, min), max);
+    };
+}
+
+if (Math.HALF_PI === undefined) {
+    Math.HALF_PI = Math.PI / 2;
+}
+
+// Thanks to Stackoverflow user fearphage
+if (!String.format) {
+    String.format = function (format) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return format.replace(/\{(\d+)\}/g, function (match, number) {
+            return args[number] !== undefined ? args[number] : match;
+        });
+    };
+}
+
 var
 // Module
-    server = require('../server/server');
+    server = require('../server/server'),
+    console = require('../dom/console'),
+    commands = require('../common/commands');
 
 server.start();
+
+// Add command shorthand
+console.executeFn = window.c = function (str) {
+    return commands.execute(str, 'sv');
+};
+
+function initDom() {
+    document.body.appendChild(console.domElement);
+}
+
+if (document.readyState === 'interactive') {
+    initDom();
+} else {
+    document.addEventListener('DOMContentLoaded', initDom);
+}

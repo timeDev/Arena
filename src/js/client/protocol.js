@@ -51,7 +51,7 @@ Object.defineProperty(exports, 'clientInterface', {
 
 exports.receive = function (d) {
     if (arena.debug) {
-        console.log('[cl]', d);
+        console.log(d);
     }
     var type = d[0];
     receivers[type](d);
@@ -117,14 +117,14 @@ receivers[201] = exports.receiveRconError = function (d) {
 
 receivers[204] = exports.receiveRconCvar = function (d) {
     if (arena.debug) {
-        console.log("[cl] RCON response:", d[1], d[2]);
+        console.log("RCON response:", d[1], d[2]);
     }
     rconHandler.cvar(d[1], d[2]);
 };
 
 receivers[205] = exports.receiveRconRevCmd = function (d) {
     if (arena.debug) {
-        console.log("[cl] Server command:", d[1]);
+        console.log("Server command:", d[1]);
     }
     rconHandler.command(d[1]);
 };

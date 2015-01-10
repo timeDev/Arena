@@ -60,7 +60,7 @@ exports.broadcast = function (d) {
 
 exports.receive = function (p, d) {
     if (arena.debug) {
-        console.log('[server]', p, d);
+        console.log(p, d);
     }
     var type = d[0];
     receivers[type](p, d);

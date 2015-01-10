@@ -55,7 +55,7 @@ var Clock = require('../common/clock'),
     protocol = require('../client/protocol'),
     arena = require('../common/arena'),
     client = require('../client/client'),
-    console = require('../client/console');
+    console = require('../dom/console');
 
 // Entry point
 function entrypoint() {
@@ -87,7 +87,7 @@ function entrypoint() {
     };
 
     // Add command shorthand
-    window.c = function (str) {
+    console.executeFn = window.c = function (str) {
         return commands.execute(str, 'cl');
     };
 

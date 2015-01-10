@@ -80,7 +80,7 @@ commands.register(level.commands);
 exports.connect = function (c) {
     var player = new Player(c, simulator);
     if (arena.debug) {
-        console.log('[server]', 'player connected:', player);
+        console.log('player connected:', player);
     }
     players.push(player);
     c.message.add(protocol.receive.bind(null, player));

@@ -24,29 +24,16 @@
 /*global require, module, exports */
 var
 // Module
-    keycode = require('./keycode'),
+    keycode = require('../client/keycode'),
     commands = require('../common/commands'),
 // Local
-    dragging, offsetX, offsetY,
     domElement = document.createElement('div'),
     inElement = document.createElement('input'),
     outElement = document.createElement('div');
 
-domElement.style.position = "absolute";
-domElement.style.left = "100px";
-domElement.style.top = "100px";
-domElement.style.backgroundColor = "#202020";
-domElement.style.padding = "10px";
-domElement.style.overflow = "hidden";
-inElement.style.backgroundColor = "#505050";
-inElement.style.borderWidth = "0px";
-inElement.style.marginTop = "10px";
-inElement.style.width = "100%";
-outElement.style.backgroundColor = "#505050";
-outElement.style.padding = "2px";
-outElement.style.fontSize = "12px";
-outElement.style.maxHeight = "350px";
-outElement.style.overflowY = "scroll";
+domElement.classList.add("console-container");
+inElement.classList.add("console-input");
+outElement.classList.add("console-output");
 
 domElement.insertAdjacentHTML('afterbegin', "Console<br>");
 domElement.appendChild(outElement);
@@ -56,7 +43,7 @@ inElement.addEventListener('keypress', function (e) {
     var which = e.which || e.charCode || e.keyCode;
     if (which === keycode.enter) {
         try {
-            var result = commands.execute(inElement.value, 'cl');
+            var result = exports.executeFn(inElement.value);
             if (result !== undefined) {
                 exports.log(result);
             }
@@ -67,29 +54,7 @@ inElement.addEventListener('keypress', function (e) {
     }
 });
 
-// Make the console draggable
-domElement.addEventListener('mousedown', function (e) {
-    var rect = domElement.getBoundingClientRect();
-    offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
-    if (offsetY <= 26) {
-        dragging = true;
-        domElement.style.cursor = "default";
-    }
-});
-
-window.addEventListener('mousemove', function (e) {
-    if (dragging) {
-        domElement.style.left = (e.clientX - offsetX) + "px";
-        domElement.style.top = (e.clientY - offsetY) + "px";
-        e.preventDefault();
-    }
-});
-
-domElement.addEventListener('mouseup', function () {
-    dragging = false;
-    domElement.style.cursor = "";
-});
+exports.executeFn = null;
 
 exports.domElement = domElement;
 exports.w = window.console;
@@ -97,22 +62,16 @@ exports.w = window.console;
 exports.log = function () {
     var str = String.format.apply(null, arguments);
     this.writeLine(str);
-    // Mirror output to web console
-    window.console.log(str);
 };
 
 exports.warn = function () {
     var str = String.format.apply(null, arguments);
     this.writeLine(str, 'yellow');
-    // Mirror output to web console
-    window.console.warn(str);
 };
 
 exports.error = function () {
     var str = String.format.apply(null, arguments);
     this.writeLine(str, 'red');
-    // Mirror console output to web console
-    window.console.error(str);
 };
 
 exports.write = function (str, color) {
