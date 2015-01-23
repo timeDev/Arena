@@ -29,17 +29,7 @@ var
     client = require('./client'),
     simulator = require('../common/simulator'),
 // Local
-    cli,
     receivers = [];
-
-Object.defineProperty(exports, 'clientInterface', {
-    get: function () {
-        return cli;
-    },
-    set: function (val) {
-        cli = val;
-    }
-});
 
 exports.receive = function (d) {
     if (arena.debug) {
@@ -73,7 +63,8 @@ receivers[1] = exports.receiveUpdatePlayer = function (d) {
 // SpawnObject 2 desc id S>C
 
 receivers[2] = exports.receiveSpawnObject = function (d) {
-    cli.spawnFromDesc(d[1], d[2]);
+    // Avoid cyclic dependency -> load module in function
+    require('./level').spawnFromDesc(d[1], d[2]);
 };
 
 // RCON protocol

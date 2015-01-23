@@ -37,7 +37,7 @@ if (Math.HALF_PI === undefined) {
 if (!String.format) {
     String.format = function (format) {
         var args = Array.prototype.slice.call(arguments, 1);
-        return format.replace(/\{(\d+)\}/g, function (match, number) {
+        return format.replace(/\{(\d+)}/g, function (match, number) {
             return args[number] !== undefined ? args[number] : match;
         });
     };
@@ -52,7 +52,6 @@ var Clock = require('../common/clock'),
 // Load rcon after level to avoid issues with cyclic deps
     rcon = require('../client/rcon'),
     scenemgr = require('../client/scene-manager'),
-    protocol = require('../client/protocol'),
     arena = require('../common/arena'),
     client = require('../client/client'),
     console = require('../dom/console');
@@ -70,10 +69,6 @@ function update(time) {
 }
 
 settings.api.init();
-
-protocol.clientInterface = {
-    spawnFromDesc: level.spawnFromDesc
-};
 
 // Add command shorthand
 console.executeFn = window.c = function (str) {

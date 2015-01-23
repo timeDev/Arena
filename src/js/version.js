@@ -25,8 +25,8 @@
 exports.major = 0;
 exports.minor = 2;
 exports.revision = 0;
-exports.build = 6;
-exports.timestamp = "2015-01-23T16:55:52.355Z";
+exports.build = 10;
+exports.timestamp = "2015-01-23T17:30:20.172Z";
 
 exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
 exports.versionString = exports.versionArray.join(".");
