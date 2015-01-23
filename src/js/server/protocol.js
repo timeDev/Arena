@@ -26,27 +26,10 @@
 var
 // Module
     arena = require('../common/arena'),
+    server = require('./server'),
 // Local
-    players, svi,
+    players = server.players,
     receivers = [];
-
-Object.defineProperty(exports, 'players', {
-    get: function () {
-        return players;
-    },
-    set: function (val) {
-        players = val;
-    }
-});
-
-Object.defineProperty(exports, 'serverInterface', {
-    get: function () {
-        return svi;
-    },
-    set: function (val) {
-        svi = val;
-    }
-});
 
 var send = exports.send = function (p, d) {
     p.connection.send(d);
@@ -115,8 +98,8 @@ exports.spawnObject = function (str, id) {
 // for things like email and stuff! Someone getting into your server
 // should not be a big deal, as you can easily restart it via ssh or whatever
 
-receivers[200] = exports.receiveRconStatus = function (p, d) {
-    send(p, [200, svi.getServerStatusMsg()]);
+receivers[200] = exports.receiveRconStatus = function (p /*, d*/) {
+    send(p, [200, server.getServerStatusMsg()]);
 };
 
 receivers[202] = exports.receiveRconCmd = function (p, d) {
@@ -124,22 +107,22 @@ receivers[202] = exports.receiveRconCmd = function (p, d) {
         send(p, [201, "not authorized"]);
         return;
     }
-    svi.executeCommand(d[1], d[2]);
+    server.executeCommand(d[1], d[2]);
 };
 
 receivers[203] = exports.receiveRconQuery = function (p, d) {
-    var response = svi.getCvar(d[1], p.data.rconAuthorized);
+    var response = server.getCvar(d[1], p.data.rconAuthorized);
     send(p, [204, d[1], response]);
 };
 
 receivers[206] = exports.receiveRconAuthorize = function (p, d) {
-    if (svi.matchesRconPassword(d[1])) {
+    if (server.matchesRconPassword(d[1])) {
         p.data.rconAuthorized = true;
     }
 };
 
-receivers[207] = exports.receiveRconQueryAll = function (p, d) {
-    var responseList = svi.getCvarList(p.data.rconAuthorized);
+receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
+    var responseList = server.getCvarList(p.data.rconAuthorized);
     for (var i = 0; i < responseList.length; i++) {
         var res = responseList[i];
         send(p, [204, res[0], res[1]]);

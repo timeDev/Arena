@@ -47,9 +47,40 @@ var
 // Module
     server = require('../server/server'),
     console = require('../dom/console'),
-    commands = require('../common/commands');
+    commands = require('../common/commands'),
+    Connection = require('../common/connection'),
+    protocol = require('../server/protocol'),
+    simulator = require('../common/simulator'),
+    Clock = require('../common/clock'),
+    Player = require('../server/player'),
+    arena = require('../common/arena'),
+    level = require('../server/level'),
+// Local
+    conListener;
 
-server.start();
+level.newIdFn = server.newId;
+
+commands.register(level.commands);
+
+function update(time) {
+    simulator.update(time);
+}
+
+function connect(c) {
+    var player = new Player(c);
+    if (arena.debug) {
+        console.w.log('player connected:', player);
+    }
+    server.players.push(player);
+    c.message.add(protocol.receive.bind(null, player));
+    simulator.add(player.body, player.entityId);
+}
+
+conListener = Connection.listen(connect);
+conListener.on('open', function (id) {
+    console.w.log("Server connection id:", id);
+});
+Clock.startNew(16, update);
 
 // Add command shorthand
 console.executeFn = window.c = function (str) {

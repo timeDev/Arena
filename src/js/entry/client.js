@@ -46,7 +46,7 @@ if (!String.format) {
 var Clock = require('../common/clock'),
     settings = require('../common/settings'),
     controls = require('../client/controls'),
-    simulator = require('../common/simulator').make(),
+    simulator = require('../common/simulator'),
     commands = require('../common/commands'),
     level = require('../client/level'),
 // Load rcon after level to avoid issues with cyclic deps
@@ -85,13 +85,11 @@ commands.register(controls.commands);
 commands.register(rcon.commands);
 commands.register(client.commands);
 
-protocol.simulator = simulator;
-
 // Entry point
 function entrypoint() {
     var display = require('../client/display');
 
-    scenemgr.init(display.scene, simulator);
+    scenemgr.init(display.scene);
 
     controls.firstPersonCam(display.camera);
     controls.sceneObj.position.set(0, 2, 0);

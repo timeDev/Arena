@@ -26,63 +26,56 @@ var
 // Module
     CANNON = require('../vendor/cannon'),
     ocl = require('./ocl');
+var  // Local
+    world,
+    solver = new CANNON.GSSolver(),
+    split = true;
 
-exports.make = function () {
-    var  // Local
-        world,
-        solver = new CANNON.GSSolver(),
-        split = true;
+var idLookup = [];
 
-    var idLookup = [];
+// -- Setup --
+world = new CANNON.World();
+world.quatNormalizeSkip = 0;
+world.quatNormalizeFast = false;
 
-    // -- Setup --
-    world = new CANNON.World();
-    world.quatNormalizeSkip = 0;
-    world.quatNormalizeFast = false;
+world.defaultContactMaterial.contactEquationStiffness = 1e9;
+world.defaultContactMaterial.contactEquationRegularizationTime = 4;
 
-    world.defaultContactMaterial.contactEquationStiffness = 1e9;
-    world.defaultContactMaterial.contactEquationRegularizationTime = 4;
+solver.iterations = 7;
+solver.tolerance = 0.1;
+if (split) {
+    world.solver = new CANNON.SplitSolver(solver);
+} else {
+    world.solver = solver;
+}
 
-    solver.iterations = 7;
-    solver.tolerance = 0.1;
-    if (split) {
-        world.solver = new CANNON.SplitSolver(solver);
-    } else {
-        world.solver = solver;
+world.gravity.set(0, -20, 0);
+world.broadphase = new CANNON.NaiveBroadphase();
+
+exports.world = world;
+
+exports.update = function (time) {
+    world.step(1 / 60, time, 2);
+};
+
+exports.updateBody = function (id, desc) {
+    var body = idLookup[id];
+    if (desc.v) {
+        body.velocity.set(desc.v[0], desc.v[1], desc.v[2]);
     }
+    if (desc.p) {
+        body.position.set(desc.p[0], desc.p[1], desc.p[2])
+    }
+};
 
-    world.gravity.set(0, -20, 0);
-    world.broadphase = new CANNON.NaiveBroadphase();
+exports.add = function (body, id) {
+    idLookup[id] = body;
+    body.id = id;
+    world.add(body);
+};
 
-    var simulator = {};
-
-    simulator.world = world;
-
-    simulator.update = function (time) {
-        world.step(1 / 60, time, 2);
-    };
-
-    simulator.updateBody = function (id, desc) {
-        var body = idLookup[id];
-        if (desc.v) {
-            body.velocity.set(desc.v[0], desc.v[1], desc.v[2]);
-        }
-        if (desc.p) {
-            body.position.set(desc.p[0], desc.p[1], desc.p[2])
-        }
-    };
-
-    simulator.add = function (body, id) {
-        idLookup[id] = body;
-        body.id = id;
-        world.add(body);
-    };
-
-    simulator.remove = function (id) {
-        world.remove(idLookup[id]);
-        delete idLookup[id].id;
-        delete idLookup[id];
-    };
-
-    return simulator;
+exports.remove = function (id) {
+    world.remove(idLookup[id]);
+    delete idLookup[id].id;
+    delete idLookup[id];
 };

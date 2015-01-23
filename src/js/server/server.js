@@ -23,88 +23,49 @@
  */
 /*global require, module, exports */
 var
-// Module
-    Connection = require('../common/connection'),
-    protocol = require('./protocol'),
-    simulator = require('../common/simulator').make(),
     commands = require('../common/commands'),
-    Clock = require('../common/clock'),
-    Player = require('./player'),
     arena = require('../common/arena'),
-    level = require('./level'),
 // Local
-    conListener,
     players = [],
     idCounter = 1;
+
+exports.players = players;
 
 exports.newId = function () {
     return idCounter++;
 };
 
-level.simulator = simulator;
-level.newIdFn = exports.newId;
+exports.getServerStatusMsg = function () {
+    return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
+};
 
-protocol.players = players;
-protocol.serverInterface = {
-    getServerStatusMsg: function () {
-        return String.format("Running version {0} | " +
-        "{1} players", arena.version, players.length);
-    },
-    executeCommand: function (cmd, args) {
-        commands.execute(args.join(" "), 'sv');
-    },
-    matchesRconPassword: function (pwd) {
-        // TODO: Make password configurable
-        return pwd === "banana";
-    },
-    getCvarList: function (admin) {
-        var cvars = commands.getCvars();
-        var list = [];
-        for (var k in cvars) {
-            if (cvars.hasOwnProperty(k)) {
-                list.push(cvars[k]);
-            }
+exports.executeCommand = function (cmd, args) {
+    commands.execute(args.join(" "), 'sv');
+};
+
+exports.matchesRconPassword = function (pwd) {
+    // TODO: Make password configurable
+    return pwd === "banana";
+};
+
+exports.getCvarList = function (/*admin*/) {
+    var cvars = commands.getCvars();
+    var list = [];
+    for (var k in cvars) {
+        if (cvars.hasOwnProperty(k)) {
+            list.push(cvars[k]);
         }
-        list = list.map(function (c) {
-            return [c.name, typeof c.value === 'function' ? c.value.call() : c.value];
-        });
-        return list;
-    },
-    getCvar: function (name) {
-
     }
+    list = list.map(function (c) {
+        return [c.name, typeof c.value === 'function' ? c.value.call() : c.value];
+    });
+    return list;
 };
 
-commands.register(level.commands);
-
-exports.connect = function (c) {
-    var player = new Player(c, simulator);
-    if (arena.debug) {
-        console.log('player connected:', player);
-    }
-    players.push(player);
-    c.message.add(protocol.receive.bind(null, player));
-    simulator.add(player.body, player.entityId);
-};
-
-exports.update = function (time) {
-    simulator.update(time);
+exports.getCvar = function (name) {
+    return commands.getCvar(name, 'sv');
 };
 
 exports.execute = function (cmd) {
-    commands.execute(cmd, 'sv');
-};
-
-exports.start = function () {
-    conListener = Connection.listen(exports.connect);
-    conListener.on('open', function (id) {
-        console.log("Server connection id:", id);
-    });
-    Clock.startNew(16, exports.update);
-};
-
-exports.shutdown = function () {
-    players = [];
-    conListener.destroy();
-    conListener = null;
+    return commands.execute(cmd, 'sv');
 };

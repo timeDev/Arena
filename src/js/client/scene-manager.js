@@ -23,13 +23,14 @@
  */
 /*global require, module, exports */
 var
+// Module
+    simulator = require('../common/simulator'),
 // Local
     sceneObjects = [],
     worldObjects = [];
 
-exports.init = function (scene, simulator) {
+exports.init = function (scene) {
     exports.scene = scene;
-    exports.simu = simulator;
 };
 
 exports.addToScene = function (obj, id) {
@@ -40,7 +41,7 @@ exports.addToScene = function (obj, id) {
 
 exports.addToWorld = function (obj, id) {
     obj.tracker = {id: id, type: "world"};
-    exports.simu.add(obj, id);
+    simulator.add(obj, id);
     worldObjects[id] = obj;
 };
 
@@ -77,7 +78,7 @@ exports.copySceneToWorld = function () {
 exports.remove = function (id) {
     var s = sceneObjects[id];
     exports.scene.remove(s);
-    exports.simu.remove(id);
+    simulator.remove(id);
     delete sceneObjects[id];
     delete worldObjects[id];
 };

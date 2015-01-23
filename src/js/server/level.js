@@ -22,24 +22,17 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
+require('../common/level');
 var
 // Module
-    level = require('../common/level'),
     commands = require('../common/commands'),
     ocl = require('../common/ocl'),
     Sexhr = require('../vendor/SeXHR'),
     protocol = require('./protocol'),
+    simulator = require('../common/simulator'),
 // Local
-    sim, ids = [];
+    ids = [];
 
-Object.defineProperty(exports, 'simulator', {
-    get: function () {
-        return sim;
-    },
-    set: function (val) {
-        sim = val;
-    }
-});
 
 exports.newIdFn = function () {
     return -1;
@@ -52,7 +45,7 @@ exports.spawnObj = function (obj, id) {
     }
     if (obj.body) {
         obj.body.position.copy(obj.pos);
-        sim.add(obj.body, id);
+        simulator.add(obj.body, id);
         ids.push(id);
     }
 };
@@ -66,7 +59,7 @@ exports.spawnString = function (str) {
 };
 
 exports.clear = function () {
-    ids.forEach(sim.remove);
+    ids.forEach(simulator.remove);
     ids = [];
 };
 

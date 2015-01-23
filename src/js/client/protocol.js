@@ -27,18 +27,10 @@ var
 // Module
     arena = require('../common/arena'),
     client = require('./client'),
+    simulator = require('../common/simulator'),
 // Local
-    s, cli,
+    cli,
     receivers = [];
-
-Object.defineProperty(exports, 'simulator', {
-    get: function () {
-        return s;
-    },
-    set: function (val) {
-        s = val;
-    }
-});
 
 Object.defineProperty(exports, 'clientInterface', {
     get: function () {
@@ -75,7 +67,7 @@ exports.sendUpdatePlayer = function (state) {
 };
 
 receivers[1] = exports.receiveUpdatePlayer = function (d) {
-    s.updateBody(0, d[1]);
+    simulator.updateBody(0, d[1]);
 };
 
 // SpawnObject 2 desc id S>C
