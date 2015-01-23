@@ -57,22 +57,40 @@ var Clock = require('../common/clock'),
     client = require('../client/client'),
     console = require('../dom/console');
 
+console.log("Playing Arena version {0}", arena.version);
+if (arena.debug) {
+    console.warn("Debug mode is enabled");
+    window.debugging = true;
+}
+
+function update(time) {
+    controls.update(time);
+    simulator.update(time);
+    scenemgr.copyWorldToScene();
+}
+
+settings.api.init();
+
+protocol.clientInterface = {
+    spawnFromDesc: level.spawnFromDesc
+};
+
+// Add command shorthand
+console.executeFn = window.c = function (str) {
+    return commands.execute(str, 'cl');
+};
+
+commands.register(level.commands);
+commands.register(controls.commands);
+commands.register(rcon.commands);
+commands.register(client.commands);
+
+protocol.simulator = simulator;
+
 // Entry point
 function entrypoint() {
     var display = require('../client/display');
-    console.log("Playing Arena version {0}", arena.version);
-    if (arena.debug) {
-        console.warn("Debug mode is enabled");
-        window.debugging = true;
-    }
 
-    function update(time) {
-        controls.update(time);
-        simulator.update(time);
-        scenemgr.copyWorldToScene();
-    }
-
-    settings.api.init();
     scenemgr.init(display.scene, simulator);
 
     controls.firstPersonCam(display.camera);
@@ -82,23 +100,10 @@ function entrypoint() {
     display.scene.add(controls.sceneObj);
     simulator.add(controls.physBody, 0);
 
-    protocol.clientInterface = {
-        spawnFromDesc: level.spawnFromDesc
-    };
-
-    // Add command shorthand
-    console.executeFn = window.c = function (str) {
-        return commands.execute(str, 'cl');
-    };
-
-    commands.register(level.commands);
     commands.register(display.commands);
-    commands.register(controls.commands);
-    commands.register(rcon.commands);
-    commands.register(client.commands);
 
     display.render();
-    protocol.simulator = simulator;
+
     Clock.startNew(16, update);
 }
 
