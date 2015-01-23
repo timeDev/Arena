@@ -48,9 +48,40 @@ var
 // Module
     server = require('../server/server'),
     console = require('../dom/console'),
-    commands = require('../common/commands');
+    commands = require('../common/commands'),
+    Connection = require('../common/connection'),
+    protocol = require('../server/protocol'),
+    simulator = require('../common/simulator'),
+    Clock = require('../common/clock'),
+    Player = require('../server/player'),
+    arena = require('../common/arena'),
+    level = require('../server/level'),
+// Local
+    conListener;
 
-server.start();
+level.newIdFn = server.newId;
+
+commands.register(level.commands);
+
+function update(time) {
+    simulator.update(time);
+}
+
+function connect(c) {
+    var player = new Player(c);
+    if (arena.debug) {
+        console.w.log('player connected:', player);
+    }
+    server.players.push(player);
+    c.message.add(protocol.receive.bind(null, player));
+    simulator.add(player.body, player.entityId);
+}
+
+conListener = Connection.listen(connect);
+conListener.on('open', function (id) {
+    console.w.log("Server connection id:", id);
+});
+Clock.startNew(16, update);
 
 // Add command shorthand
 console.executeFn = window.c = function (str) {
@@ -66,119 +97,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/commands":16,"../dom/console":23,"../server/server":28}],28:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-var
-// Module
-    Connection = require('../common/connection'),
-    protocol = require('./protocol'),
-    simulator = require('../common/simulator').make(),
-    commands = require('../common/commands'),
-    Clock = require('../common/clock'),
-    Player = require('./player'),
-    arena = require('../common/arena'),
-    level = require('./level'),
-// Local
-    conListener,
-    players = [],
-    idCounter = 1;
-
-exports.newId = function () {
-    return idCounter++;
-};
-
-level.simulator = simulator;
-level.newIdFn = exports.newId;
-
-protocol.players = players;
-protocol.serverInterface = {
-    getServerStatusMsg: function () {
-        return String.format("Running version {0} | " +
-        "{1} players", arena.version, players.length);
-    },
-    executeCommand: function (cmd, args) {
-        commands.execute(args.join(" "), 'sv');
-    },
-    matchesRconPassword: function (pwd) {
-        // TODO: Make password configurable
-        return pwd === "banana";
-    },
-    getCvarList: function (admin) {
-        var cvars = commands.getCvars();
-        var list = [];
-        for (var k in cvars) {
-            if (cvars.hasOwnProperty(k)) {
-                list.push(cvars[k]);
-            }
-        }
-        list = list.map(function (c) {
-            return [c.name, typeof c.value === 'function' ? c.value.call() : c.value];
-        });
-        return list;
-    },
-    getCvar: function (name) {
-
-    }
-};
-
-commands.register(level.commands);
-
-exports.connect = function (c) {
-    var player = new Player(c, simulator);
-    if (arena.debug) {
-        console.log('player connected:', player);
-    }
-    players.push(player);
-    c.message.add(protocol.receive.bind(null, player));
-    simulator.add(player.body, player.entityId);
-};
-
-exports.update = function (time) {
-    simulator.update(time);
-};
-
-exports.execute = function (cmd) {
-    commands.execute(cmd, 'sv');
-};
-
-exports.start = function () {
-    conListener = Connection.listen(exports.connect);
-    conListener.on('open', function (id) {
-        console.log("Server connection id:", id);
-    });
-    Clock.startNew(16, exports.update);
-};
-
-exports.shutdown = function () {
-    players = [];
-    conListener.destroy();
-    conListener = null;
-};
-
-},{"../common/arena":14,"../common/clock":15,"../common/commands":16,"../common/connection":17,"../common/simulator":22,"./level":25,"./player":26,"./protocol":27}],26:[function(require,module,exports){
+},{"../common/arena":14,"../common/clock":15,"../common/commands":16,"../common/connection":17,"../common/simulator":22,"../dom/console":23,"../server/level":25,"../server/player":26,"../server/protocol":27,"../server/server":28}],26:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -207,13 +126,13 @@ exports.shutdown = function () {
 var
 // Module
     CANNON = require('../vendor/cannon'),
-    settings = require('../common/settings');
+    settings = require('../common/settings'),
+    simulator = require('../common/simulator');
 
-function Player(connection, simulator) {
+function Player(connection) {
     this.connection = connection;
     this.name = "Bob";
     this.data = {};
-    this.simulator = simulator;
     this.entityId = 1;
 
     this.body = new CANNON.Body({mass: settings.player.mass});
@@ -221,11 +140,11 @@ function Player(connection, simulator) {
 }
 
 Player.prototype.updateBody = function (state) {
-    this.simulator.updateBody(this.entityId, state);
+    simulator.updateBody(this.entityId, state);
 };
 
 module.exports = Player;
-},{"../common/settings":21,"../vendor/cannon":31}],25:[function(require,module,exports){
+},{"../common/settings":21,"../common/simulator":22,"../vendor/cannon":31}],25:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -250,24 +169,17 @@ module.exports = Player;
  * THE SOFTWARE.
  */
 /*global require, module, exports */
+require('../common/level');
 var
 // Module
-    level = require('../common/level'),
     commands = require('../common/commands'),
     ocl = require('../common/ocl'),
     Sexhr = require('../vendor/SeXHR'),
     protocol = require('./protocol'),
+    simulator = require('../common/simulator'),
 // Local
-    sim, ids = [];
+    ids = [];
 
-Object.defineProperty(exports, 'simulator', {
-    get: function () {
-        return sim;
-    },
-    set: function (val) {
-        sim = val;
-    }
-});
 
 exports.newIdFn = function () {
     return -1;
@@ -280,7 +192,7 @@ exports.spawnObj = function (obj, id) {
     }
     if (obj.body) {
         obj.body.position.copy(obj.pos);
-        sim.add(obj.body, id);
+        simulator.add(obj.body, id);
         ids.push(id);
     }
 };
@@ -294,7 +206,7 @@ exports.spawnString = function (str) {
 };
 
 exports.clear = function () {
-    ids.forEach(sim.remove);
+    ids.forEach(simulator.remove);
     ids = [];
 };
 
@@ -350,7 +262,7 @@ exports.commands.lv_spawn = {
     }
 };
 
-},{"../common/commands":16,"../common/level":18,"../common/ocl":19,"../vendor/SeXHR":29,"./protocol":27}],27:[function(require,module,exports){
+},{"../common/commands":16,"../common/level":18,"../common/ocl":19,"../common/simulator":22,"../vendor/SeXHR":29,"./protocol":27}],27:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -379,27 +291,10 @@ exports.commands.lv_spawn = {
 var
 // Module
     arena = require('../common/arena'),
+    server = require('./server'),
 // Local
-    players, svi,
+    players = server.players,
     receivers = [];
-
-Object.defineProperty(exports, 'players', {
-    get: function () {
-        return players;
-    },
-    set: function (val) {
-        players = val;
-    }
-});
-
-Object.defineProperty(exports, 'serverInterface', {
-    get: function () {
-        return svi;
-    },
-    set: function (val) {
-        svi = val;
-    }
-});
 
 var send = exports.send = function (p, d) {
     p.connection.send(d);
@@ -468,8 +363,8 @@ exports.spawnObject = function (str, id) {
 // for things like email and stuff! Someone getting into your server
 // should not be a big deal, as you can easily restart it via ssh or whatever
 
-receivers[200] = exports.receiveRconStatus = function (p, d) {
-    send(p, [200, svi.getServerStatusMsg()]);
+receivers[200] = exports.receiveRconStatus = function (p /*, d*/) {
+    send(p, [200, server.getServerStatusMsg()]);
 };
 
 receivers[202] = exports.receiveRconCmd = function (p, d) {
@@ -477,26 +372,99 @@ receivers[202] = exports.receiveRconCmd = function (p, d) {
         send(p, [201, "not authorized"]);
         return;
     }
-    svi.executeCommand(d[1], d[2]);
+    server.executeCommand(d[1], d[2]);
 };
 
 receivers[203] = exports.receiveRconQuery = function (p, d) {
-    var response = svi.getCvar(d[1], p.data.rconAuthorized);
+    var response = server.getCvar(d[1], p.data.rconAuthorized);
     send(p, [204, d[1], response]);
 };
 
 receivers[206] = exports.receiveRconAuthorize = function (p, d) {
-    if (svi.matchesRconPassword(d[1])) {
+    if (server.matchesRconPassword(d[1])) {
         p.data.rconAuthorized = true;
     }
 };
 
-receivers[207] = exports.receiveRconQueryAll = function (p, d) {
-    var responseList = svi.getCvarList(p.data.rconAuthorized);
+receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
+    var responseList = server.getCvarList(p.data.rconAuthorized);
     for (var i = 0; i < responseList.length; i++) {
         var res = responseList[i];
         send(p, [204, res[0], res[1]]);
     }
 };
 
-},{"../common/arena":14}]},{},[2]);
+},{"../common/arena":14,"./server":28}],28:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+    commands = require('../common/commands'),
+    arena = require('../common/arena'),
+// Local
+    players = [],
+    idCounter = 1;
+
+exports.players = players;
+
+exports.newId = function () {
+    return idCounter++;
+};
+
+exports.getServerStatusMsg = function () {
+    return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
+};
+
+exports.executeCommand = function (cmd, args) {
+    commands.execute(args.join(" "), 'sv');
+};
+
+exports.matchesRconPassword = function (pwd) {
+    // TODO: Make password configurable
+    return pwd === "banana";
+};
+
+exports.getCvarList = function (/*admin*/) {
+    var cvars = commands.getCvars();
+    var list = [];
+    for (var k in cvars) {
+        if (cvars.hasOwnProperty(k)) {
+            list.push(cvars[k]);
+        }
+    }
+    list = list.map(function (c) {
+        return [c.name, typeof c.value === 'function' ? c.value.call() : c.value];
+    });
+    return list;
+};
+
+exports.getCvar = function (name) {
+    return commands.getCvar(name, 'sv');
+};
+
+exports.execute = function (cmd) {
+    return commands.execute(cmd, 'sv');
+};
+
+},{"../common/arena":14,"../common/commands":16}]},{},[2]);

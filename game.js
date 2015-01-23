@@ -47,7 +47,7 @@ if (!String.format) {
 var Clock = require('../common/clock'),
     settings = require('../common/settings'),
     controls = require('../client/controls'),
-    simulator = require('../common/simulator').make(),
+    simulator = require('../common/simulator'),
     commands = require('../common/commands'),
     level = require('../client/level'),
 // Load rcon after level to avoid issues with cyclic deps
@@ -86,13 +86,11 @@ commands.register(controls.commands);
 commands.register(rcon.commands);
 commands.register(client.commands);
 
-protocol.simulator = simulator;
-
 // Entry point
 function entrypoint() {
     var display = require('../client/display');
 
-    scenemgr.init(display.scene, simulator);
+    scenemgr.init(display.scene);
 
     controls.firstPersonCam(display.camera);
     controls.sceneObj.position.set(0, 2, 0);
@@ -252,13 +250,14 @@ exports.commands.lv_spawn = {
  */
 /*global require, module, exports */
 var
+// Module
+    simulator = require('../common/simulator'),
 // Local
     sceneObjects = [],
     worldObjects = [];
 
-exports.init = function (scene, simulator) {
+exports.init = function (scene) {
     exports.scene = scene;
-    exports.simu = simulator;
 };
 
 exports.addToScene = function (obj, id) {
@@ -269,7 +268,7 @@ exports.addToScene = function (obj, id) {
 
 exports.addToWorld = function (obj, id) {
     obj.tracker = {id: id, type: "world"};
-    exports.simu.add(obj, id);
+    simulator.add(obj, id);
     worldObjects[id] = obj;
 };
 
@@ -306,12 +305,12 @@ exports.copySceneToWorld = function () {
 exports.remove = function (id) {
     var s = sceneObjects[id];
     exports.scene.remove(s);
-    exports.simu.remove(id);
+    simulator.remove(id);
     delete sceneObjects[id];
     delete worldObjects[id];
 };
 
-},{}],12:[function(require,module,exports){
+},{"../common/simulator":22}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -893,18 +892,10 @@ var
 // Module
     arena = require('../common/arena'),
     client = require('./client'),
+    simulator = require('../common/simulator'),
 // Local
-    s, cli,
+    cli,
     receivers = [];
-
-Object.defineProperty(exports, 'simulator', {
-    get: function () {
-        return s;
-    },
-    set: function (val) {
-        s = val;
-    }
-});
 
 Object.defineProperty(exports, 'clientInterface', {
     get: function () {
@@ -941,7 +932,7 @@ exports.sendUpdatePlayer = function (state) {
 };
 
 receivers[1] = exports.receiveUpdatePlayer = function (d) {
-    s.updateBody(0, d[1]);
+    simulator.updateBody(0, d[1]);
 };
 
 // SpawnObject 2 desc id S>C
@@ -1015,7 +1006,7 @@ exports.sendRconQueryAll = function () {
     sendRaw([207]);
 };
 
-},{"../common/arena":14,"./client":5}],8:[function(require,module,exports){
+},{"../common/arena":14,"../common/simulator":22,"./client":5}],8:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
