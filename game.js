@@ -38,7 +38,7 @@ if (Math.HALF_PI === undefined) {
 if (!String.format) {
     String.format = function (format) {
         var args = Array.prototype.slice.call(arguments, 1);
-        return format.replace(/\{(\d+)\}/g, function (match, number) {
+        return format.replace(/\{(\d+)}/g, function (match, number) {
             return args[number] !== undefined ? args[number] : match;
         });
     };
@@ -53,7 +53,6 @@ var Clock = require('../common/clock'),
 // Load rcon after level to avoid issues with cyclic deps
     rcon = require('../client/rcon'),
     scenemgr = require('../client/scene-manager'),
-    protocol = require('../client/protocol'),
     arena = require('../common/arena'),
     client = require('../client/client'),
     console = require('../dom/console');
@@ -71,10 +70,6 @@ function update(time) {
 }
 
 settings.api.init();
-
-protocol.clientInterface = {
-    spawnFromDesc: level.spawnFromDesc
-};
 
 // Add command shorthand
 console.executeFn = window.c = function (str) {
@@ -111,293 +106,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
-},{"../client/client":5,"../client/controls":6,"../client/display":7,"../client/level":10,"../client/protocol":11,"../client/rcon":12,"../client/scene-manager":13,"../common/arena":14,"../common/clock":15,"../common/commands":16,"../common/settings":21,"../common/simulator":22,"../dom/console":23}],10:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-var
-// Module
-    ocl = require('../common/ocl'),
-    scenemgr = require('./scene-manager'),
-    commands = require('../common/commands'),
-    Sexhr = require('../vendor/SeXHR'),
-// Local
-    ids = [];
-
-require('../common/level');
-require('./rcon');
-
-exports.load = function () {
-    throw "deprecated";
-};
-
-exports.spawn = function (obj, id) {
-    if (!obj.pos) {
-        console.warn("Skipping map object without position.");
-        return;
-    }
-    if (obj.mesh) {
-        obj.mesh.position.copy(obj.pos);
-        ids.push(scenemgr.addToScene(obj.mesh, id));
-    }
-    if (obj.body) {
-        obj.body.position.copy(obj.pos);
-        ids.push(scenemgr.addToWorld(obj.body, id));
-    }
-};
-
-exports.spawnFromDesc = function (desc, id) {
-    ocl.load(desc, function (obj) {
-        exports.spawn(obj, id);
-    });
-};
-
-exports.load = function (str) {
-    ocl.load(str, function (objList) {
-        objList.forEach(exports.spawn);
-        console.log("Level loaded");
-    });
-};
-
-exports.commands = {};
-
-exports.commands.lv_clear = {
-    isCvar: false,
-    name: 'lv_clear',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate([], args);
-        exports.clear();
-    }
-};
-
-exports.commands.lv_load = {
-    isCvar: false,
-    name: 'lv_load',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        new Sexhr().req({
-            url: args[1],
-            done: function (err, res) {
-                if (err) {
-                    throw err;
-                }
-                exports.load(res.text);
-            }
-        });
-    }
-};
-
-exports.commands.lv_spawn = {
-    isCvar: false,
-    name: 'lv_spawn',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        try {
-            ocl.load(args[1], exports.spawn);
-        } catch (e) {
-            console.error("Error parsing JSON!");
-        }
-    }
-};
-
-},{"../common/commands":16,"../common/level":18,"../common/ocl":19,"../vendor/SeXHR":29,"./rcon":12,"./scene-manager":13}],13:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-var
-// Module
-    simulator = require('../common/simulator'),
-// Local
-    sceneObjects = [],
-    worldObjects = [];
-
-exports.init = function (scene) {
-    exports.scene = scene;
-};
-
-exports.addToScene = function (obj, id) {
-    obj.tracker = {id: id, type: "scene"};
-    exports.scene.add(obj);
-    sceneObjects[id] = obj;
-};
-
-exports.addToWorld = function (obj, id) {
-    obj.tracker = {id: id, type: "world"};
-    simulator.add(obj, id);
-    worldObjects[id] = obj;
-};
-
-exports.addLink = function (s, w) {
-    this.addToScene(s);
-    this.addToWorld(w);
-    this.link(s, w);
-};
-
-exports.copyWorldToScene = function () {
-    var i, w, s;
-    for (i = 0; i < worldObjects.length; i++) {
-        if (worldObjects[i] !== undefined && sceneObjects[i] !== undefined) {
-            w = worldObjects[i];
-            s = sceneObjects[i];
-            s.position.copy(w.position);
-            s.quaternion.copy(w.quaternion);
-        }
-    }
-};
-
-exports.copySceneToWorld = function () {
-    var i, s, w;
-    for (i = 0; i < sceneObjects.length; i++) {
-        if (sceneObjects[i] !== undefined && worldObjects[i] !== undefined) {
-            s = worldObjects[i];
-            w = sceneObjects[i];
-            w.position.copy(s.position);
-            w.quaternion.copy(s.quaternion);
-        }
-    }
-};
-
-exports.remove = function (id) {
-    var s = sceneObjects[id];
-    exports.scene.remove(s);
-    simulator.remove(id);
-    delete sceneObjects[id];
-    delete worldObjects[id];
-};
-
-},{"../common/simulator":22}],12:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports:true */
-var
-// Module
-    commands = require('../common/commands'),
-    protocol = require('./protocol'),
-    console = require('../dom/console'),
-// Local
-    cvarCache;
-
-commands.contexts.rcon = exports = module.exports = commands.makeContext();
-
-protocol.rconHandler = {
-    status: function (msg) {
-        console.log(msg);
-    },
-    error: function (msg) {
-        console.warn(msg);
-    },
-    cvar: function (name, value) {
-        cvarCache[name] = value;
-    },
-    command: function (cmd) {
-        // Execute command as server
-        commands.execute(cmd, 'sv');
-    }
-};
-
-exports.cacheCvars = function () {
-    cvarCache = {};
-    protocol.sendRconQueryAll();
-};
-
-exports.execute = function (cmd, args) {
-    protocol.sendRconCommand(cmd.name, args);
-};
-
-exports.setCvar = function (name, value) {
-    protocol.sendRconCommand(name, [value]);
-};
-
-exports.getCvar = function (name) {
-    // Refresh even if we already know it
-    protocol.sendRconQuery(name);
-    return cvarCache[name];
-};
-
-exports.commands = {};
-
-exports.commands.rcon = {
-    isCvar: false,
-    name: 'rcon',
-    ctx: {cl: commands.contexts.host},
-    handler: function (args) {
-        if (args[1] === "status") {
-            protocol.sendRconStatus();
-        } else if (args[1] === "auth") {
-            protocol.sendRconAuthorize(args[2]);
-        } else {
-            throw "Usage: rcon status | rcon auth <pwd>";
-        }
-    }
-};
-
-},{"../common/commands":16,"../dom/console":23,"./protocol":11}],7:[function(require,module,exports){
+},{"../client/client":5,"../client/controls":6,"../client/display":7,"../client/level":10,"../client/rcon":12,"../client/scene-manager":13,"../common/arena":14,"../common/clock":15,"../common/commands":16,"../common/settings":21,"../common/simulator":22,"../dom/console":23}],7:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -894,17 +603,7 @@ var
     client = require('./client'),
     simulator = require('../common/simulator'),
 // Local
-    cli,
     receivers = [];
-
-Object.defineProperty(exports, 'clientInterface', {
-    get: function () {
-        return cli;
-    },
-    set: function (val) {
-        cli = val;
-    }
-});
 
 exports.receive = function (d) {
     if (arena.debug) {
@@ -938,7 +637,8 @@ receivers[1] = exports.receiveUpdatePlayer = function (d) {
 // SpawnObject 2 desc id S>C
 
 receivers[2] = exports.receiveSpawnObject = function (d) {
-    cli.spawnFromDesc(d[1], d[2]);
+    // Avoid cyclic dependency -> load module in function
+    require('./level').spawnFromDesc(d[1], d[2]);
 };
 
 // RCON protocol
@@ -1006,7 +706,293 @@ exports.sendRconQueryAll = function () {
     sendRaw([207]);
 };
 
-},{"../common/arena":14,"../common/simulator":22,"./client":5}],8:[function(require,module,exports){
+},{"../common/arena":14,"../common/simulator":22,"./client":5,"./level":10}],10:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+// Module
+    ocl = require('../common/ocl'),
+    scenemgr = require('./scene-manager'),
+    commands = require('../common/commands'),
+    Sexhr = require('../vendor/SeXHR'),
+// Local
+    ids = [];
+
+require('../common/level');
+require('./rcon');
+
+exports.load = function () {
+    throw "deprecated";
+};
+
+exports.spawn = function (obj, id) {
+    if (!obj.pos) {
+        console.warn("Skipping map object without position.");
+        return;
+    }
+    if (obj.mesh) {
+        obj.mesh.position.copy(obj.pos);
+        ids.push(scenemgr.addToScene(obj.mesh, id));
+    }
+    if (obj.body) {
+        obj.body.position.copy(obj.pos);
+        ids.push(scenemgr.addToWorld(obj.body, id));
+    }
+};
+
+exports.spawnFromDesc = function (desc, id) {
+    ocl.load(desc, function (obj) {
+        exports.spawn(obj, id);
+    });
+};
+
+exports.load = function (str) {
+    ocl.load(str, function (objList) {
+        objList.forEach(exports.spawn);
+        console.log("Level loaded");
+    });
+};
+
+exports.commands = {};
+
+exports.commands.lv_clear = {
+    isCvar: false,
+    name: 'lv_clear',
+    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
+    handler: function (args) {
+        commands.validate([], args);
+        exports.clear();
+    }
+};
+
+exports.commands.lv_load = {
+    isCvar: false,
+    name: 'lv_load',
+    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
+    handler: function (args) {
+        commands.validate(['string'], args);
+        new Sexhr().req({
+            url: args[1],
+            done: function (err, res) {
+                if (err) {
+                    throw err;
+                }
+                exports.load(res.text);
+            }
+        });
+    }
+};
+
+exports.commands.lv_spawn = {
+    isCvar: false,
+    name: 'lv_spawn',
+    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
+    handler: function (args) {
+        commands.validate(['string'], args);
+        try {
+            ocl.load(args[1], exports.spawn);
+        } catch (e) {
+            console.error("Error parsing JSON!");
+        }
+    }
+};
+
+},{"../common/commands":16,"../common/level":18,"../common/ocl":19,"../vendor/SeXHR":29,"./rcon":12,"./scene-manager":13}],13:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+// Module
+    simulator = require('../common/simulator'),
+// Local
+    sceneObjects = [],
+    worldObjects = [];
+
+exports.init = function (scene) {
+    exports.scene = scene;
+};
+
+exports.addToScene = function (obj, id) {
+    obj.tracker = {id: id, type: "scene"};
+    exports.scene.add(obj);
+    sceneObjects[id] = obj;
+};
+
+exports.addToWorld = function (obj, id) {
+    obj.tracker = {id: id, type: "world"};
+    simulator.add(obj, id);
+    worldObjects[id] = obj;
+};
+
+exports.addLink = function (s, w) {
+    this.addToScene(s);
+    this.addToWorld(w);
+    this.link(s, w);
+};
+
+exports.copyWorldToScene = function () {
+    var i, w, s;
+    for (i = 0; i < worldObjects.length; i++) {
+        if (worldObjects[i] !== undefined && sceneObjects[i] !== undefined) {
+            w = worldObjects[i];
+            s = sceneObjects[i];
+            s.position.copy(w.position);
+            s.quaternion.copy(w.quaternion);
+        }
+    }
+};
+
+exports.copySceneToWorld = function () {
+    var i, s, w;
+    for (i = 0; i < sceneObjects.length; i++) {
+        if (sceneObjects[i] !== undefined && worldObjects[i] !== undefined) {
+            s = worldObjects[i];
+            w = sceneObjects[i];
+            w.position.copy(s.position);
+            w.quaternion.copy(s.quaternion);
+        }
+    }
+};
+
+exports.remove = function (id) {
+    var s = sceneObjects[id];
+    exports.scene.remove(s);
+    simulator.remove(id);
+    delete sceneObjects[id];
+    delete worldObjects[id];
+};
+
+},{"../common/simulator":22}],12:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports:true */
+var
+// Module
+    commands = require('../common/commands'),
+    protocol = require('./protocol'),
+    console = require('../dom/console'),
+// Local
+    cvarCache;
+
+commands.contexts.rcon = exports = module.exports = commands.makeContext();
+
+protocol.rconHandler = {
+    status: function (msg) {
+        console.log(msg);
+    },
+    error: function (msg) {
+        console.warn(msg);
+    },
+    cvar: function (name, value) {
+        cvarCache[name] = value;
+    },
+    command: function (cmd) {
+        // Execute command as server
+        commands.execute(cmd, 'sv');
+    }
+};
+
+exports.cacheCvars = function () {
+    cvarCache = {};
+    protocol.sendRconQueryAll();
+};
+
+exports.execute = function (cmd, args) {
+    protocol.sendRconCommand(cmd.name, args);
+};
+
+exports.setCvar = function (name, value) {
+    protocol.sendRconCommand(name, [value]);
+};
+
+exports.getCvar = function (name) {
+    // Refresh even if we already know it
+    protocol.sendRconQuery(name);
+    return cvarCache[name];
+};
+
+exports.commands = {};
+
+exports.commands.rcon = {
+    isCvar: false,
+    name: 'rcon',
+    ctx: {cl: commands.contexts.host},
+    handler: function (args) {
+        if (args[1] === "status") {
+            protocol.sendRconStatus();
+        } else if (args[1] === "auth") {
+            protocol.sendRconAuthorize(args[2]);
+        } else {
+            throw "Usage: rcon status | rcon auth <pwd>";
+        }
+    }
+};
+
+},{"../common/commands":16,"../dom/console":23,"./protocol":11}],8:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
