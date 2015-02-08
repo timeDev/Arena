@@ -561,13 +561,13 @@ exports.firstPersonCam = function (camera) {
 
 exports.commands = {};
 exports.commands.tp = {
-    isCvar:false,
-    name:'tp',
-    ctx:{'cl':commands.contexts.host},
+    isCvar: false,
+    name: 'tp',
+    ctx: {'cl': commands.contexts.host},
     handler: function (args) {
         commands.validate(['number', 'number', 'number'], args);
-        exports.physBody.position.set(args[0], args[1], args[2]);
-        exports.sceneObj.position.set(args[0], args[1], args[2]);
+        exports.physBody.position.set(args[1], args[2], args[3]);
+        exports.sceneObj.position.set(args[1], args[2], args[3]);
     }
 };
 
