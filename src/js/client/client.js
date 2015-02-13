@@ -25,13 +25,15 @@
 var
 // Module
     commands = require('../common/commands'),
-    Connection = require('../common/connection');
+    Connection = require('../common/connection'),
+    protocol = require('./protocol');
 
 exports.connection = null;
 
 exports.connect = function (address) {
     exports.connection = new Connection();
     exports.connection.connect(address);
+    exports.connection.message.add(protocol.receive);
 };
 
 exports.commands = {};
