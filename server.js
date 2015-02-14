@@ -72,8 +72,15 @@ function connect(c) {
     if (arena.debug) {
         console.w.log('player connected:', player);
     }
-    server.players.push(player);
     c.message.add(protocol.receive.bind(null, player));
+    protocol.sendPlayerData(player, player.playerId, 0, {});
+    for (var i = 0; i < server.players.length; i++) {
+        protocol.sendPlayerData(server.players[i], player.playerId, 2, {
+            id: player.entityId,
+            pos: {x: 0, y: 0, z: 0}
+        });
+    }
+    server.players.push(player);
     simulator.add(player.body, player.entityId);
 }
 
@@ -97,7 +104,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":14,"../common/clock":15,"../common/commands":16,"../common/connection":17,"../common/simulator":22,"../dom/console":23,"../server/level":25,"../server/player":26,"../server/protocol":27,"../server/server":28}],26:[function(require,module,exports){
+},{"../common/arena":13,"../common/clock":14,"../common/commands":15,"../common/connection":16,"../common/simulator":21,"../dom/console":22,"../server/level":24,"../server/player":25,"../server/protocol":26,"../server/server":27}],25:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -127,13 +134,15 @@ var
 // Module
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
-    simulator = require('../common/simulator');
+    simulator = require('../common/simulator'),
+    server = require('./server');
 
 function Player(connection) {
     this.connection = connection;
     this.name = "Bob";
     this.data = {};
-    this.entityId = 1;
+    this.entityId = server.newId();
+    this.playerId = Player.newId();
 
     this.body = new CANNON.Body({mass: settings.player.mass});
     this.body.addShape(new CANNON.Sphere(settings.player.radius));
@@ -143,8 +152,15 @@ Player.prototype.updateBody = function (state) {
     simulator.updateBody(this.entityId, state);
 };
 
+Player.newId = function () {
+    var id = 0;
+    return function () {
+        return id++;
+    };
+}();
+
 module.exports = Player;
-},{"../common/settings":21,"../common/simulator":22,"../vendor/cannon":31}],25:[function(require,module,exports){
+},{"../common/settings":20,"../common/simulator":21,"../vendor/cannon":30,"./server":27}],24:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -262,7 +278,7 @@ exports.commands.lv_spawn = {
     }
 };
 
-},{"../common/commands":16,"../common/level":18,"../common/ocl":19,"../common/simulator":22,"../vendor/SeXHR":29,"./protocol":27}],27:[function(require,module,exports){
+},{"../common/commands":15,"../common/level":17,"../common/ocl":18,"../common/simulator":21,"../vendor/SeXHR":28,"./protocol":26}],26:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -330,14 +346,15 @@ receivers[0] = exports.receiveKeepAlive = function (p, d) {
     }
 };
 
-// UpdatePlayer 1 state S<>C
+// PlayerData 1 playerId type data S>C | 1 data C>S
 
-exports.sendUpdatePlayer = function (p, state) {
-    send(p, [1, state]);
+exports.sendPlayerData = function (p, plId, type, data) {
+    send(p, [1, plId, type, data]);
 };
 
-receivers[1] = exports.receiveUpdatePlayer = function (p, d) {
+receivers[1] = exports.receivePlayerData = function (p, d) {
     p.updateBody(d[1]);
+    exports.broadcast([1, p.playerId, 1, {p: p.body.position.toArray(), v: p.body.velocity.toArray()}]);
 };
 
 // SpawnObject 2 desc id S>C
@@ -394,7 +411,7 @@ receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
     }
 };
 
-},{"../common/arena":14,"./server":28}],28:[function(require,module,exports){
+},{"../common/arena":13,"./server":27}],27:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -467,4 +484,4 @@ exports.execute = function (cmd) {
     return commands.execute(cmd, 'sv');
 };
 
-},{"../common/arena":14,"../common/commands":16}]},{},[2]);
+},{"../common/arena":13,"../common/commands":15}]},{},[2]);

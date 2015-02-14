@@ -106,7 +106,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
-},{"../client/client":5,"../client/controls":6,"../client/display":7,"../client/level":10,"../client/rcon":12,"../client/scene-manager":13,"../common/arena":14,"../common/clock":15,"../common/commands":16,"../common/settings":21,"../common/simulator":22,"../dom/console":23}],7:[function(require,module,exports){
+},{"../client/client":4,"../client/controls":5,"../client/display":6,"../client/level":9,"../client/rcon":11,"../client/scene-manager":12,"../common/arena":13,"../common/clock":14,"../common/commands":15,"../common/settings":20,"../common/simulator":21,"../dom/console":22}],6:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -133,7 +133,7 @@ if (document.readyState === 'interactive') {
 /*global require, module, exports */
 var
 // Module
-    THREE = require('three'),
+    THREE = require('../vendor/three'),
     Stats = require('../vendor/Stats'),
     commands = require('../common/commands'),
     console = require('../dom/console'),
@@ -221,7 +221,7 @@ exports.commands.cl_refresh_vp = {
     }
 };
 
-},{"../common/commands":16,"../common/settings":21,"../dom/console":23,"../dom/draggable":24,"../vendor/Stats":30,"./input":8,"three":4}],30:[function(require,module,exports){
+},{"../common/commands":15,"../common/settings":20,"../dom/console":22,"../dom/draggable":23,"../vendor/Stats":29,"../vendor/three":32,"./input":7}],29:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -371,7 +371,7 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
-},{}],24:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -428,7 +428,7 @@ module.exports = function (domElement) {
     });
 };
 
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -457,7 +457,7 @@ var
 // Module
     input = require('./input'),
     keycode = require('./keycode'),
-    THREE = require('three'),
+    THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
     commands = require('../common/commands'),
@@ -523,7 +523,7 @@ exports.update = function () {
     }
 
     physBody.velocity.vadd(changeVel, physBody.velocity);
-    protocol.sendUpdatePlayer({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
+    protocol.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
     yawObj.position.copy(physBody.position);
 
     input.resetDelta();
@@ -571,7 +571,7 @@ exports.commands.tp = {
     }
 };
 
-},{"../common/commands":16,"../common/settings":21,"../vendor/cannon":31,"./input":8,"./keycode":9,"./protocol":11,"three":4}],8:[function(require,module,exports){
+},{"../common/commands":15,"../common/settings":20,"../vendor/cannon":30,"../vendor/three":32,"./input":7,"./keycode":8,"./protocol":10}],7:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -773,7 +773,7 @@ exports.resetDelta = function () {
     mousepos[3] = 0.0;
 };
 
-},{"signals":3}],5:[function(require,module,exports){
+},{"signals":3}],4:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -802,7 +802,11 @@ var
 // Module
     commands = require('../common/commands'),
     Connection = require('../common/connection'),
-    protocol = require('./protocol');
+    protocol = require('./protocol'),
+    CANNON = require('../vendor/cannon'),
+    settings = require('../common/settings'),
+    THREE = require('../vendor/three'),
+    scenemgr = require('./scene-manager');
 
 exports.connection = null;
 
@@ -810,6 +814,22 @@ exports.connect = function (address) {
     exports.connection = new Connection();
     exports.connection.connect(address);
     exports.connection.message.add(protocol.receive);
+};
+
+// Maps player ids to entity ids
+exports.players = [];
+
+exports.spawnPlayer = function (pid, data) {
+    var eid = data.id;
+    exports.players[pid] = eid;
+    var pos = data.pos;
+    var body = new CANNON.Body({mass: settings.player.mass});
+    body.addShape(new CANNON.Sphere(settings.player.radius));
+    var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));
+    mesh.position.copy(pos);
+    scenemgr.addToScene(mesh, eid);
+    body.position.copy(pos);
+    scenemgr.addToWorld(body, eid);
 };
 
 exports.commands = {};
@@ -824,7 +844,7 @@ exports.commands.connect = {
     }
 };
 
-},{"../common/commands":16,"../common/connection":17,"./protocol":11}],11:[function(require,module,exports){
+},{"../common/commands":15,"../common/connection":16,"../common/settings":20,"../vendor/cannon":30,"../vendor/three":32,"./protocol":10,"./scene-manager":12}],10:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -877,14 +897,29 @@ receivers[0] = exports.receiveKeepAlive = function (d) {
     sendRaw(d);
 };
 
-// UpdatePlayer 1 state S<>C
+// PlayerData 1 playerId type data S>C | 1 data C>S
+// Types:
+// 0 = welcome, 1 = position, 2 = connect, 3 = disconnect
 
-exports.sendUpdatePlayer = function (state) {
-    sendRaw([1, state]);
+exports.sendPlayerData = function (data) {
+    sendRaw([1, data]);
 };
 
-receivers[1] = exports.receiveUpdatePlayer = function (d) {
-    simulator.updateBody(0, d[1]);
+receivers[1] = exports.receivePlayerData = function (d) {
+    var eid, pid = d[1], type = d[2], data = d[3];
+    if(type === 0) {
+        client.players[pid] = 0;
+    }
+    if(type === 1) {
+        eid = client.players[pid];
+        simulator.updateBody(eid, data);
+    }
+    if(type === 2) {
+        client.spawnPlayer(pid, data);
+    }
+    if(type === 3) {
+        client.players[pid] = undefined;
+    }
 };
 
 // SpawnObject 2 desc id S>C
@@ -959,7 +994,7 @@ exports.sendRconQueryAll = function () {
     sendRaw([207]);
 };
 
-},{"../common/arena":14,"../common/simulator":22,"./client":5,"./level":10}],10:[function(require,module,exports){
+},{"../common/arena":13,"../common/simulator":21,"./client":4,"./level":9}],9:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1072,7 +1107,7 @@ exports.commands.lv_spawn = {
     }
 };
 
-},{"../common/commands":16,"../common/level":18,"../common/ocl":19,"../vendor/SeXHR":29,"./rcon":12,"./scene-manager":13}],13:[function(require,module,exports){
+},{"../common/commands":15,"../common/level":17,"../common/ocl":18,"../vendor/SeXHR":28,"./rcon":11,"./scene-manager":12}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1158,7 +1193,7 @@ exports.remove = function (id) {
     delete worldObjects[id];
 };
 
-},{"../common/simulator":22}],12:[function(require,module,exports){
+},{"../common/simulator":21}],11:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1245,4 +1280,4 @@ exports.commands.rcon = {
     }
 };
 
-},{"../common/commands":16,"../dom/console":23,"./protocol":11}]},{},[1]);
+},{"../common/commands":15,"../dom/console":22,"./protocol":10}]},{},[1]);
