@@ -26,7 +26,11 @@ var
 // Module
     commands = require('../common/commands'),
     Connection = require('../common/connection'),
-    protocol = require('./protocol');
+    protocol = require('./protocol'),
+    CANNON = require('../vendor/cannon'),
+    settings = require('../common/settings'),
+    THREE = require('../vendor/three'),
+    scenemgr = require('./scene-manager');
 
 exports.connection = null;
 
@@ -34,6 +38,22 @@ exports.connect = function (address) {
     exports.connection = new Connection();
     exports.connection.connect(address);
     exports.connection.message.add(protocol.receive);
+};
+
+// Maps player ids to entity ids
+exports.players = [];
+
+exports.spawnPlayer = function (pid, data) {
+    var eid = data.id;
+    exports.players[pid] = eid;
+    var pos = data.pos;
+    var body = new CANNON.Body({mass: settings.player.mass});
+    body.addShape(new CANNON.Sphere(settings.player.radius));
+    var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));
+    mesh.position.copy(pos);
+    scenemgr.addToScene(mesh, eid);
+    body.position.copy(pos);
+    scenemgr.addToWorld(body, eid);
 };
 
 exports.commands = {};

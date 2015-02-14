@@ -50,14 +50,29 @@ receivers[0] = exports.receiveKeepAlive = function (d) {
     sendRaw(d);
 };
 
-// UpdatePlayer 1 state S<>C
+// PlayerData 1 playerId type data S>C | 1 data C>S
+// Types:
+// 0 = welcome, 1 = position, 2 = connect, 3 = disconnect
 
-exports.sendUpdatePlayer = function (state) {
-    sendRaw([1, state]);
+exports.sendPlayerData = function (data) {
+    sendRaw([1, data]);
 };
 
-receivers[1] = exports.receiveUpdatePlayer = function (d) {
-    simulator.updateBody(0, d[1]);
+receivers[1] = exports.receivePlayerData = function (d) {
+    var eid, pid = d[1], type = d[2], data = d[3];
+    if(type === 0) {
+        client.players[pid] = 0;
+    }
+    if(type === 1) {
+        eid = client.players[pid];
+        simulator.updateBody(eid, data);
+    }
+    if(type === 2) {
+        client.spawnPlayer(pid, data);
+    }
+    if(type === 3) {
+        client.players[pid] = undefined;
+    }
 };
 
 // SpawnObject 2 desc id S>C

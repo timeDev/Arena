@@ -71,8 +71,15 @@ function connect(c) {
     if (arena.debug) {
         console.w.log('player connected:', player);
     }
-    server.players.push(player);
     c.message.add(protocol.receive.bind(null, player));
+    protocol.sendPlayerData(player, player.playerId, 0, {});
+    for (var i = 0; i < server.players.length; i++) {
+        protocol.sendPlayerData(server.players[i], player.playerId, 2, {
+            id: player.entityId,
+            pos: {x: 0, y: 0, z: 0}
+        });
+    }
+    server.players.push(player);
     simulator.add(player.body, player.entityId);
 }
 

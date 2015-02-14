@@ -27,13 +27,15 @@ var
 // Module
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
-    simulator = require('../common/simulator');
+    simulator = require('../common/simulator'),
+    server = require('./server');
 
 function Player(connection) {
     this.connection = connection;
     this.name = "Bob";
     this.data = {};
-    this.entityId = 1;
+    this.entityId = server.newId();
+    this.playerId = Player.newId();
 
     this.body = new CANNON.Body({mass: settings.player.mass});
     this.body.addShape(new CANNON.Sphere(settings.player.radius));
@@ -42,5 +44,12 @@ function Player(connection) {
 Player.prototype.updateBody = function (state) {
     simulator.updateBody(this.entityId, state);
 };
+
+Player.newId = function () {
+    var id = 0;
+    return function () {
+        return id++;
+    };
+}();
 
 module.exports = Player;
