@@ -26,7 +26,7 @@ var
 // Module
     input = require('./input'),
     keycode = require('./keycode'),
-    THREE = require('three'),
+    THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
     commands = require('../common/commands'),

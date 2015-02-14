@@ -18,7 +18,6 @@
     "make": "gulp --cwd ./build make"
   },
   "dependencies": {
-    "signals": "^1.0.0",
-    "three": "^0.69.0"
+    "signals": "^1.0.0"
   }
 }

@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    THREE = require('three'),
+    THREE = require('../vendor/three'),
     Stats = require('../vendor/Stats'),
     commands = require('../common/commands'),
     console = require('../dom/console'),

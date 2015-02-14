@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    THREE = require('three'),
+    THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
     ocl = require('./ocl'),
     arena = require('./arena'),
