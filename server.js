@@ -341,7 +341,11 @@ receivers[0] = exports.receiveKeepAlive = function (p, d) {
     }
 };
 
-// PlayerData 1 playerId type data S>C | 1 data C>S
+// PlayerData 1 playerId type data S>C
+//            1 data pktnr C>S
+// Types:
+// 0 = welcome, 1 = position
+// 2 = connect, 3 = disconnect
 
 exports.sendPlayerData = function (p, plId, type, data) {
     send(p, [1, plId, type, data]);
@@ -349,7 +353,7 @@ exports.sendPlayerData = function (p, plId, type, data) {
 
 receivers[1] = exports.receivePlayerData = function (p, d) {
     p.updateBody(d[1]);
-    exports.broadcast([1, p.playerId, 1, {p: p.body.position.toArray(), v: p.body.velocity.toArray()}]);
+    exports.broadcast([1, p.playerId, 1, {p: p.body.position.toArray(), v: p.body.velocity.toArray(), pnr: d[2]}]);
 };
 
 // SpawnObject 2 desc id S>C
