@@ -36,8 +36,9 @@ exports.connection = null;
 
 exports.connect = function (address) {
     exports.connection = new Connection();
-    exports.connection.connect(address);
     exports.connection.message.add(protocol.receive);
+    exports.connection.connect(address);
+    protocol.sendLogon("Bob");
 };
 
 // Maps player ids to entity ids
@@ -47,6 +48,7 @@ exports.spawnPlayer = function (pid, data) {
     var eid = data.id;
     exports.players[pid] = eid;
     var pos = data.pos;
+    pos = {x: pos[0], y: pos[1], z: pos[2]};
     var body = new CANNON.Body({mass: settings.player.mass});
     body.addShape(new CANNON.Sphere(settings.player.radius));
     var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));

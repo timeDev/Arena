@@ -33,7 +33,7 @@ var
 
 exports.receive = function (d) {
     if (arena.debug) {
-        console.log(d);
+        console.log("[in]", d);
     }
     var type = d[0];
     receivers[type](d);
@@ -41,6 +41,9 @@ exports.receive = function (d) {
 
 function sendRaw(d) {
     client.connection.send(d);
+    if (arena.debug) {
+        console.log("[out]", d);
+    }
 }
 
 // KeepAlive 0 num S<>C
@@ -60,17 +63,17 @@ exports.sendPlayerData = function (data) {
 
 receivers[1] = exports.receivePlayerData = function (d) {
     var eid, pid = d[1], type = d[2], data = d[3];
-    if(type === 0) {
+    if (type === 0) {
         client.players[pid] = 0;
     }
-    if(type === 1) {
+    if (type === 1) {
         eid = client.players[pid];
         simulator.updateBody(eid, data);
     }
-    if(type === 2) {
+    if (type === 2) {
         client.spawnPlayer(pid, data);
     }
-    if(type === 3) {
+    if (type === 3) {
         client.players[pid] = undefined;
     }
 };
@@ -80,6 +83,12 @@ receivers[1] = exports.receivePlayerData = function (d) {
 receivers[2] = exports.receiveSpawnObject = function (d) {
     // Avoid cyclic dependency -> load module in function
     require('./level').spawnFromDesc(d[1], d[2]);
+};
+
+// Logon 3 name C>S
+
+exports.sendLogon = function (name) {
+    sendRaw([3, name]);
 };
 
 // RCON protocol

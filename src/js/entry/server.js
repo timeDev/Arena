@@ -67,20 +67,11 @@ function update(time) {
 }
 
 function connect(c) {
-    var player = new Player(c);
+    var newPlayer = new Player(c);
     if (arena.debug) {
-        console.w.log('player connected:', player);
+        console.w.log('client connected:', newPlayer);
     }
-    c.message.add(protocol.receive.bind(null, player));
-    protocol.sendPlayerData(player, player.playerId, 0, {});
-    for (var i = 0; i < server.players.length; i++) {
-        protocol.sendPlayerData(server.players[i], player.playerId, 2, {
-            id: player.entityId,
-            pos: {x: 0, y: 0, z: 0}
-        });
-    }
-    server.players.push(player);
-    simulator.add(player.body, player.entityId);
+    c.message.add(protocol.receive.bind(null, newPlayer));
 }
 
 conListener = Connection.listen(connect);

@@ -32,7 +32,7 @@ var
 
 function Player(connection) {
     this.connection = connection;
-    this.name = "Bob";
+    this.name = "unnamed";
     this.data = {};
     this.entityId = server.newId();
     this.playerId = Player.newId();

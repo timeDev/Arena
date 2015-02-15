@@ -27,12 +27,16 @@ var
 // Module
     arena = require('../common/arena'),
     server = require('./server'),
+    simulator = require('../common/simulator'),
 // Local
     players = server.players,
     receivers = [];
 
 var send = exports.send = function (p, d) {
     p.connection.send(d);
+    if (arena.debug) {
+        console.log("[out]", p.playerId, ",", d);
+    }
 };
 
 exports.broadcast = function (d) {
@@ -43,7 +47,7 @@ exports.broadcast = function (d) {
 
 exports.receive = function (p, d) {
     if (arena.debug) {
-        console.log(p, d);
+        console.log("[in]", p.playerId, ",", d);
     }
     var type = d[0];
     receivers[type](p, d);
@@ -84,6 +88,26 @@ exports.sendSpawnObject = function (p, str, id) {
 
 exports.spawnObject = function (str, id) {
     return [2, str, id];
+};
+
+// Logon 3 name C>S
+
+receivers[3] = exports.receiveLogon = function (p, d) {
+    p.name = d[1];
+    exports.sendPlayerData(p, p.playerId, 0, {});
+    for (var i = 0; i < server.players.length; i++) {
+        var player = server.players[i];
+        exports.sendPlayerData(player, p.playerId, 2, {
+            id: p.entityId,
+            pos: p.body.position.toArray()
+        });
+        exports.sendPlayerData(p, player.playerId, 2, {
+            id: player.entityId,
+            pos: player.body.position.toArray()
+        });
+    }
+    server.players.push(p);
+    simulator.add(p.body, p.entityId);
 };
 
 // RCON protocol
