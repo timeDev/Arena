@@ -74,7 +74,7 @@ Connection.prototype.connect = function (target) {
         this.target = new ConnectionInterface(target, this);
         target.accept(this);
     } else if (typeof target === 'string') {
-        this.peer = new Peer({key: key, debug: 3});
+        this.peer = new Peer({key: key, debug: 2});
         this.target = new PeerInterface(this.peer.connect(target), this);
     }
 };
@@ -100,7 +100,7 @@ Connection.prototype.receive = function (data) {
 };
 
 Connection.listen = function (cb, id) {
-    var host = id === undefined ? new Peer({key: key, debug: 3}) : new Peer(id, {key: key, debug: 3});
+    var host = id === undefined ? new Peer({key: key, debug: 2}) : new Peer(id, {key: key, debug: 2});
     host.on('connection', function (connection) {
         var conn = new Connection();
         conn.accept(connection);

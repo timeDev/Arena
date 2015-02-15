@@ -53,12 +53,18 @@ receivers[0] = exports.receiveKeepAlive = function (d) {
     sendRaw(d);
 };
 
-// PlayerData 1 playerId type data S>C | 1 data C>S
+// PlayerData 1 playerId type data S>C
+//            1 data pktnr C>S
 // Types:
-// 0 = welcome, 1 = position, 2 = connect, 3 = disconnect
+// 0 = welcome, 1 = position
+// 2 = connect, 3 = disconnect
+
+var pktnr = 0,
+    unackPkts = [];
 
 exports.sendPlayerData = function (data) {
-    sendRaw([1, data]);
+    sendRaw([1, data, ++pktnr]);
+    unackPkts[pktnr] = data;
 };
 
 receivers[1] = exports.receivePlayerData = function (d) {
@@ -68,7 +74,29 @@ receivers[1] = exports.receivePlayerData = function (d) {
     }
     if (type === 1) {
         eid = client.players[pid];
-        simulator.updateBody(eid, data);
+        var pcktcount = unackPkts.filter(function (e) {
+            return e !== undefined;
+        }).length;
+        if (eid === 0) {
+            var pnr = data.pnr;
+            var pkt = unackPkts[pnr];
+            // Only correct position as player acceleration is pretty high
+            var corr = {x: data.p[0] - pkt.p[0], y: data.p[1] - pkt.p[1], z: data.p[2] - pkt.p[2]};
+            // Avoid cyclic deps
+            var controls = require('./controls');
+            console.log(corr);
+            //noinspection JSCheckFunctionSignatures
+            controls.physBody.position.vadd(corr, controls.physBody.position);
+            controls.sceneObj.position.copy(controls.physBody.position);
+            delete unackPkts[pnr];
+        } else {
+            simulator.updateBody(eid, data);
+        }
+        if (pcktcount <= 1) {
+            unackPkts = [];
+            // Reset the counter so everyone is happy
+            pktnr = 0;
+        }
     }
     if (type === 2) {
         client.spawnPlayer(pid, data);
