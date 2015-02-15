@@ -68,20 +68,11 @@ function update(time) {
 }
 
 function connect(c) {
-    var player = new Player(c);
+    var newPlayer = new Player(c);
     if (arena.debug) {
-        console.w.log('player connected:', player);
+        console.w.log('client connected:', newPlayer);
     }
-    c.message.add(protocol.receive.bind(null, player));
-    protocol.sendPlayerData(player, player.playerId, 0, {});
-    for (var i = 0; i < server.players.length; i++) {
-        protocol.sendPlayerData(server.players[i], player.playerId, 2, {
-            id: player.entityId,
-            pos: {x: 0, y: 0, z: 0}
-        });
-    }
-    server.players.push(player);
-    simulator.add(player.body, player.entityId);
+    c.message.add(protocol.receive.bind(null, newPlayer));
 }
 
 conListener = Connection.listen(connect);
@@ -139,7 +130,7 @@ var
 
 function Player(connection) {
     this.connection = connection;
-    this.name = "Bob";
+    this.name = "unnamed";
     this.data = {};
     this.entityId = server.newId();
     this.playerId = Player.newId();
@@ -308,12 +299,16 @@ var
 // Module
     arena = require('../common/arena'),
     server = require('./server'),
+    simulator = require('../common/simulator'),
 // Local
     players = server.players,
     receivers = [];
 
 var send = exports.send = function (p, d) {
     p.connection.send(d);
+    if (arena.debug) {
+        console.log("[out]", p.playerId, ",", d);
+    }
 };
 
 exports.broadcast = function (d) {
@@ -324,7 +319,7 @@ exports.broadcast = function (d) {
 
 exports.receive = function (p, d) {
     if (arena.debug) {
-        console.log(p, d);
+        console.log("[in]", p.playerId, ",", d);
     }
     var type = d[0];
     receivers[type](p, d);
@@ -365,6 +360,26 @@ exports.sendSpawnObject = function (p, str, id) {
 
 exports.spawnObject = function (str, id) {
     return [2, str, id];
+};
+
+// Logon 3 name C>S
+
+receivers[3] = exports.receiveLogon = function (p, d) {
+    p.name = d[1];
+    exports.sendPlayerData(p, p.playerId, 0, {});
+    for (var i = 0; i < server.players.length; i++) {
+        var player = server.players[i];
+        exports.sendPlayerData(player, p.playerId, 2, {
+            id: p.entityId,
+            pos: p.body.position.toArray()
+        });
+        exports.sendPlayerData(p, player.playerId, 2, {
+            id: player.entityId,
+            pos: player.body.position.toArray()
+        });
+    }
+    server.players.push(p);
+    simulator.add(p.body, p.entityId);
 };
 
 // RCON protocol
@@ -411,7 +426,7 @@ receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
     }
 };
 
-},{"../common/arena":13,"./server":27}],27:[function(require,module,exports){
+},{"../common/arena":13,"../common/simulator":21,"./server":27}],27:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
