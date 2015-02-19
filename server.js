@@ -48,7 +48,8 @@ var
 // Module
     server = require('../server/server'),
     console = require('../dom/console'),
-    commands = require('../common/commands'),
+    cmdEngine = require('../console/engine'),
+    cmdBuiltins = require('../console/builtins'),
     Connection = require('../common/connection'),
     protocol = require('../server/protocol'),
     simulator = require('../common/simulator'),
@@ -61,7 +62,9 @@ var
 
 level.newIdFn = server.newId;
 
-commands.register(level.commands);
+if (!cmdBuiltins.registered) {
+    console.warn("Built-in commands have not been registered!");
+}
 
 function update(time) {
     simulator.update(time);
@@ -83,7 +86,7 @@ Clock.startNew(16, update);
 
 // Add command shorthand
 console.executeFn = window.c = function (str) {
-    return commands.execute(str, 'sv');
+    return cmdEngine.executeString(str, window.console);
 };
 
 function initDom() {
@@ -95,7 +98,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":13,"../common/clock":14,"../common/commands":15,"../common/connection":16,"../common/simulator":21,"../dom/console":22,"../server/level":24,"../server/player":25,"../server/protocol":26,"../server/server":27}],25:[function(require,module,exports){
+},{"../common/arena":13,"../common/clock":14,"../common/connection":15,"../common/simulator":20,"../console/builtins":21,"../console/engine":23,"../dom/console":27,"../server/level":29,"../server/player":30,"../server/protocol":31,"../server/server":32}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -151,7 +154,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":20,"../common/simulator":21,"../vendor/cannon":30,"./server":27}],24:[function(require,module,exports){
+},{"../common/settings":19,"../common/simulator":20,"../vendor/cannon":35,"./server":32}],29:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -179,7 +182,7 @@ module.exports = Player;
 require('../common/level');
 var
 // Module
-    commands = require('../common/commands'),
+    command = require('../console/command'),
     ocl = require('../common/ocl'),
     Sexhr = require('../vendor/SeXHR'),
     protocol = require('./protocol'),
@@ -225,51 +228,33 @@ exports.load = function (str) {
     console.log("Level loaded");
 };
 
-exports.commands = {};
+command("lv_clear", {}, 'lv_clear', function (match) {
+    exports.clear();
+});
 
-exports.commands.lv_clear = {
-    isCvar: false,
-    name: 'lv_clear',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate([], args);
-        exports.clear();
-    }
-};
-
-exports.commands.lv_load = {
-    isCvar: false,
-    name: 'lv_load',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        new Sexhr().req({
-            url: args[1],
-            done: function (err, res) {
-                if (err) {
-                    throw err;
-                }
-                exports.load(res.text);
+command("lv_load <path>", {
+    mandatory: [{name: 'path', type: 'string'}]
+}, 'lv_load', function (match) {
+    new Sexhr().req({
+        url: match.path,
+        done: function (err, res) {
+            if (err) {
+                throw err;
             }
-        });
-    }
-};
-
-exports.commands.lv_spawn = {
-    isCvar: false,
-    name: 'lv_spawn',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        try {
-            ocl.load(args[1], exports.spawn);
-        } catch (e) {
-            console.error("Error parsing JSON!");
+            exports.load(res.text);
         }
-    }
-};
+    });
+});
 
-},{"../common/commands":15,"../common/level":17,"../common/ocl":18,"../common/simulator":21,"../vendor/SeXHR":28,"./protocol":26}],26:[function(require,module,exports){
+command("lv_spawn <obj>", {mandatory: [{name: 'obj', type: 'string'}]}, 'lv_spawn', function (match) {
+    try {
+        ocl.load(match.obj, exports.spawn);
+    } catch (e) {
+        console.error("Error parsing JSON!");
+    }
+});
+
+},{"../common/level":16,"../common/ocl":17,"../common/simulator":20,"../console/command":22,"../vendor/SeXHR":33,"./protocol":31}],31:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -389,7 +374,7 @@ receivers[3] = exports.receiveLogon = function (p, d) {
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C
-// rcon command 202 cmd args C>S requires authorization
+// rcon command 202 str C>S
 // rcon query 203 cvarname C>S
 // rcon cvar 204 cvarname value S>C
 // rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
@@ -408,7 +393,7 @@ receivers[202] = exports.receiveRconCmd = function (p, d) {
         send(p, [201, "not authorized"]);
         return;
     }
-    server.executeCommand(d[1], d[2]);
+    server.executeCommand(d[1]);
 };
 
 receivers[203] = exports.receiveRconQuery = function (p, d) {
@@ -430,7 +415,7 @@ receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
     }
 };
 
-},{"../common/arena":13,"../common/simulator":21,"./server":27}],27:[function(require,module,exports){
+},{"../common/arena":13,"../common/simulator":20,"./server":32}],32:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -456,7 +441,7 @@ receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
  */
 /*global require, module, exports */
 var
-    commands = require('../common/commands'),
+    cmdEngine = require('../console/engine'),
     arena = require('../common/arena'),
 // Local
     players = [],
@@ -472,8 +457,8 @@ exports.getServerStatusMsg = function () {
     return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
 };
 
-exports.executeCommand = function (cmd, args) {
-    commands.execute(args.join(" "), 'sv');
+exports.executeCommand = function (str) {
+    cmdEngine.executeString(str, window.console);
 };
 
 exports.matchesRconPassword = function (pwd) {
@@ -482,16 +467,13 @@ exports.matchesRconPassword = function (pwd) {
 };
 
 exports.getCvarList = function (/*admin*/) {
-    var cvars = commands.getCvars();
+    var reg = cmdEngine.getRegistry();
     var list = [];
-    for (var k in cvars) {
-        if (cvars.hasOwnProperty(k)) {
-            list.push(cvars[k]);
+    for (var k in reg) {
+        if (reg.hasOwnProperty(k) && reg[k].type === 'cvar') {
+            list.push([k, reg[k].getter()]);
         }
     }
-    list = list.map(function (c) {
-        return [c.name, typeof c.value === 'function' ? c.value.call() : c.value];
-    });
     return list;
 };
 
@@ -503,4 +485,4 @@ exports.execute = function (cmd) {
     return commands.execute(cmd, 'sv');
 };
 
-},{"../common/arena":13,"../common/commands":15}]},{},[2]);
+},{"../common/arena":13,"../console/engine":23}]},{},[2]);

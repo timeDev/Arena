@@ -48,14 +48,13 @@ var Clock = require('../common/clock'),
     settings = require('../common/settings'),
     controls = require('../client/controls'),
     simulator = require('../common/simulator'),
-    commands = require('../common/commands'),
-    level = require('../client/level'),
-// Load rcon after level to avoid issues with cyclic deps
-    rcon = require('../client/rcon'),
+    cmdEngine = require('../console/engine'),
+    cmdBuiltins = require('../console/builtins'),
     scenemgr = require('../client/scene-manager'),
     arena = require('../common/arena'),
-    client = require('../client/client'),
     console = require('../dom/console');
+
+require('../client/rcon');
 
 console.log("Playing Arena version {0}", arena.version);
 if (arena.debug) {
@@ -71,15 +70,14 @@ function update(time) {
 
 settings.api.init();
 
+if (!cmdBuiltins.registered) {
+    console.warn("Built-in commands have not been registered!");
+}
+
 // Add command shorthand
 console.executeFn = window.c = function (str) {
-    return commands.execute(str, 'cl');
+    return cmdEngine.executeString(str, window.console);
 };
-
-commands.register(level.commands);
-commands.register(controls.commands);
-commands.register(rcon.commands);
-commands.register(client.commands);
 
 // Entry point
 function entrypoint() {
@@ -94,8 +92,6 @@ function entrypoint() {
     display.scene.add(controls.sceneObj);
     simulator.add(controls.physBody, 0);
 
-    commands.register(display.commands);
-
     display.render();
 
     Clock.startNew(16, update);
@@ -106,7 +102,94 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
-},{"../client/client":4,"../client/controls":5,"../client/display":6,"../client/level":9,"../client/rcon":11,"../client/scene-manager":12,"../common/arena":13,"../common/clock":14,"../common/commands":15,"../common/settings":20,"../common/simulator":21,"../dom/console":22}],6:[function(require,module,exports){
+},{"../client/controls":5,"../client/display":6,"../client/rcon":11,"../client/scene-manager":12,"../common/arena":13,"../common/clock":14,"../common/settings":19,"../common/simulator":20,"../console/builtins":21,"../console/engine":23,"../dom/console":27}],11:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports:true */
+var
+// Module
+    command = require('../console/command'),
+    cmdEngine = require('../console/engine'),
+    protocol = require('./protocol'),
+    console = require('../dom/console'),
+// Local
+    cvarCache;
+
+protocol.rconHandler = {
+    status: function (msg) {
+        console.log(msg);
+    },
+    error: function (msg) {
+        console.warn(msg);
+    },
+    cvar: function (name, value) {
+        cvarCache[name] = value;
+    },
+    command: function (cmd) {
+        // Execute command as server
+        cmdEngine.executeString(cmd, window.console);
+    }
+};
+
+exports.cacheCvars = function () {
+    cvarCache = {};
+    protocol.sendRconQueryAll();
+};
+
+exports.execute = function (str) {
+    protocol.sendRconCommand(str);
+};
+
+exports.setCvar = function (name, value) {
+    protocol.sendRconCommand(name, value);
+};
+
+exports.getCvar = function (name) {
+    // Refresh even if we already know it
+    protocol.sendRconQuery(name);
+    return cvarCache[name];
+};
+
+command("rcon auth <pwd> | status | cmd <cmd>", [{
+    mandatory: [{name: 'mode', type: 'value', value: 'auth'},
+        {name: 'pwd', type: 'string'}]
+}, {
+    mandatory: [{name: 'mode', type: 'value', value: 'status'}]
+}, {
+    mandatory: [{name: 'mode', type: 'value', value: 'cmd'},
+        {name: 'cmd', type: 'string'}]
+}], 'rcon', function (match) {
+    if (match.matchI === 0) {
+        protocol.sendRconAuthorize(match.pwd);
+    } else if (match.matchI === 1) {
+        protocol.sendRconStatus();
+    } else if (match.matchI === 2) {
+        protocol.sendRconCommand()
+    }
+});
+
+},{"../console/command":22,"../console/engine":23,"../dom/console":27,"./protocol":10}],6:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -135,7 +218,7 @@ var
 // Module
     THREE = require('../vendor/three'),
     Stats = require('../vendor/Stats'),
-    commands = require('../common/commands'),
+    command = require('../console/command'),
     console = require('../dom/console'),
     settings = require('../common/settings'),
     input = require('./input'),
@@ -207,21 +290,14 @@ exports.render = render;
 exports.camera = camera;
 
 // -- Commands --
-exports.commands = {};
-exports.commands.cl_refresh_vp = {
-    isCvar: false,
-    name: 'cl_refresh_vp',
-    ctx: {cl: commands.contexts.host},
-    handler: function (args) {
-        commands.api.validate([], args);
-        renderer.setSize(window.innerWidth, window.innerHeight - 5);
-        camera.aspect = window.innerWidth / (window.innerHeight - 5);
-        camera.fov = settings.graphics.fov;
-        camera.updateProjectionMatrix();
-    }
-};
+command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
+    renderer.setSize(window.innerWidth, window.innerHeight - 5);
+    camera.aspect = window.innerWidth / (window.innerHeight - 5);
+    camera.fov = settings.graphics.fov;
+    camera.updateProjectionMatrix();
+});
 
-},{"../common/commands":15,"../common/settings":20,"../dom/console":22,"../dom/draggable":23,"../vendor/Stats":29,"../vendor/three":32,"./input":7}],29:[function(require,module,exports){
+},{"../common/settings":19,"../console/command":22,"../dom/console":27,"../dom/draggable":28,"../vendor/Stats":34,"../vendor/three":37,"./input":7}],34:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -371,7 +447,7 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
-},{}],23:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -428,11 +504,11 @@ module.exports = function (domElement) {
     });
 };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Oskar Homburg
+ * Copyright (c) 2014 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -455,53 +531,118 @@ module.exports = function (domElement) {
 /*global require, module, exports */
 var
 // Module
-    commands = require('../common/commands'),
-    Connection = require('../common/connection'),
-    protocol = require('./protocol'),
+    input = require('./input'),
+    keycode = require('./keycode'),
+    THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
-    THREE = require('../vendor/three'),
-    scenemgr = require('./scene-manager');
+    command = require('../console/command'),
+    protocol = require('./protocol'),
+// Local
+    paused = true, shape, physBody,
+    onground = false,
+    pitchObj = new THREE.Object3D(), yawObj = new THREE.Object3D(),
+    vec3a = new THREE.Vector3(), contactNormal = new CANNON.Vec3(),
+    upAxis = new CANNON.Vec3(0, 1, 0);
 
-exports.connection = null;
+input.pointerlocked.add(function () {
+    paused = false;
+    input.prevent = true;
+});
 
-exports.connect = function (address) {
-    exports.connection = new Connection();
-    exports.connection.message.add(protocol.receive);
-    exports.connection.connect(address);
-    protocol.sendLogon("Bob");
-};
+input.pointerunlocked.add(function () {
+    paused = true;
+    input.prevent = false;
+});
 
-// Maps player ids to entity ids
-exports.players = [];
+input.escape.add(function () {
+    paused = true;
+    input.prevent = false;
+});
 
-exports.spawnPlayer = function (pid, data) {
-    var eid = data.id;
-    exports.players[pid] = eid;
-    var pos = data.pos;
-    pos = {x: pos[0], y: pos[1], z: pos[2]};
-    var body = new CANNON.Body({mass: settings.player.mass});
-    body.addShape(new CANNON.Sphere(settings.player.radius));
-    var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));
-    mesh.position.copy(pos);
-    scenemgr.addToScene(mesh, eid);
-    body.position.copy(pos);
-    scenemgr.addToWorld(body, eid);
-};
+input.bind('mouseaxis', 2, 'lookx');
+input.bind('mouseaxis', 3, 'looky');
+input.bind('key', keycode.w, 'movf');
+input.bind('key', keycode.a, 'movl');
+input.bind('key', keycode.s, 'movb');
+input.bind('key', keycode.d, 'movr');
+input.bind('key', keycode.space, 'jump');
+input.bind('mouse', 0, 'shoot');
 
-exports.commands = {};
-
-exports.commands.connect = {
-    isCvar: false,
-    name: 'connect',
-    ctx: {cl: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        exports.connect(args[1]);
+exports.update = function () {
+    input.updateGamepad();
+    if (paused === true) {
+        input.resetDelta();
+        yawObj.position.copy(physBody.position);
+        return;
     }
+
+    yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
+    pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
+    pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
+
+    vec3a.set((input.check('movr') - input.check('movl')) * settings.player.speed, 0, (input.check('movb') - input.check('movf')) * settings.player.speed);
+    vec3a.applyQuaternion(yawObj.quaternion);
+
+    var vel = physBody.velocity, changeVel = new THREE.Vector3().subVectors(vec3a, vel);
+    changeVel.x = Math.clamp(changeVel.x, -settings.player.maxAcc, settings.player.maxAcc);
+    changeVel.y = -1;
+    changeVel.z = Math.clamp(changeVel.z, -settings.player.maxAcc, settings.player.maxAcc);
+
+    if (onground === false) {
+        changeVel.multiplyScalar(0.1);
+    }
+
+    if (onground && input.check('jump') > 0.2) {
+        changeVel.y = settings.player.jumpVel;
+        onground = false;
+    }
+
+    physBody.velocity.vadd(changeVel, physBody.velocity);
+    protocol.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
+    yawObj.position.copy(physBody.position);
+
+    input.resetDelta();
 };
 
-},{"../common/commands":15,"../common/connection":16,"../common/settings":20,"../vendor/cannon":30,"../vendor/three":32,"./protocol":10,"./scene-manager":12}],10:[function(require,module,exports){
+physBody = new CANNON.Body({mass: settings.player.mass});
+shape = new CANNON.Sphere(settings.player.radius);
+physBody.addShape(shape);
+
+physBody.addEventListener('collide', function (e) {
+    var contact = e.contact;
+
+    // contact.bi and contact.bj are the colliding bodies, and contact.ni is the collision normal.
+    // We do not yet know which one is which! Let's check.
+    if (contact.bi.id === physBody.id) { // bi is the player body, flip the contact normal
+        contact.ni.negate(contactNormal);
+    } else {
+        contactNormal.copy(contact.ni); // bi is something else. Keep the normal as it is
+    }
+    // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
+    if (contactNormal.dot(upAxis) > 0.5) { // Use a "good" threshold value between 0 and 1 here!
+        onground = true;
+    }
+});
+
+yawObj.rotation.y = 1.25 * Math.PI;
+
+exports.physBody = physBody;
+exports.sceneObj = yawObj;
+
+exports.firstPersonCam = function (camera) {
+    pitchObj.add(camera);
+    yawObj.add(pitchObj);
+};
+
+command("tp <x> <y> <z>", {
+    mandatory: [{name: 'x', type: 'number'}, {name: 'y', type: 'number'}, {name: 'z', type: 'number'}]
+}, 'tp', function (match) {
+    exports.physBody.position.set(match.x, match.y, match.z);
+    exports.sceneObj.position.set(match.x, match.y, match.z);
+});
+
+},{"../common/settings":19,"../console/command":22,"../vendor/cannon":35,"../vendor/three":37,"./input":7,"./keycode":8,"./protocol":10}],10:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -626,7 +767,7 @@ exports.sendLogon = function (name) {
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C
-// rcon command 202 cmd args C>S
+// rcon command 202 str C>S
 // rcon query 203 cvarname C>S
 // rcon cvar 204 cvarname value S>C
 // rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
@@ -672,8 +813,8 @@ exports.sendRconStatus = function () {
     sendRaw([200]);
 };
 
-exports.sendRconCommand = function (cmd, args) {
-    sendRaw([202, cmd, args]);
+exports.sendRconCommand = function (str) {
+    sendRaw([202, str]);
 };
 
 exports.sendRconQuery = function (cvar) {
@@ -688,7 +829,7 @@ exports.sendRconQueryAll = function () {
     sendRaw([207]);
 };
 
-},{"../common/arena":13,"../common/simulator":21,"./client":4,"./controls":5,"./level":9}],9:[function(require,module,exports){
+},{"../common/arena":13,"../common/simulator":20,"./client":4,"./controls":5,"./level":9}],9:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -717,13 +858,12 @@ var
 // Module
     ocl = require('../common/ocl'),
     scenemgr = require('./scene-manager'),
-    commands = require('../common/commands'),
+    command = require('../console/command'),
     Sexhr = require('../vendor/SeXHR'),
 // Local
     ids = [];
 
 require('../common/level');
-require('./rcon');
 
 exports.load = function () {
     throw "deprecated";
@@ -757,51 +897,75 @@ exports.load = function (str) {
     });
 };
 
-exports.commands = {};
+},{"../common/level":16,"../common/ocl":17,"../console/command":22,"../vendor/SeXHR":33,"./scene-manager":12}],4:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+// Module
+    command = require('../console/command'),
+    Connection = require('../common/connection'),
+    protocol = require('./protocol'),
+    CANNON = require('../vendor/cannon'),
+    settings = require('../common/settings'),
+    THREE = require('../vendor/three'),
+    scenemgr = require('./scene-manager');
 
-exports.commands.lv_clear = {
-    isCvar: false,
-    name: 'lv_clear',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate([], args);
-        exports.clear();
-    }
+exports.connection = null;
+
+exports.connect = function (address) {
+    exports.connection = new Connection();
+    exports.connection.message.add(protocol.receive);
+    exports.connection.connect(address);
+    protocol.sendLogon("Bob");
 };
 
-exports.commands.lv_load = {
-    isCvar: false,
-    name: 'lv_load',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        new Sexhr().req({
-            url: args[1],
-            done: function (err, res) {
-                if (err) {
-                    throw err;
-                }
-                exports.load(res.text);
-            }
-        });
-    }
+// Maps player ids to entity ids
+exports.players = [];
+
+exports.spawnPlayer = function (pid, data) {
+    var eid = data.id;
+    exports.players[pid] = eid;
+    var pos = data.pos;
+    pos = {x: pos[0], y: pos[1], z: pos[2]};
+    var body = new CANNON.Body({mass: settings.player.mass});
+    body.addShape(new CANNON.Sphere(settings.player.radius));
+    var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));
+    mesh.position.copy(pos);
+    scenemgr.addToScene(mesh, eid);
+    body.position.copy(pos);
+    scenemgr.addToWorld(body, eid);
 };
 
-exports.commands.lv_spawn = {
-    isCvar: false,
-    name: 'lv_spawn',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        try {
-            ocl.load(args[1], exports.spawn);
-        } catch (e) {
-            console.error("Error parsing JSON!");
-        }
-    }
-};
+command("connect <address>",
+    {mandatory: [{name: 'address', type: 'string'}]},
+    'connect',
+    function (match) {
+        exports.connect(match.address);
+    });
 
-},{"../common/commands":15,"../common/level":17,"../common/ocl":18,"../vendor/SeXHR":28,"./rcon":11,"./scene-manager":12}],12:[function(require,module,exports){
+},{"../common/connection":15,"../common/settings":19,"../console/command":22,"../vendor/cannon":35,"../vendor/three":37,"./protocol":10,"./scene-manager":12}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -887,237 +1051,7 @@ exports.remove = function (id) {
     delete worldObjects[id];
 };
 
-},{"../common/simulator":21}],11:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports:true */
-var
-// Module
-    commands = require('../common/commands'),
-    protocol = require('./protocol'),
-    console = require('../dom/console'),
-// Local
-    cvarCache;
-
-commands.contexts.rcon = exports = module.exports = commands.makeContext();
-
-protocol.rconHandler = {
-    status: function (msg) {
-        console.log(msg);
-    },
-    error: function (msg) {
-        console.warn(msg);
-    },
-    cvar: function (name, value) {
-        cvarCache[name] = value;
-    },
-    command: function (cmd) {
-        // Execute command as server
-        commands.execute(cmd, 'sv');
-    }
-};
-
-exports.cacheCvars = function () {
-    cvarCache = {};
-    protocol.sendRconQueryAll();
-};
-
-exports.execute = function (cmd, args) {
-    protocol.sendRconCommand(cmd.name, args);
-};
-
-exports.setCvar = function (name, value) {
-    protocol.sendRconCommand(name, [value]);
-};
-
-exports.getCvar = function (name) {
-    // Refresh even if we already know it
-    protocol.sendRconQuery(name);
-    return cvarCache[name];
-};
-
-exports.commands = {};
-
-exports.commands.rcon = {
-    isCvar: false,
-    name: 'rcon',
-    ctx: {cl: commands.contexts.host},
-    handler: function (args) {
-        if (args[1] === "status") {
-            protocol.sendRconStatus();
-        } else if (args[1] === "auth") {
-            protocol.sendRconAuthorize(args[2]);
-        } else {
-            throw "Usage: rcon status | rcon auth <pwd>";
-        }
-    }
-};
-
-},{"../common/commands":15,"../dom/console":22,"./protocol":10}],5:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-var
-// Module
-    input = require('./input'),
-    keycode = require('./keycode'),
-    THREE = require('../vendor/three'),
-    CANNON = require('../vendor/cannon'),
-    settings = require('../common/settings'),
-    commands = require('../common/commands'),
-    protocol = require('./protocol'),
-// Local
-    paused = true, shape, physBody,
-    onground = false,
-    pitchObj = new THREE.Object3D(), yawObj = new THREE.Object3D(),
-    vec3a = new THREE.Vector3(), contactNormal = new CANNON.Vec3(),
-    upAxis = new CANNON.Vec3(0, 1, 0);
-
-input.pointerlocked.add(function () {
-    paused = false;
-    input.prevent = true;
-});
-
-input.pointerunlocked.add(function () {
-    paused = true;
-    input.prevent = false;
-});
-
-input.escape.add(function () {
-    paused = true;
-    input.prevent = false;
-});
-
-input.bind('mouseaxis', 2, 'lookx');
-input.bind('mouseaxis', 3, 'looky');
-input.bind('key', keycode.w, 'movf');
-input.bind('key', keycode.a, 'movl');
-input.bind('key', keycode.s, 'movb');
-input.bind('key', keycode.d, 'movr');
-input.bind('key', keycode.space, 'jump');
-input.bind('mouse', 0, 'shoot');
-
-exports.update = function () {
-    input.updateGamepad();
-    if (paused === true) {
-        input.resetDelta();
-        yawObj.position.copy(physBody.position);
-        return;
-    }
-
-    yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
-    pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
-    pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
-
-    vec3a.set((input.check('movr') - input.check('movl')) * settings.player.speed, 0, (input.check('movb') - input.check('movf')) * settings.player.speed);
-    vec3a.applyQuaternion(yawObj.quaternion);
-
-    var vel = physBody.velocity, changeVel = new THREE.Vector3().subVectors(vec3a, vel);
-    changeVel.x = Math.clamp(changeVel.x, -settings.player.maxAcc, settings.player.maxAcc);
-    changeVel.y = -1;
-    changeVel.z = Math.clamp(changeVel.z, -settings.player.maxAcc, settings.player.maxAcc);
-
-    if (onground === false) {
-        changeVel.multiplyScalar(0.1);
-    }
-
-    if (onground && input.check('jump') > 0.2) {
-        changeVel.y = settings.player.jumpVel;
-        onground = false;
-    }
-
-    physBody.velocity.vadd(changeVel, physBody.velocity);
-    protocol.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
-    yawObj.position.copy(physBody.position);
-
-    input.resetDelta();
-};
-
-physBody = new CANNON.Body({mass: settings.player.mass});
-shape = new CANNON.Sphere(settings.player.radius);
-physBody.addShape(shape);
-
-physBody.addEventListener('collide', function (e) {
-    var contact = e.contact;
-
-    // contact.bi and contact.bj are the colliding bodies, and contact.ni is the collision normal.
-    // We do not yet know which one is which! Let's check.
-    if (contact.bi.id === physBody.id) { // bi is the player body, flip the contact normal
-        contact.ni.negate(contactNormal);
-    } else {
-        contactNormal.copy(contact.ni); // bi is something else. Keep the normal as it is
-    }
-    // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
-    if (contactNormal.dot(upAxis) > 0.5) { // Use a "good" threshold value between 0 and 1 here!
-        onground = true;
-    }
-});
-
-yawObj.rotation.y = 1.25 * Math.PI;
-
-exports.physBody = physBody;
-exports.sceneObj = yawObj;
-
-exports.firstPersonCam = function (camera) {
-    pitchObj.add(camera);
-    yawObj.add(pitchObj);
-};
-
-exports.commands = {};
-exports.commands.tp = {
-    isCvar: false,
-    name: 'tp',
-    ctx: {'cl': commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['number', 'number', 'number'], args);
-        exports.physBody.position.set(args[1], args[2], args[3]);
-        exports.sceneObj.position.set(args[1], args[2], args[3]);
-    }
-};
-
-},{"../common/commands":15,"../common/settings":20,"../vendor/cannon":30,"../vendor/three":32,"./input":7,"./keycode":8,"./protocol":10}],7:[function(require,module,exports){
+},{"../common/simulator":20}],7:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
