@@ -47,7 +47,8 @@ var
 // Module
     server = require('../server/server'),
     console = require('../dom/console'),
-    commands = require('../common/commands'),
+    cmdEngine = require('../console/engine'),
+    cmdBuiltins = require('../console/builtins'),
     Connection = require('../common/connection'),
     protocol = require('../server/protocol'),
     simulator = require('../common/simulator'),
@@ -60,7 +61,9 @@ var
 
 level.newIdFn = server.newId;
 
-commands.register(level.commands);
+if (!cmdBuiltins.registered) {
+    console.warn("Built-in commands have not been registered!");
+}
 
 function update(time) {
     simulator.update(time);
@@ -82,7 +85,7 @@ Clock.startNew(16, update);
 
 // Add command shorthand
 console.executeFn = window.c = function (str) {
-    return commands.execute(str, 'sv');
+    return cmdEngine.executeString(str, window.console);
 };
 
 function initDom() {

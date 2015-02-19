@@ -29,7 +29,7 @@ var
     THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
-    commands = require('../common/commands'),
+    command = require('../console/command'),
     protocol = require('./protocol'),
 // Local
     paused = true, shape, physBody,
@@ -128,14 +128,9 @@ exports.firstPersonCam = function (camera) {
     yawObj.add(pitchObj);
 };
 
-exports.commands = {};
-exports.commands.tp = {
-    isCvar: false,
-    name: 'tp',
-    ctx: {'cl': commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['number', 'number', 'number'], args);
-        exports.physBody.position.set(args[1], args[2], args[3]);
-        exports.sceneObj.position.set(args[1], args[2], args[3]);
-    }
-};
+command("tp <x> <y> <z>", {
+    mandatory: [{name: 'x', type: 'number'}, {name: 'y', type: 'number'}, {name: 'z', type: 'number'}]
+}, 'tp', function (match) {
+    exports.physBody.position.set(match.x, match.y, match.z);
+    exports.sceneObj.position.set(match.x, match.y, match.z);
+});

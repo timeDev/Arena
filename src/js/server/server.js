@@ -23,7 +23,7 @@
  */
 /*global require, module, exports */
 var
-    commands = require('../common/commands'),
+    cmdEngine = require('../console/engine'),
     arena = require('../common/arena'),
 // Local
     players = [],
@@ -39,8 +39,8 @@ exports.getServerStatusMsg = function () {
     return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
 };
 
-exports.executeCommand = function (cmd, args) {
-    commands.execute(args.join(" "), 'sv');
+exports.executeCommand = function (str) {
+    cmdEngine.executeString(str, window.console);
 };
 
 exports.matchesRconPassword = function (pwd) {
@@ -49,16 +49,13 @@ exports.matchesRconPassword = function (pwd) {
 };
 
 exports.getCvarList = function (/*admin*/) {
-    var cvars = commands.getCvars();
+    var reg = cmdEngine.getRegistry();
     var list = [];
-    for (var k in cvars) {
-        if (cvars.hasOwnProperty(k)) {
-            list.push(cvars[k]);
+    for (var k in reg) {
+        if (reg.hasOwnProperty(k) && reg[k].type === 'cvar') {
+            list.push([k, reg[k].getter()]);
         }
     }
-    list = list.map(function (c) {
-        return [c.name, typeof c.value === 'function' ? c.value.call() : c.value];
-    });
     return list;
 };
 

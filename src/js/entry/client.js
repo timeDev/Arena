@@ -47,14 +47,13 @@ var Clock = require('../common/clock'),
     settings = require('../common/settings'),
     controls = require('../client/controls'),
     simulator = require('../common/simulator'),
-    commands = require('../common/commands'),
-    level = require('../client/level'),
-// Load rcon after level to avoid issues with cyclic deps
-    rcon = require('../client/rcon'),
+    cmdEngine = require('../console/engine'),
+    cmdBuiltins = require('../console/builtins'),
     scenemgr = require('../client/scene-manager'),
     arena = require('../common/arena'),
-    client = require('../client/client'),
     console = require('../dom/console');
+
+require('../client/rcon');
 
 console.log("Playing Arena version {0}", arena.version);
 if (arena.debug) {
@@ -70,15 +69,14 @@ function update(time) {
 
 settings.api.init();
 
+if (!cmdBuiltins.registered) {
+    console.warn("Built-in commands have not been registered!");
+}
+
 // Add command shorthand
 console.executeFn = window.c = function (str) {
-    return commands.execute(str, 'cl');
+    return cmdEngine.executeString(str, window.console);
 };
-
-commands.register(level.commands);
-commands.register(controls.commands);
-commands.register(rcon.commands);
-commands.register(client.commands);
 
 // Entry point
 function entrypoint() {
@@ -92,8 +90,6 @@ function entrypoint() {
     controls.physBody.linearDamping = 0.95;
     display.scene.add(controls.sceneObj);
     simulator.add(controls.physBody, 0);
-
-    commands.register(display.commands);
 
     display.render();
 

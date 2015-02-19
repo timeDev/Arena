@@ -26,7 +26,7 @@ var
 // Module
     THREE = require('../vendor/three'),
     Stats = require('../vendor/Stats'),
-    commands = require('../common/commands'),
+    command = require('../console/command'),
     console = require('../dom/console'),
     settings = require('../common/settings'),
     input = require('./input'),
@@ -98,16 +98,9 @@ exports.render = render;
 exports.camera = camera;
 
 // -- Commands --
-exports.commands = {};
-exports.commands.cl_refresh_vp = {
-    isCvar: false,
-    name: 'cl_refresh_vp',
-    ctx: {cl: commands.contexts.host},
-    handler: function (args) {
-        commands.api.validate([], args);
-        renderer.setSize(window.innerWidth, window.innerHeight - 5);
-        camera.aspect = window.innerWidth / (window.innerHeight - 5);
-        camera.fov = settings.graphics.fov;
-        camera.updateProjectionMatrix();
-    }
-};
+command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
+    renderer.setSize(window.innerWidth, window.innerHeight - 5);
+    camera.aspect = window.innerWidth / (window.innerHeight - 5);
+    camera.fov = settings.graphics.fov;
+    camera.updateProjectionMatrix();
+});

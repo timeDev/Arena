@@ -23,21 +23,10 @@
  */
 /*global require, module, exports */
 var
-    // Module
-    commands = require('./commands'),
+// Module
+    cmdEngine = require('../console/engine'),
 // Local
-    keys,
-// Function
-    reg;
-
-reg = function (name, primary, secondary) {
-    commands.registerCvar(name, function (val) {
-        if (val !== undefined) {
-            module.exports[primary][secondary] = val;
-        }
-        return module.exports[primary][secondary];
-    });
-};
+    keys;
 
 keys = {
     mouse: {
@@ -85,7 +74,7 @@ module.exports = {
                 if (keys.hasOwnProperty(kp)) {
                     for (var ks in keys[kp]) {
                         if (keys[kp].hasOwnProperty(ks) && typeof keys[kp][ks] === 'string') {
-                            reg(keys[kp][ks], kp, ks);
+                            cmdEngine.registerCvar(keys[kp][ks], module.exports[kp], ks);
                         }
                     }
                 }

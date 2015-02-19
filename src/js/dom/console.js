@@ -25,7 +25,6 @@
 var
 // Module
     keycode = require('../client/keycode'),
-    commands = require('../common/commands'),
 // Local
     domElement = document.createElement('div'),
     inElement = document.createElement('input'),

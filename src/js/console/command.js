@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,43 +24,23 @@
 /*global require, module, exports */
 var
 // Module
-    ocl = require('../common/ocl'),
-    scenemgr = require('./scene-manager'),
-    command = require('../console/command'),
-    Sexhr = require('../vendor/SeXHR'),
-// Local
-    ids = [];
+    validate = require('./validate'),
+    engine = require('./engine');
 
-require('../common/level');
-
-exports.load = function () {
-    throw "deprecated";
+module.exports = function (syntaxMsg, syntax, name, handler) {
+    engine.registerCommand(name, module.exports.make(syntaxMsg, syntax, handler));
 };
 
-exports.spawn = function (obj, id) {
-    if (!obj.pos) {
-        console.warn("Skipping map object without position.");
-        return;
+module.exports.make = function (syntaxMsg, syntax, handler) {
+    return function (args) {
+        var match = validate(syntax, args);
+        if (match.matched) {
+            return handler.call(engine.env, match);
+        } else {
+            engine.env.error("Syntax: " + syntaxMsg);
+        }
+        if (match.tma) {
+            engine.env.warn("Too many arguments!");
+        }
     }
-    if (obj.mesh) {
-        obj.mesh.position.copy(obj.pos);
-        ids.push(scenemgr.addToScene(obj.mesh, id));
-    }
-    if (obj.body) {
-        obj.body.position.copy(obj.pos);
-        ids.push(scenemgr.addToWorld(obj.body, id));
-    }
-};
-
-exports.spawnFromDesc = function (desc, id) {
-    ocl.load(desc, function (obj) {
-        exports.spawn(obj, id);
-    });
-};
-
-exports.load = function (str) {
-    ocl.load(str, function (objList) {
-        objList.forEach(exports.spawn);
-        console.log("Level loaded");
-    });
 };

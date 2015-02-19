@@ -122,7 +122,7 @@ exports.sendLogon = function (name) {
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C
-// rcon command 202 cmd args C>S
+// rcon command 202 str C>S
 // rcon query 203 cvarname C>S
 // rcon cvar 204 cvarname value S>C
 // rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
@@ -168,8 +168,8 @@ exports.sendRconStatus = function () {
     sendRaw([200]);
 };
 
-exports.sendRconCommand = function (cmd, args) {
-    sendRaw([202, cmd, args]);
+exports.sendRconCommand = function (str) {
+    sendRaw([202, str]);
 };
 
 exports.sendRconQuery = function (cvar) {

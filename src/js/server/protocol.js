@@ -117,7 +117,7 @@ receivers[3] = exports.receiveLogon = function (p, d) {
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C
-// rcon command 202 cmd args C>S requires authorization
+// rcon command 202 str C>S
 // rcon query 203 cvarname C>S
 // rcon cvar 204 cvarname value S>C
 // rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
@@ -136,7 +136,7 @@ receivers[202] = exports.receiveRconCmd = function (p, d) {
         send(p, [201, "not authorized"]);
         return;
     }
-    server.executeCommand(d[1], d[2]);
+    server.executeCommand(d[1]);
 };
 
 receivers[203] = exports.receiveRconQuery = function (p, d) {

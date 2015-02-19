@@ -1,0 +1,70 @@
+start = cmdline+
+
+commandblock = "(" b:cmdline* ")" {return {type:'block', body:b}}
+
+cmdline
+  = wsc c:commandblock wsc {return c}
+  / wsc c:command wsc {return c}
+  / wsc "->" wsc c:cmdline {return {type:'ret', body:c}}
+  / wsc "$" n:name wsc "=" wsc v:value {return {type:'ass', name:n, value:v}}
+
+command = ";" / n:name wsc a:args {return {type:'cmd', name:n, args:a}}
+
+name = $([A-Za-z] [A-Za-z0-9_]*)
+
+args = (arg:value wsc {return arg})*
+
+value= variable / string / number / function / expression
+
+variable = $("$" [A-Za-z0-9$_]*)
+
+string = "\"" s:($[^"]*) "\"" {return s} / $[A-Za-z]+
+
+number = n:$([\+\-]?[0-9]+("."[0-9]+)?) {return parseFloat(n)}
+
+function = "{" b:cmdline* "}" {return {type:'fn', body:b}}
+
+expression
+  = "[" wsc b:cmdline wsc "]" {return {type:'expr', body:b}}
+  / "[" wsc b:operation wsc "]" {return b}  
+
+operation = logicop
+
+logicop
+  = l:eqop wsc "&&" wsc r:logicop {return {type:'&&', l:l,r:r}}
+  / l:eqop wsc "||" wsc r:logicop {return {type:'||', l:l,r:r}}
+  / eqop
+
+eqop
+  = l:addop wsc "==" wsc r:eqop {return {type:'==', l:l,r:r}}
+  / l:addop wsc "!=" wsc r:eqop {return {type:'!=', l:l,r:r}}
+  / l:addop wsc ">" wsc r:eqop {return {type:'>', l:l,r:r}}
+  / l:addop wsc "<" wsc r:eqop {return {type:'<', l:l,r:r}}
+  / l:addop wsc ">=" wsc r:eqop {return {type:'>=', l:l,r:r}}
+  / l:addop wsc "<=" wsc r:eqop {return {type:'<=', l:l,r:r}}
+  / addop
+
+addop
+  = l:multop wsc "+" wsc r:addop {return {type:'+', l:l,r:r}}
+  / l:multop wsc "-" wsc r:addop {return {type:'-', l:l,r:r}}
+  / multop
+
+multop
+  = l:unary wsc "*" wsc r:multop {return {type:'*', l:l,r:r}}
+  / l:unary wsc "/" wsc r:multop {return {type:'/', l:l,r:r}}
+  / l:unary wsc "%" wsc r:multop {return {type:'%', l:l,r:r}}
+  / unary
+
+unary
+  = "-" wsc v:primary { return {type:'u-', v:v}}
+  / "!" wsc v:unary { return {type:'u!', v:v}}
+  / primary
+
+primary
+  = value
+
+wsc = (comment / ws)*
+
+comment = "#" [^#]* "#"
+
+ws = [ \n\r\t]

@@ -25,7 +25,7 @@
 require('../common/level');
 var
 // Module
-    commands = require('../common/commands'),
+    command = require('../console/command'),
     ocl = require('../common/ocl'),
     Sexhr = require('../vendor/SeXHR'),
     protocol = require('./protocol'),
@@ -71,46 +71,28 @@ exports.load = function (str) {
     console.log("Level loaded");
 };
 
-exports.commands = {};
+command("lv_clear", {}, 'lv_clear', function (match) {
+    exports.clear();
+});
 
-exports.commands.lv_clear = {
-    isCvar: false,
-    name: 'lv_clear',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate([], args);
-        exports.clear();
-    }
-};
-
-exports.commands.lv_load = {
-    isCvar: false,
-    name: 'lv_load',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        new Sexhr().req({
-            url: args[1],
-            done: function (err, res) {
-                if (err) {
-                    throw err;
-                }
-                exports.load(res.text);
+command("lv_load <path>", {
+    mandatory: [{name: 'path', type: 'string'}]
+}, 'lv_load', function (match) {
+    new Sexhr().req({
+        url: match.path,
+        done: function (err, res) {
+            if (err) {
+                throw err;
             }
-        });
-    }
-};
-
-exports.commands.lv_spawn = {
-    isCvar: false,
-    name: 'lv_spawn',
-    ctx: {cl: commands.contexts.rcon, sv: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        try {
-            ocl.load(args[1], exports.spawn);
-        } catch (e) {
-            console.error("Error parsing JSON!");
+            exports.load(res.text);
         }
+    });
+});
+
+command("lv_spawn <obj>", {mandatory: [{name: 'obj', type: 'string'}]}, 'lv_spawn', function (match) {
+    try {
+        ocl.load(match.obj, exports.spawn);
+    } catch (e) {
+        console.error("Error parsing JSON!");
     }
-};
+});

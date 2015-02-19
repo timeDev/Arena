@@ -24,13 +24,12 @@
 /*global require, module, exports:true */
 var
 // Module
-    commands = require('../common/commands'),
+    command = require('../console/command'),
+    cmdEngine = require('../console/engine'),
     protocol = require('./protocol'),
     console = require('../dom/console'),
 // Local
     cvarCache;
-
-commands.contexts.rcon = exports = module.exports = commands.makeContext();
 
 protocol.rconHandler = {
     status: function (msg) {
@@ -44,7 +43,7 @@ protocol.rconHandler = {
     },
     command: function (cmd) {
         // Execute command as server
-        commands.execute(cmd, 'sv');
+        cmdEngine.executeString(cmd, window.console);
     }
 };
 
@@ -53,12 +52,12 @@ exports.cacheCvars = function () {
     protocol.sendRconQueryAll();
 };
 
-exports.execute = function (cmd, args) {
-    protocol.sendRconCommand(cmd.name, args);
+exports.execute = function (str) {
+    protocol.sendRconCommand(str);
 };
 
 exports.setCvar = function (name, value) {
-    protocol.sendRconCommand(name, [value]);
+    protocol.sendRconCommand(name, value);
 };
 
 exports.getCvar = function (name) {
@@ -67,19 +66,20 @@ exports.getCvar = function (name) {
     return cvarCache[name];
 };
 
-exports.commands = {};
-
-exports.commands.rcon = {
-    isCvar: false,
-    name: 'rcon',
-    ctx: {cl: commands.contexts.host},
-    handler: function (args) {
-        if (args[1] === "status") {
-            protocol.sendRconStatus();
-        } else if (args[1] === "auth") {
-            protocol.sendRconAuthorize(args[2]);
-        } else {
-            throw "Usage: rcon status | rcon auth <pwd>";
-        }
+command("rcon auth <pwd> | status | cmd <cmd>", [{
+    mandatory: [{name: 'mode', type: 'value', value: 'auth'},
+        {name: 'pwd', type: 'string'}]
+}, {
+    mandatory: [{name: 'mode', type: 'value', value: 'status'}]
+}, {
+    mandatory: [{name: 'mode', type: 'value', value: 'cmd'},
+        {name: 'cmd', type: 'string'}]
+}], 'rcon', function (match) {
+    if (match.matchI === 0) {
+        protocol.sendRconAuthorize(match.pwd);
+    } else if (match.matchI === 1) {
+        protocol.sendRconStatus();
+    } else if (match.matchI === 2) {
+        protocol.sendRconCommand()
     }
-};
+});

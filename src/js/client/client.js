@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    commands = require('../common/commands'),
+    command = require('../console/command'),
     Connection = require('../common/connection'),
     protocol = require('./protocol'),
     CANNON = require('../vendor/cannon'),
@@ -58,14 +58,9 @@ exports.spawnPlayer = function (pid, data) {
     scenemgr.addToWorld(body, eid);
 };
 
-exports.commands = {};
-
-exports.commands.connect = {
-    isCvar: false,
-    name: 'connect',
-    ctx: {cl: commands.contexts.host},
-    handler: function (args) {
-        commands.validate(['string'], args);
-        exports.connect(args[1]);
-    }
-};
+command("connect <address>",
+    {mandatory: [{name: 'address', type: 'string'}]},
+    'connect',
+    function (match) {
+        exports.connect(match.address);
+    });
