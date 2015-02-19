@@ -79,7 +79,8 @@ function connect(c) {
 
 conListener = Connection.listen(connect);
 conListener.on('open', function (id) {
-    console.write("Server open. Enter the following to connect: connect \"" + id + "\"");
+    console.writeLine("Server open. Enter the following to connect:");
+    console.writeLine("connect \"" + id + "\"", 'greenyellow');
     console.w.log("Server connection id:", id);
 });
 Clock.startNew(16, update);

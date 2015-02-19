@@ -29,6 +29,7 @@ var
     command = require('../console/command'),
     console = require('../dom/console'),
     settings = require('../common/settings'),
+    chat = require('../dom/chat'),
     input = require('./input'),
     makeDraggable = require('../dom/draggable'),
 // Local
@@ -57,6 +58,8 @@ scene.add(new THREE.AmbientLight());
 
 makeDraggable(console.domElement);
 document.body.appendChild(console.domElement);
+
+document.body.appendChild(chat.domElement);
 
 // -- Stats --
 var renderStats = new Stats();

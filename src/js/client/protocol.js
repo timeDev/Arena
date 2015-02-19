@@ -28,6 +28,7 @@ var
     arena = require('../common/arena'),
     client = require('./client'),
     simulator = require('../common/simulator'),
+    chat = require('../dom/chat'),
 // Local
     receivers = [];
 
@@ -117,6 +118,17 @@ receivers[2] = exports.receiveSpawnObject = function (d) {
 
 exports.sendLogon = function (name) {
     sendRaw([3, name]);
+};
+
+// Chat Message 4 msg C<>S
+
+chat.submitFn = exports.sendChatMsg = function (str) {
+    sendRaw([4, str]);
+};
+
+receivers[4] = exports.receiveChatMsg = function(d) {
+    chat.refresh();
+    chat.write(d[1]);
 };
 
 // RCON protocol

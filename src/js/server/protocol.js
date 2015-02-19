@@ -114,6 +114,24 @@ receivers[3] = exports.receiveLogon = function (p, d) {
     simulator.add(p.body, p.entityId);
 };
 
+// Chat Message 4 msg C<>S
+
+exports.sendChatMsg = function (p, msg) {
+    send(p, [4, msg]);
+};
+
+exports.chatMsg = function (msg) {
+    return [4, msg];
+};
+
+receivers[4] = exports.receiveChatMsg = function (p, d) {
+    var origMsg = d[1];
+    var playerName = p.name;
+    var msg = playerName + ": " + origMsg + "<br>";
+    // TODO: filter event exploits
+    exports.broadcast(exports.chatMsg(msg));
+};
+
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C
