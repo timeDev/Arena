@@ -80,7 +80,8 @@ function connect(c) {
 
 conListener = Connection.listen(connect);
 conListener.on('open', function (id) {
-    console.write("Server open. Enter the following to connect: connect \"" + id + "\"");
+    console.writeLine("Server open. Enter the following to connect:");
+    console.writeLine("connect \"" + id + "\"", 'greenyellow');
     console.w.log("Server connection id:", id);
 });
 Clock.startNew(16, update);
@@ -99,7 +100,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":13,"../common/clock":14,"../common/connection":15,"../common/simulator":20,"../console/builtins":21,"../console/engine":23,"../dom/console":27,"../server/level":29,"../server/player":30,"../server/protocol":31,"../server/server":32}],30:[function(require,module,exports){
+},{"../common/arena":13,"../common/clock":14,"../common/connection":15,"../common/simulator":20,"../console/builtins":21,"../console/engine":23,"../dom/console":28,"../server/level":30,"../server/player":31,"../server/protocol":32,"../server/server":33}],31:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -155,7 +156,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":19,"../common/simulator":20,"../vendor/cannon":35,"./server":32}],29:[function(require,module,exports){
+},{"../common/settings":19,"../common/simulator":20,"../vendor/cannon":36,"./server":33}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -255,7 +256,7 @@ command("lv_spawn <obj>", {mandatory: [{name: 'obj', type: 'string'}]}, 'lv_spaw
     }
 });
 
-},{"../common/level":16,"../common/ocl":17,"../common/simulator":20,"../console/command":22,"../vendor/SeXHR":33,"./protocol":31}],31:[function(require,module,exports){
+},{"../common/level":16,"../common/ocl":17,"../common/simulator":20,"../console/command":22,"../vendor/SeXHR":34,"./protocol":32}],32:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -372,6 +373,24 @@ receivers[3] = exports.receiveLogon = function (p, d) {
     simulator.add(p.body, p.entityId);
 };
 
+// Chat Message 4 msg C<>S
+
+exports.sendChatMsg = function (p, msg) {
+    send(p, [4, msg]);
+};
+
+exports.chatMsg = function (msg) {
+    return [4, msg];
+};
+
+receivers[4] = exports.receiveChatMsg = function (p, d) {
+    var origMsg = d[1];
+    var playerName = p.name;
+    var msg = playerName + ": " + origMsg + "<br>";
+    // TODO: filter event exploits
+    exports.broadcast(exports.chatMsg(msg));
+};
+
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C
@@ -416,7 +435,7 @@ receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
     }
 };
 
-},{"../common/arena":13,"../common/simulator":20,"./server":32}],32:[function(require,module,exports){
+},{"../common/arena":13,"../common/simulator":20,"./server":33}],33:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *

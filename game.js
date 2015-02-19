@@ -102,7 +102,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
-},{"../client/controls":5,"../client/display":6,"../client/rcon":11,"../client/scene-manager":12,"../common/arena":13,"../common/clock":14,"../common/settings":19,"../common/simulator":20,"../console/builtins":21,"../console/engine":23,"../dom/console":27}],11:[function(require,module,exports){
+},{"../client/controls":5,"../client/display":6,"../client/rcon":11,"../client/scene-manager":12,"../common/arena":13,"../common/clock":14,"../common/settings":19,"../common/simulator":20,"../console/builtins":21,"../console/engine":23,"../dom/console":28}],11:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -189,7 +189,7 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
     }
 });
 
-},{"../console/command":22,"../console/engine":23,"../dom/console":27,"./protocol":10}],6:[function(require,module,exports){
+},{"../console/command":22,"../console/engine":23,"../dom/console":28,"./protocol":10}],6:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -221,6 +221,7 @@ var
     command = require('../console/command'),
     console = require('../dom/console'),
     settings = require('../common/settings'),
+    chat = require('../dom/chat'),
     input = require('./input'),
     makeDraggable = require('../dom/draggable'),
 // Local
@@ -249,6 +250,8 @@ scene.add(new THREE.AmbientLight());
 
 makeDraggable(console.domElement);
 document.body.appendChild(console.domElement);
+
+document.body.appendChild(chat.domElement);
 
 // -- Stats --
 var renderStats = new Stats();
@@ -297,7 +300,7 @@ command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
     camera.updateProjectionMatrix();
 });
 
-},{"../common/settings":19,"../console/command":22,"../dom/console":27,"../dom/draggable":28,"../vendor/Stats":34,"../vendor/three":37,"./input":7}],34:[function(require,module,exports){
+},{"../common/settings":19,"../console/command":22,"../dom/chat":27,"../dom/console":28,"../dom/draggable":29,"../vendor/Stats":35,"../vendor/three":38,"./input":7}],35:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -447,7 +450,7 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -642,7 +645,7 @@ command("tp <x> <y> <z>", {
     exports.sceneObj.position.set(match.x, match.y, match.z);
 });
 
-},{"../common/settings":19,"../console/command":22,"../vendor/cannon":35,"../vendor/three":37,"./input":7,"./keycode":8,"./protocol":10}],10:[function(require,module,exports){
+},{"../common/settings":19,"../console/command":22,"../vendor/cannon":36,"../vendor/three":38,"./input":7,"./keycode":8,"./protocol":10}],10:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -673,6 +676,7 @@ var
     arena = require('../common/arena'),
     client = require('./client'),
     simulator = require('../common/simulator'),
+    chat = require('../dom/chat'),
 // Local
     receivers = [];
 
@@ -764,6 +768,17 @@ exports.sendLogon = function (name) {
     sendRaw([3, name]);
 };
 
+// Chat Message 4 msg C<>S
+
+chat.submitFn = exports.sendChatMsg = function (str) {
+    sendRaw([4, str]);
+};
+
+receivers[4] = exports.receiveChatMsg = function(d) {
+    chat.refresh();
+    chat.write(d[1]);
+};
+
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C
@@ -829,7 +844,118 @@ exports.sendRconQueryAll = function () {
     sendRaw([207]);
 };
 
-},{"../common/arena":13,"../common/simulator":20,"./client":4,"./controls":5,"./level":9}],9:[function(require,module,exports){
+},{"../common/arena":13,"../common/simulator":20,"../dom/chat":27,"./client":4,"./controls":5,"./level":9}],27:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+// Module
+    keycode = require('../client/keycode'),
+// Local
+    domElement = document.createElement('div'),
+    inElement = document.createElement('input'),
+    outElement = document.createElement('div');
+
+domElement.classList.add("chat-container");
+inElement.classList.add("chat-input");
+outElement.classList.add("chat-output");
+
+domElement.style.position = 'absolute';
+domElement.style.left = '0';
+domElement.style.bottom = '0';
+
+domElement.insertAdjacentHTML('afterbegin', "Chat<br>");
+domElement.appendChild(outElement);
+domElement.appendChild(inElement);
+
+inElement.addEventListener('keypress', function (e) {
+    var which = e.which || e.charCode || e.keyCode;
+    if (which === keycode.enter) {
+        exports.submitFn(inElement.value);
+        inElement.value = "";
+    }
+});
+
+exports.submitFn = null;
+
+exports.domElement = domElement;
+
+exports.write = function (str) {
+    outElement.insertAdjacentHTML('beforeend', str);
+    outElement.scrollTop = outElement.scrollHeight;
+};
+
+exports.refresh = function () {
+    window.clearInterval(fadeId);
+    window.clearTimeout(fadeWaitId);
+    if (!focused) {
+        fadeWaitId = window.setTimeout(exports.fade, 3000);
+    }
+};
+
+document.addEventListener('keydown', function (e) {
+    var which = e.which || e.charCode || e.keyCode;
+    if (which === keycode.t) {
+        exports.focus();
+        e.preventDefault();
+    }
+}, false);
+
+var focused;
+
+exports.focus = function () {
+    focused = true;
+    exports.refresh();
+    domElement.style.display = '';
+    domElement.style.opacity = '1';
+    domElement.style.filter = '';
+    inElement.focus();
+};
+
+inElement.addEventListener('blur', function () {
+    focused = false;
+    exports.fade();
+}, false);
+
+var fadeId = -1, fadeWaitId = -1;
+
+exports.fade = function () {
+    var op = 1;  // initial opacity
+    fadeId = setInterval(function () {
+        if (op <= 0.05) {
+            clearInterval(fadeId);
+            fadeId = -1;
+            domElement.style.display = 'none';
+        }
+        domElement.style.opacity = op;
+        domElement.style.filter = "alpha(opacity=" + op * 100 + ")";
+        op *= 0.95;
+    }, 20);
+    fadeWaitId = -1;
+};
+
+},{"../client/keycode":8}],9:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -897,7 +1023,7 @@ exports.load = function (str) {
     });
 };
 
-},{"../common/level":16,"../common/ocl":17,"../console/command":22,"../vendor/SeXHR":33,"./scene-manager":12}],4:[function(require,module,exports){
+},{"../common/level":16,"../common/ocl":17,"../console/command":22,"../vendor/SeXHR":34,"./scene-manager":12}],4:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -965,7 +1091,7 @@ command("connect <address>",
         exports.connect(match.address);
     });
 
-},{"../common/connection":15,"../common/settings":19,"../console/command":22,"../vendor/cannon":35,"../vendor/three":37,"./protocol":10,"./scene-manager":12}],12:[function(require,module,exports){
+},{"../common/connection":15,"../common/settings":19,"../console/command":22,"../vendor/cannon":36,"../vendor/three":38,"./protocol":10,"./scene-manager":12}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *

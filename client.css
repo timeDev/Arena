@@ -38,3 +38,28 @@ canvas {
     margin-top: 10px;
     width: 100%;
 }
+
+.chat-container {
+    background-color: rgba(34, 44, 61, 0.3);
+    color: #aaaaaa;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.chat-output {
+    background-color: transparent;
+    color: #dddddd;
+    padding: 2px;
+    font-size: 12px;
+    max-height: 250px;
+    max-width: 350px;
+    overflow-y: scroll;
+}
+
+.chat-input {
+    background-color: rgba(60, 60, 60, 0.2);
+    color: #eeeeee;
+    border-width: 0;
+    margin-top: 10px;
+    width: 100%;
+}
