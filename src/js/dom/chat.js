@@ -69,6 +69,12 @@ exports.refresh = function () {
 
 document.addEventListener('keydown', function (e) {
     var which = e.which || e.charCode || e.keyCode;
+    var el = document.activeElement;
+    if (el && (el.tagName.toLowerCase() == 'input' && el.type == 'text' ||
+        el.tagName.toLowerCase() == 'textarea')) {
+        // focused element is a text input or textarea
+        return;
+    }
     if (which === keycode.t) {
         exports.focus();
         e.preventDefault();
