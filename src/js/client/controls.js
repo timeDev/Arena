@@ -31,6 +31,7 @@ var
     settings = require('../common/settings'),
     command = require('../console/command'),
     protocol = require('./protocol'),
+    materials = require('../common/materials'),
 // Local
     paused = true, shape, physBody,
     onground = false,
@@ -62,28 +63,34 @@ input.bind('key', keycode.d, 'movr');
 input.bind('key', keycode.space, 'jump');
 input.bind('mouse', 0, 'shoot');
 
-exports.update = function () {
+exports.update = function (dt) {
     input.updateGamepad();
-    if (paused === true) {
-        input.resetDelta();
-        yawObj.position.copy(physBody.position);
-        return;
+
+    var accdt = settings.player.acc * dt;
+    if (paused) {
+        vec3a.set(0, 0, 0);
+    } else {
+        yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
+        pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
+        pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
+
+        vec3a.set((input.check('movr') - input.check('movl')), 0, (input.check('movb') - input.check('movf')));
+        if (vec3a.length() > 1) {
+            vec3a.normalize();
+        }
+        vec3a.multiplyScalar(settings.player.speed);
+        vec3a.applyQuaternion(yawObj.quaternion);
     }
 
-    yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
-    pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
-    pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
-
-    vec3a.set((input.check('movr') - input.check('movl')) * settings.player.speed, 0, (input.check('movb') - input.check('movf')) * settings.player.speed);
-    vec3a.applyQuaternion(yawObj.quaternion);
-
     var vel = physBody.velocity, changeVel = new THREE.Vector3().subVectors(vec3a, vel);
-    changeVel.x = Math.clamp(changeVel.x, -settings.player.maxAcc, settings.player.maxAcc);
+    if (changeVel.length > accdt) {
+        changeVel.setLength(accdt);
+    }
+
     changeVel.y = -1;
-    changeVel.z = Math.clamp(changeVel.z, -settings.player.maxAcc, settings.player.maxAcc);
 
     if (onground === false) {
-        changeVel.multiplyScalar(0.1);
+        changeVel.multiplyScalar(0.2);
     }
 
     if (onground && input.check('jump') > 0.2) {
@@ -101,6 +108,9 @@ exports.update = function () {
 physBody = new CANNON.Body({mass: settings.player.mass});
 shape = new CANNON.Sphere(settings.player.radius);
 physBody.addShape(shape);
+physBody.material = materials.playerMaterial;
+physBody.fixedRotation = true;
+physBody.updateMassProperties();
 
 physBody.addEventListener('collide', function (e) {
     var contact = e.contact;

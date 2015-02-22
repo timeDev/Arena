@@ -25,13 +25,13 @@
 var
 // Module
     CANNON = require('../vendor/cannon'),
-    ocl = require('./ocl');
-var  // Local
+    ocl = require('./ocl'),
+    materials = require('./materials'),
+// Local
     world,
     solver = new CANNON.GSSolver(),
-    split = true;
-
-var idLookup = [];
+    split = true,
+    idLookup = [];
 
 // -- Setup --
 world = new CANNON.World();
@@ -40,6 +40,9 @@ world.quatNormalizeFast = false;
 
 world.defaultContactMaterial.contactEquationStiffness = 1e9;
 world.defaultContactMaterial.contactEquationRegularizationTime = 4;
+
+world.addContactMaterial(materials.cmPlayerGround);
+world.addContactMaterial(materials.cmPlayerDefault);
 
 solver.iterations = 7;
 solver.tolerance = 0.1;
@@ -69,6 +72,9 @@ exports.updateBody = function (id, desc) {
 };
 
 exports.add = function (body, id) {
+    if (!body.material) {
+        body.material = materials.defaultMaterial;
+    }
     idLookup[id] = body;
     body.id = id;
     world.add(body);

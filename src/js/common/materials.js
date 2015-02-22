@@ -1,7 +1,7 @@
-﻿/*
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,18 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-exports.version = require('../version').versionString;
-exports.debug = false;
-exports.assetDir = 'asset/';
-exports.modelDir = exports.assetDir + 'model/';
-exports.propDir = exports.assetDir + 'prop/';
-exports.textureDir = exports.assetDir + 'texture/';
-exports.peerJsKey = '7xpn4ptmqgvkuik9';
+var CANNON = require('../vendor/cannon');
+
+exports.defaultMaterial = new CANNON.Material('default');
+exports.playerMaterial = new CANNON.Material('player');
+exports.groundMaterial = new CANNON.Material('ground');
+
+exports.cmPlayerDefault = new CANNON.ContactMaterial(exports.playerMaterial, exports.defaultMaterial, {
+    friction: 0.01,
+    restitution: 0.1
+});
+
+exports.cmPlayerGround = new CANNON.ContactMaterial(exports.playerMaterial, exports.groundMaterial, {
+    friction: 0.01,
+    restitution: 0.1
+});
