@@ -256,6 +256,19 @@ command("lv_spawn <obj>", {mandatory: [{name: 'obj', type: 'string'}]}, 'lv_spaw
     }
 });
 
+command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map', function (match) {
+    exports.clear();
+    new Sexhr().req({
+        url: "maps/" + match.mapname + ".json",
+        done: function (err, res) {
+            if (err) {
+                throw err;
+            }
+            exports.load(res.text);
+        }
+    });
+});
+
 },{"../common/level":16,"../common/ocl":18,"../common/simulator":21,"../console/command":23,"../vendor/SeXHR":35,"./protocol":33}],33:[function(require,module,exports){
 /*
  * The MIT License (MIT)
