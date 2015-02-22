@@ -102,7 +102,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
-},{"../client/controls":5,"../client/display":6,"../client/rcon":11,"../client/scene-manager":12,"../common/arena":13,"../common/clock":14,"../common/settings":19,"../common/simulator":20,"../console/builtins":21,"../console/engine":23,"../dom/console":28}],11:[function(require,module,exports){
+},{"../client/controls":5,"../client/display":6,"../client/rcon":11,"../client/scene-manager":12,"../common/arena":13,"../common/clock":14,"../common/settings":20,"../common/simulator":21,"../console/builtins":22,"../console/engine":24,"../dom/console":29}],11:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -189,7 +189,7 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
     }
 });
 
-},{"../console/command":22,"../console/engine":23,"../dom/console":28,"./protocol":10}],6:[function(require,module,exports){
+},{"../console/command":23,"../console/engine":24,"../dom/console":29,"./protocol":10}],6:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -300,7 +300,7 @@ command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
     camera.updateProjectionMatrix();
 });
 
-},{"../common/settings":19,"../console/command":22,"../dom/chat":27,"../dom/console":28,"../dom/draggable":29,"../vendor/Stats":35,"../vendor/three":38,"./input":7}],35:[function(require,module,exports){
+},{"../common/settings":20,"../console/command":23,"../dom/chat":28,"../dom/console":29,"../dom/draggable":30,"../vendor/Stats":36,"../vendor/three":39,"./input":7}],36:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -450,7 +450,7 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -541,6 +541,7 @@ var
     settings = require('../common/settings'),
     command = require('../console/command'),
     protocol = require('./protocol'),
+    materials = require('../common/materials'),
 // Local
     paused = true, shape, physBody,
     onground = false,
@@ -572,28 +573,34 @@ input.bind('key', keycode.d, 'movr');
 input.bind('key', keycode.space, 'jump');
 input.bind('mouse', 0, 'shoot');
 
-exports.update = function () {
+exports.update = function (dt) {
     input.updateGamepad();
-    if (paused === true) {
-        input.resetDelta();
-        yawObj.position.copy(physBody.position);
-        return;
+
+    var accdt = settings.player.acc * dt;
+    if (paused) {
+        vec3a.set(0, 0, 0);
+    } else {
+        yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
+        pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
+        pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
+
+        vec3a.set((input.check('movr') - input.check('movl')), 0, (input.check('movb') - input.check('movf')));
+        if (vec3a.length() > 1) {
+            vec3a.normalize();
+        }
+        vec3a.multiplyScalar(settings.player.speed);
+        vec3a.applyQuaternion(yawObj.quaternion);
     }
 
-    yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
-    pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
-    pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
-
-    vec3a.set((input.check('movr') - input.check('movl')) * settings.player.speed, 0, (input.check('movb') - input.check('movf')) * settings.player.speed);
-    vec3a.applyQuaternion(yawObj.quaternion);
-
     var vel = physBody.velocity, changeVel = new THREE.Vector3().subVectors(vec3a, vel);
-    changeVel.x = Math.clamp(changeVel.x, -settings.player.maxAcc, settings.player.maxAcc);
+    if (changeVel.length > accdt) {
+        changeVel.setLength(accdt);
+    }
+
     changeVel.y = -1;
-    changeVel.z = Math.clamp(changeVel.z, -settings.player.maxAcc, settings.player.maxAcc);
 
     if (onground === false) {
-        changeVel.multiplyScalar(0.1);
+        changeVel.multiplyScalar(0.2);
     }
 
     if (onground && input.check('jump') > 0.2) {
@@ -611,6 +618,9 @@ exports.update = function () {
 physBody = new CANNON.Body({mass: settings.player.mass});
 shape = new CANNON.Sphere(settings.player.radius);
 physBody.addShape(shape);
+physBody.material = materials.playerMaterial;
+physBody.fixedRotation = true;
+physBody.updateMassProperties();
 
 physBody.addEventListener('collide', function (e) {
     var contact = e.contact;
@@ -645,7 +655,7 @@ command("tp <x> <y> <z>", {
     exports.sceneObj.position.set(match.x, match.y, match.z);
 });
 
-},{"../common/settings":19,"../console/command":22,"../vendor/cannon":36,"../vendor/three":38,"./input":7,"./keycode":8,"./protocol":10}],10:[function(require,module,exports){
+},{"../common/materials":17,"../common/settings":20,"../console/command":23,"../vendor/cannon":37,"../vendor/three":39,"./input":7,"./keycode":8,"./protocol":10}],10:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -843,7 +853,7 @@ exports.sendRconQueryAll = function () {
     sendRaw([207]);
 };
 
-},{"../common/arena":13,"../common/simulator":20,"../dom/chat":27,"./client":4,"./controls":5,"./level":9}],27:[function(require,module,exports){
+},{"../common/arena":13,"../common/simulator":21,"../dom/chat":28,"./client":4,"./controls":5,"./level":9}],28:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1028,7 +1038,7 @@ exports.load = function (str) {
     });
 };
 
-},{"../common/level":16,"../common/ocl":17,"../console/command":22,"../vendor/SeXHR":34,"./scene-manager":12}],4:[function(require,module,exports){
+},{"../common/level":16,"../common/ocl":18,"../console/command":23,"../vendor/SeXHR":35,"./scene-manager":12}],4:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1096,7 +1106,7 @@ command("connect <address>",
         exports.connect(match.address);
     });
 
-},{"../common/connection":15,"../common/settings":19,"../console/command":22,"../vendor/cannon":36,"../vendor/three":38,"./protocol":10,"./scene-manager":12}],12:[function(require,module,exports){
+},{"../common/connection":15,"../common/settings":20,"../console/command":23,"../vendor/cannon":37,"../vendor/three":39,"./protocol":10,"./scene-manager":12}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1182,7 +1192,7 @@ exports.remove = function (id) {
     delete worldObjects[id];
 };
 
-},{"../common/simulator":20}],7:[function(require,module,exports){
+},{"../common/simulator":21}],7:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *

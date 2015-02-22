@@ -4,7 +4,7 @@
         "obj": { "pos": [ 15, 12.5, 15 ] },
         "rbox": [ 2, 2, 2 ],
         "cbox": [ 2, 2, 2 ],
-        "body": { "mass": 10 },
+        "body": { "mass": 100 },
         "matbasic": { "color": 255 }
     },
     {

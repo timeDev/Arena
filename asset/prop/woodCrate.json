@@ -1,6 +1,6 @@
 {
     "class": [ "cbox", "body", "model", "mesh", "compound" ],
-    "body": { "mass": 100 },
+    "body": { "mass": 150 },
     "cbox": [ 2, 2, 2 ],
     "mesh": "",
     "model": "woodCrate"
