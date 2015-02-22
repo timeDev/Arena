@@ -80,6 +80,6 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
     } else if (match.matchI === 1) {
         protocol.sendRconStatus();
     } else if (match.matchI === 2) {
-        protocol.sendRconCommand()
+        protocol.sendRconCommand(match.cmd);
     }
 });
