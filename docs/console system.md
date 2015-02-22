@@ -66,8 +66,9 @@ If the referenced variable is not found, an error should be thrown.
 ###6.2 Strings###
 A string of characters is evaluated as a String value, if
 
-1. it contains only letters, or
-2. it is surrounded by double quotation marks (`"`)
+1. it contains only the following characters: A-Za-z0-9$%&=?!\\+-,*~|_/. , or
+2. it is surrounded by double quotation marks (`"`), but contains none, or
+3. it is a triplet of double quotation marks (`"""`), representing the character itself
 
 ###6.3 Numbers###
 A number is a set of decimal digits.

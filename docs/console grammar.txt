@@ -14,11 +14,11 @@ name = $([A-Za-z] [A-Za-z0-9_]*)
 
 args = (arg:value wsc {return arg})*
 
-value= variable / string / number / function / expression
+value= variable / number / string / function / expression
 
 variable = $("$" [A-Za-z0-9$_]*)
 
-string = "\"" s:($[^"]*) "\"" {return s} / $[A-Za-z]+
+string ="\"\"\"" {return '"'} / "\"" s:($[^"]*) "\"" {return s} / $[A-Za-z0-9$%&=?!\\+-,*~|_/.]+
 
 number = n:$([\+\-]?[0-9]+("."[0-9]+)?) {return parseFloat(n)}
 
