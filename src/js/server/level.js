@@ -96,3 +96,16 @@ command("lv_spawn <obj>", {mandatory: [{name: 'obj', type: 'string'}]}, 'lv_spaw
         console.error("Error parsing JSON!");
     }
 });
+
+command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map', function (match) {
+    exports.clear();
+    new Sexhr().req({
+        url: "maps/" + match.mapname + ".json",
+        done: function (err, res) {
+            if (err) {
+                throw err;
+            }
+            exports.load(res.text);
+        }
+    });
+});
