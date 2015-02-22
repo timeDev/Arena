@@ -185,7 +185,7 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
     } else if (match.matchI === 1) {
         protocol.sendRconStatus();
     } else if (match.matchI === 2) {
-        protocol.sendRconCommand()
+        protocol.sendRconCommand(match.cmd);
     }
 });
 
@@ -733,7 +733,6 @@ receivers[1] = exports.receivePlayerData = function (d) {
             var corr = {x: data.p[0] - pkt.p[0], y: data.p[1] - pkt.p[1], z: data.p[2] - pkt.p[2]};
             // Avoid cyclic deps
             var controls = require('./controls');
-            console.log(corr);
             //noinspection JSCheckFunctionSignatures
             controls.physBody.position.vadd(corr, controls.physBody.position);
             controls.sceneObj.position.copy(controls.physBody.position);
@@ -916,6 +915,12 @@ exports.refresh = function () {
 
 document.addEventListener('keydown', function (e) {
     var which = e.which || e.charCode || e.keyCode;
+    var el = document.activeElement;
+    if (el && (el.tagName.toLowerCase() == 'input' && el.type == 'text' ||
+        el.tagName.toLowerCase() == 'textarea')) {
+        // focused element is a text input or textarea
+        return;
+    }
     if (which === keycode.t) {
         exports.focus();
         e.preventDefault();
