@@ -34,7 +34,7 @@ var
     materials = require('../common/materials'),
 // Local
     paused = true, shape, physBody,
-    onground = false,
+    onground = false, jumpPrg = Infinity,
     pitchObj = new THREE.Object3D(), yawObj = new THREE.Object3D(),
     vec3a = new THREE.Vector3(), contactNormal = new CANNON.Vec3(),
     upAxis = new CANNON.Vec3(0, 1, 0);
@@ -90,12 +90,16 @@ exports.update = function (dt) {
     changeVel.y = -1;
 
     if (onground === false) {
-        changeVel.multiplyScalar(0.2);
+        changeVel.multiplyScalar(0.1);
     }
 
-    if (onground && input.check('jump') > 0.2) {
+    if (jumpPrg < settings.player.jumpDur && input.check('jump') > 0.2) {
+        if (onground) {
+            changeVel.multiplyScalar(1.2);
+        }
         changeVel.y = settings.player.jumpVel;
         onground = false;
+        jumpPrg += dt;
     }
 
     physBody.velocity.vadd(changeVel, physBody.velocity);
@@ -125,6 +129,7 @@ physBody.addEventListener('collide', function (e) {
     // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
     if (contactNormal.dot(upAxis) > 0.5) { // Use a "good" threshold value between 0 and 1 here!
         onground = true;
+        jumpPrg = 0;
     }
 });
 
