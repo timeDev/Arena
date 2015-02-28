@@ -769,13 +769,6 @@ receivers[1] = exports.receivePlayerData = function (d) {
     }
 };
 
-// SpawnObject 2 desc id S>C
-
-receivers[2] = exports.receiveSpawnObject = function (d) {
-    // Avoid cyclic dependency -> load module in function
-    require('./level').spawnFromDesc(d[1], d[2]);
-};
-
 // Logon 3 name C>S
 
 exports.sendLogon = function (name) {
@@ -788,9 +781,50 @@ chat.submitFn = exports.sendChatMsg = function (str) {
     sendRaw([4, str]);
 };
 
-receivers[4] = exports.receiveChatMsg = function(d) {
+receivers[4] = exports.receiveChatMsg = function (d) {
     chat.refresh();
     chat.write(d[1]);
+};
+
+// === Entities ===
+
+// Spawn object from string 10 id string S>C
+
+receivers[10] = exports.receiveSpawnObject = function (d) {
+    // Avoid cyclic dependency -> load module in function
+    require('./level').spawnFromDesc(d[2], d[1]);
+};
+
+// Spawn entity by name 11 id name meta S>C
+
+receivers[11] = exports.receiveSpawnEntity = function (d) {
+    throw 'Not implemented';
+};
+
+// Update entity by id 12 id meta S>C
+
+receivers[12] = exports.receiveUpdateEntity = function (d) {
+    if (d[2].ph) {
+        simulator.updateBody(d[1], d[2].ph);
+    }
+};
+
+// Kill entity by id 13 id S>C
+
+receivers[13] = exports.receiveKillEntity = function (d) {
+    simulator.remove(d[1]);
+};
+
+// Spawn many 14 list
+// list: array of {id,str/name,meta}
+
+receivers[14] = exports.receiveSpawnMany = function (d) {
+    for (var i = 0; i < d[1].length; i++) {
+        var obj = d[1][i];
+        if (obj.str) {
+            require('./level').spawnFromDesc(obj.str, obj.id);
+        }
+    }
 };
 
 // RCON protocol
@@ -1076,7 +1110,8 @@ var
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
-    scenemgr = require('./scene-manager');
+    scenemgr = require('./scene-manager'),
+    materials = require('../common/materials');
 
 exports.connection = null;
 
@@ -1097,6 +1132,9 @@ exports.spawnPlayer = function (pid, data) {
     pos = {x: pos[0], y: pos[1], z: pos[2]};
     var body = new CANNON.Body({mass: settings.player.mass});
     body.addShape(new CANNON.Sphere(settings.player.radius));
+    body.material = materials.playerMaterial;
+    body.fixedRotation = true;
+    body.updateMassProperties();
     var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));
     mesh.position.copy(pos);
     scenemgr.addToScene(mesh, eid);
@@ -1111,7 +1149,7 @@ command("connect <address>",
         exports.connect(match.address);
     });
 
-},{"../common/connection":15,"../common/settings":20,"../console/command":23,"../vendor/cannon":37,"../vendor/three":39,"./protocol":10,"./scene-manager":12}],12:[function(require,module,exports){
+},{"../common/connection":15,"../common/materials":17,"../common/settings":20,"../console/command":23,"../vendor/cannon":37,"../vendor/three":39,"./protocol":10,"./scene-manager":12}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
