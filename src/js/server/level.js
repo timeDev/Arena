@@ -30,6 +30,7 @@ var
     Sexhr = require('../vendor/SeXHR'),
     protocol = require('./protocol'),
     simulator = require('../common/simulator'),
+    server = require('./server'),
 // Local
     ids = [];
 
@@ -52,15 +53,22 @@ exports.spawnObj = function (obj, id) {
 
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
-    protocol.broadcast(protocol.spawnObject(str, id));
+    protocol.broadcast(protocol.spawnObject(id, str));
+    server.mapState.push({id: id, str: str});
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
     });
 };
 
 exports.clear = function () {
+    ids.forEach(function (id) {
+        protocol.broadcast(protocol.killEntity(id));
+    });
     ids.forEach(simulator.remove);
     ids = [];
+    while (server.mapState.length > 0) {
+        server.mapState.pop();
+    }
 };
 
 exports.load = function (str) {
@@ -91,7 +99,7 @@ command("lv_load <path>", {
 
 command("lv_spawn <obj>", {mandatory: [{name: 'obj', type: 'string'}]}, 'lv_spawn', function (match) {
     try {
-        ocl.load(match.obj, exports.spawn);
+        exports.spawnString(match.obj);
     } catch (e) {
         console.error("Error parsing JSON!");
     }

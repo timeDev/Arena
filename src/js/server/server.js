@@ -35,6 +35,8 @@ exports.newId = function () {
     return idCounter++;
 };
 
+exports.mapState = [];
+
 exports.getServerStatusMsg = function () {
     return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
 };

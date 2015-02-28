@@ -30,7 +30,8 @@ var
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
-    scenemgr = require('./scene-manager');
+    scenemgr = require('./scene-manager'),
+    materials = require('../common/materials');
 
 exports.connection = null;
 
@@ -51,6 +52,9 @@ exports.spawnPlayer = function (pid, data) {
     pos = {x: pos[0], y: pos[1], z: pos[2]};
     var body = new CANNON.Body({mass: settings.player.mass});
     body.addShape(new CANNON.Sphere(settings.player.radius));
+    body.material = materials.playerMaterial;
+    body.fixedRotation = true;
+    body.updateMassProperties();
     var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));
     mesh.position.copy(pos);
     scenemgr.addToScene(mesh, eid);

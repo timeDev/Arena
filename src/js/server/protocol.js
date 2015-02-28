@@ -84,21 +84,12 @@ receivers[1] = exports.receivePlayerData = function (p, d) {
     exports.broadcast([1, p.playerId, 1, {p: p.body.position.toArray(), v: p.body.velocity.toArray(), pnr: d[2]}]);
 };
 
-// SpawnObject 2 desc id S>C
-
-exports.sendSpawnObject = function (p, str, id) {
-    send(p, [2, str, id]);
-};
-
-exports.spawnObject = function (str, id) {
-    return [2, str, id];
-};
-
 // Logon 3 name C>S
 
 receivers[3] = exports.receiveLogon = function (p, d) {
     p.name = d[1];
     exports.sendPlayerData(p, p.playerId, 0, {});
+    exports.sendSpawnMany(p, server.mapState);
     for (var i = 0; i < server.players.length; i++) {
         var player = server.players[i];
         exports.sendPlayerData(player, p.playerId, 2, {
@@ -130,6 +121,55 @@ receivers[4] = exports.receiveChatMsg = function (p, d) {
     var msg = playerName + ": " + origMsg + "<br>";
     // TODO: filter event exploits
     exports.broadcast(exports.chatMsg(msg));
+};
+
+// === Entities ===
+
+// Spawn object from string 10 id string S>C
+
+exports.sendSpawnObject = function (p, id, str) {
+    send(p, [10, id, str]);
+};
+
+exports.spawnObject = function (id, str) {
+    return [10, id, str];
+};
+
+// Spawn entity by name 11 id name meta S>C
+
+exports.sendSpawnEntity = function (p, id, name, meta) {
+    send(p, [11, id, name, meta]);
+};
+
+exports.spawnEntity = function (id, name, meta) {
+    return [11, id, name, meta];
+};
+
+// Update entity by id 12 id meta S>C
+
+exports.sendUpdateEntity = function (p, id, meta) {
+    send(p, [12, id, meta]);
+};
+
+exports.updateEntity = function (id, meta) {
+    return [12, id, meta];
+};
+
+// Kill entity by id 13 id S>C
+
+exports.sendKillEntity = function (p, id) {
+    send(p, [13, id]);
+};
+
+exports.killEntity = function (id) {
+    return [13, id];
+};
+
+// Spawn many 14 list
+// list: array of {id,str/name,meta}
+
+exports.sendSpawnMany = function (p, list) {
+    send(p, [14, list]);
 };
 
 // RCON protocol

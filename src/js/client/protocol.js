@@ -106,13 +106,6 @@ receivers[1] = exports.receivePlayerData = function (d) {
     }
 };
 
-// SpawnObject 2 desc id S>C
-
-receivers[2] = exports.receiveSpawnObject = function (d) {
-    // Avoid cyclic dependency -> load module in function
-    require('./level').spawnFromDesc(d[1], d[2]);
-};
-
 // Logon 3 name C>S
 
 exports.sendLogon = function (name) {
@@ -125,9 +118,50 @@ chat.submitFn = exports.sendChatMsg = function (str) {
     sendRaw([4, str]);
 };
 
-receivers[4] = exports.receiveChatMsg = function(d) {
+receivers[4] = exports.receiveChatMsg = function (d) {
     chat.refresh();
     chat.write(d[1]);
+};
+
+// === Entities ===
+
+// Spawn object from string 10 id string S>C
+
+receivers[10] = exports.receiveSpawnObject = function (d) {
+    // Avoid cyclic dependency -> load module in function
+    require('./level').spawnFromDesc(d[2], d[1]);
+};
+
+// Spawn entity by name 11 id name meta S>C
+
+receivers[11] = exports.receiveSpawnEntity = function (d) {
+    throw 'Not implemented';
+};
+
+// Update entity by id 12 id meta S>C
+
+receivers[12] = exports.receiveUpdateEntity = function (d) {
+    if (d[2].ph) {
+        simulator.updateBody(d[1], d[2].ph);
+    }
+};
+
+// Kill entity by id 13 id S>C
+
+receivers[13] = exports.receiveKillEntity = function (d) {
+    simulator.remove(d[1]);
+};
+
+// Spawn many 14 list
+// list: array of {id,str/name,meta}
+
+receivers[14] = exports.receiveSpawnMany = function (d) {
+    for (var i = 0; i < d[1].length; i++) {
+        var obj = d[1][i];
+        if (obj.str) {
+            require('./level').spawnFromDesc(obj.str, obj.id);
+        }
+    }
 };
 
 // RCON protocol
