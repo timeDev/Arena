@@ -142,10 +142,3 @@ exports.firstPersonCam = function (camera) {
     pitchObj.add(camera);
     yawObj.add(pitchObj);
 };
-
-command("tp <x> <y> <z>", {
-    mandatory: [{name: 'x', type: 'number'}, {name: 'y', type: 'number'}, {name: 'z', type: 'number'}]
-}, 'tp', function (match) {
-    exports.physBody.position.set(match.x, match.y, match.z);
-    exports.sceneObj.position.set(match.x, match.y, match.z);
-});

@@ -25,6 +25,7 @@
 var
     cmdEngine = require('../console/engine'),
     arena = require('../common/arena'),
+    command = require('../console/command'),
 // Local
     players = [],
     idCounter = 1;
@@ -68,3 +69,11 @@ exports.getCvar = function (name) {
 exports.execute = function (cmd) {
     return commands.execute(cmd, 'sv');
 };
+
+command("tpa <x> <y> <z>", {
+    mandatory: [{name: 'x', type: 'number'}, {name: 'y', type: 'number'}, {name: 'z', type: 'number'}]
+}, 'tpa', function (match) {
+    players.forEach(function (p) {
+        p.teleport(match.x, match.y, match.z);
+    });
+});
