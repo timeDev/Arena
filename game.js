@@ -653,13 +653,6 @@ exports.firstPersonCam = function (camera) {
     yawObj.add(pitchObj);
 };
 
-command("tp <x> <y> <z>", {
-    mandatory: [{name: 'x', type: 'number'}, {name: 'y', type: 'number'}, {name: 'z', type: 'number'}]
-}, 'tp', function (match) {
-    exports.physBody.position.set(match.x, match.y, match.z);
-    exports.sceneObj.position.set(match.x, match.y, match.z);
-});
-
 },{"../common/materials":17,"../common/settings":20,"../console/command":23,"../vendor/cannon":37,"../vendor/three":39,"./input":7,"./keycode":8,"./protocol":10}],10:[function(require,module,exports){
 /*
  * The MIT License (MIT)

@@ -147,7 +147,7 @@ var
 // Module
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
-    simulator = require('../common/simulator'),
+    THREE = require('../vendor/three'),
     server = require('./server');
 
 function Player(connection) {
@@ -162,7 +162,28 @@ function Player(connection) {
 }
 
 Player.prototype.updateBody = function (state) {
-    simulator.updateBody(this.entityId, state);
+    if (state.v) {
+        var v = new THREE.Vector3(state.v[0], state.v[1], state.v[2]);
+        if (v.length > settings.player.speed) {
+            v.setLength(settings.player.speed);
+        }
+        this.body.velocity.copy(v);
+    }
+    if (state.p) {
+        var p = new THREE.Vector3(state.p[0], state.p[1], state.p[2]);
+        var len = p.distanceTo(this.body.position);
+        // Use 1.3 tolerance
+        if (len > settings.player.speed * 1.3) {
+            p.sub(this.body.position);
+            p.setLength(settings.player.speed);
+            p.add(this.body.position);
+        }
+        this.body.position.copy(p);
+    }
+};
+
+Player.prototype.teleport = function (x, y, z) {
+    this.body.position.set(x, y, z);
 };
 
 Player.newId = function () {
@@ -173,7 +194,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":20,"../common/simulator":21,"../vendor/cannon":37,"./server":34}],31:[function(require,module,exports){
+},{"../common/settings":20,"../vendor/cannon":37,"../vendor/three":39,"./server":34}],31:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -541,6 +562,7 @@ receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
 var
     cmdEngine = require('../console/engine'),
     arena = require('../common/arena'),
+    command = require('../console/command'),
 // Local
     players = [],
     idCounter = 1;
@@ -585,4 +607,12 @@ exports.execute = function (cmd) {
     return commands.execute(cmd, 'sv');
 };
 
-},{"../common/arena":13,"../console/engine":24}]},{},[2]);
+command("tpa <x> <y> <z>", {
+    mandatory: [{name: 'x', type: 'number'}, {name: 'y', type: 'number'}, {name: 'z', type: 'number'}]
+}, 'tpa', function (match) {
+    players.forEach(function (p) {
+        p.teleport(match.x, match.y, match.z);
+    });
+});
+
+},{"../common/arena":13,"../console/command":23,"../console/engine":24}]},{},[2]);
