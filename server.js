@@ -103,9 +103,43 @@ conListener.on('open', function (id) {
 });
 Clock.startNew(16, update);
 
+var cmdEnv = {
+    log: function () {
+        var msg = Array.prototype.join.call(arguments, " ");
+        server.players.forEach(function (p) {
+            if (p.data.rconAuthorized) {
+                protocol.sendRconMessage(p, msg);
+            }
+        });
+        console.log(arguments);
+        console.w.log(arguments);
+    },
+    error: function () {
+        var msg = "[error] " + Array.prototype.join.call(arguments, " ");
+        server.players.forEach(function (p) {
+            if (p.data.rconAuthorized) {
+                protocol.sendRconMessage(p, msg);
+            }
+        });
+        console.error(arguments);
+        console.w.error(arguments);
+    }
+    ,
+    warn: function () {
+        var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
+        server.players.forEach(function (p) {
+            if (p.data.rconAuthorized) {
+                protocol.sendRconMessage(p, msg);
+            }
+        });
+        console.warn(arguments);
+        console.w.warn(arguments);
+    }
+};
+
 // Add command shorthand
-console.executeFn = window.c = function (str) {
-    return cmdEngine.executeString(str, window.console);
+console.executeFn = window.c = server.executeCommand = function (str) {
+    return cmdEngine.executeString(str, cmdEnv);
 };
 
 function initDom() {
@@ -499,6 +533,7 @@ exports.sendSpawnMany = function (p, list) {
 // rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
 // rcon authorize 206 password C>S
 // rcon queryall 207 C>S
+// rcon consolemessage 208 msg S>C
 // Important: messages are not encrypted! Do not reuse the rcon password
 // for things like email and stuff! Someone getting into your server
 // should not be a big deal, as you can easily restart it via ssh or whatever
@@ -532,6 +567,10 @@ receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
         var res = responseList[i];
         send(p, [204, res[0], res[1]]);
     }
+};
+
+exports.sendRconMessage = function (p, msg) {
+    send(p, [208, msg]);
 };
 
 },{"../common/arena":13,"../common/simulator":21,"./server":34}],34:[function(require,module,exports){
@@ -579,9 +618,7 @@ exports.getServerStatusMsg = function () {
     return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
 };
 
-exports.executeCommand = function (str) {
-    cmdEngine.executeString(str, window.console);
-};
+exports.executeCommand = null;
 
 exports.matchesRconPassword = function (pwd) {
     // TODO: Make password configurable

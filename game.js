@@ -231,17 +231,17 @@ var
 
 // -- Setup --
 scene = new THREE.Scene();
-camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight - 5), 0.1, 1000);
+camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
 renderer = new THREE.WebGLRenderer();
 // The -5 is to hide scrollbars
-renderer.setSize(window.innerWidth, window.innerHeight - 5);
+renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.domElement.onclick = function () {
     input.trylockpointer(renderer.domElement);
 };
 window.addEventListener('resize', function () {
-    renderer.setSize(window.innerWidth, window.innerHeight - 5);
-    camera.aspect = window.innerWidth / (window.innerHeight - 5);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / (window.innerHeight);
     camera.updateProjectionMatrix();
 });
 document.body.appendChild(renderer.domElement);
@@ -294,8 +294,8 @@ exports.camera = camera;
 
 // -- Commands --
 command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
-    renderer.setSize(window.innerWidth, window.innerHeight - 5);
-    camera.aspect = window.innerWidth / (window.innerHeight - 5);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / (window.innerHeight);
     camera.fov = settings.graphics.fov;
     camera.updateProjectionMatrix();
 });
@@ -831,6 +831,7 @@ receivers[14] = exports.receiveSpawnMany = function (d) {
 // rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
 // rcon authorize 206 password C>S
 // rcon queryall 207 C>S
+// rcon consolemessage 208 msg S>C
 // Important: messages are not encrypted! Do not reuse the rcon password
 // for things like email and stuff! Someone getting into your server
 // should not be a big deal, as you can easily restart it via ssh or whatever
@@ -865,6 +866,10 @@ receivers[205] = exports.receiveRconRevCmd = function (d) {
         console.log("Server command:", d[1]);
     }
     rconHandler.command(d[1]);
+};
+
+receivers[208] = exports.receiveRconMessage = function (d) {
+    rconHandler.status(d[1]);
 };
 
 exports.sendRconStatus = function () {
