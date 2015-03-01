@@ -39,17 +39,17 @@ var
 
 // -- Setup --
 scene = new THREE.Scene();
-camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight - 5), 0.1, 1000);
+camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
 renderer = new THREE.WebGLRenderer();
 // The -5 is to hide scrollbars
-renderer.setSize(window.innerWidth, window.innerHeight - 5);
+renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.domElement.onclick = function () {
     input.trylockpointer(renderer.domElement);
 };
 window.addEventListener('resize', function () {
-    renderer.setSize(window.innerWidth, window.innerHeight - 5);
-    camera.aspect = window.innerWidth / (window.innerHeight - 5);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / (window.innerHeight);
     camera.updateProjectionMatrix();
 });
 document.body.appendChild(renderer.domElement);
@@ -102,8 +102,8 @@ exports.camera = camera;
 
 // -- Commands --
 command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
-    renderer.setSize(window.innerWidth, window.innerHeight - 5);
-    camera.aspect = window.innerWidth / (window.innerHeight - 5);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / (window.innerHeight);
     camera.fov = settings.graphics.fov;
     camera.updateProjectionMatrix();
 });
