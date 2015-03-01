@@ -59,17 +59,17 @@ exports.domElement = domElement;
 exports.w = window.console;
 
 exports.log = function () {
-    var str = String.format.apply(null, arguments);
+    var str = Array.prototype.join.call(arguments, " ");
     this.writeLine(str);
 };
 
 exports.warn = function () {
-    var str = String.format.apply(null, arguments);
+    var str = Array.prototype.join.call(arguments, " ");
     this.writeLine(str, 'yellow');
 };
 
 exports.error = function () {
-    var str = String.format.apply(null, arguments);
+    var str = Array.prototype.join.call(arguments, " ");
     this.writeLine(str, 'red');
 };
 

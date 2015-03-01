@@ -181,6 +181,7 @@ exports.sendSpawnMany = function (p, list) {
 // rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
 // rcon authorize 206 password C>S
 // rcon queryall 207 C>S
+// rcon consolemessage 208 msg S>C
 // Important: messages are not encrypted! Do not reuse the rcon password
 // for things like email and stuff! Someone getting into your server
 // should not be a big deal, as you can easily restart it via ssh or whatever
@@ -214,4 +215,8 @@ receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
         var res = responseList[i];
         send(p, [204, res[0], res[1]]);
     }
+};
+
+exports.sendRconMessage = function (p, msg) {
+    send(p, [208, msg]);
 };

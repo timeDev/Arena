@@ -102,9 +102,43 @@ conListener.on('open', function (id) {
 });
 Clock.startNew(16, update);
 
+var cmdEnv = {
+    log: function () {
+        var msg = Array.prototype.join.call(arguments, " ");
+        server.players.forEach(function (p) {
+            if (p.data.rconAuthorized) {
+                protocol.sendRconMessage(p, msg);
+            }
+        });
+        console.log(arguments);
+        console.w.log(arguments);
+    },
+    error: function () {
+        var msg = "[error] " + Array.prototype.join.call(arguments, " ");
+        server.players.forEach(function (p) {
+            if (p.data.rconAuthorized) {
+                protocol.sendRconMessage(p, msg);
+            }
+        });
+        console.error(arguments);
+        console.w.error(arguments);
+    }
+    ,
+    warn: function () {
+        var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
+        server.players.forEach(function (p) {
+            if (p.data.rconAuthorized) {
+                protocol.sendRconMessage(p, msg);
+            }
+        });
+        console.warn(arguments);
+        console.w.warn(arguments);
+    }
+};
+
 // Add command shorthand
-console.executeFn = window.c = function (str) {
-    return cmdEngine.executeString(str, window.console);
+console.executeFn = window.c = server.executeCommand = function (str) {
+    return cmdEngine.executeString(str, cmdEnv);
 };
 
 function initDom() {

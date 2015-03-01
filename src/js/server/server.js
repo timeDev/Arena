@@ -42,9 +42,7 @@ exports.getServerStatusMsg = function () {
     return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
 };
 
-exports.executeCommand = function (str) {
-    cmdEngine.executeString(str, window.console);
-};
+exports.executeCommand = null;
 
 exports.matchesRconPassword = function (pwd) {
     // TODO: Make password configurable
