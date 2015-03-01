@@ -92,7 +92,7 @@ receivers[1] = exports.receivePlayerData = function (d) {
         } else {
             simulator.updateBody(eid, data);
         }
-        if (pcktcount <= 1) {
+        if (pcktcount < 1) {
             unackPkts = [];
             // Reset the counter so everyone is happy
             pktnr = 0;

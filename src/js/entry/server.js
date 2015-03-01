@@ -65,8 +65,20 @@ if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
 }
 
+var bodyI = 0;
+
 function update(time) {
     simulator.update(time);
+    // Pick Object to broadcast
+    var bodies = simulator.world.bodies;
+    if (bodies.length > 0) {
+        if (bodyI >= bodies.length) {
+            bodyI = 0;
+        }
+        var body = bodies[bodyI++];
+        var id = simulator.getId(body);
+        protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
+    }
 }
 
 function connect(c) {

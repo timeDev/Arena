@@ -71,6 +71,15 @@ exports.updateBody = function (id, desc) {
     }
 };
 
+exports.makeUpdatePacket = function (id) {
+    var body = idLookup[id];
+    return {ph: {p: body.position.toArray(), v: body.velocity.toArray()}};
+};
+
+exports.getId = function (body) {
+    return idLookup.indexOf(body);
+};
+
 exports.add = function (body, id) {
     if (!body.material) {
         body.material = materials.defaultMaterial;
