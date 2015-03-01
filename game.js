@@ -755,7 +755,7 @@ receivers[1] = exports.receivePlayerData = function (d) {
         } else {
             simulator.updateBody(eid, data);
         }
-        if (pcktcount <= 1) {
+        if (pcktcount < 1) {
             unackPkts = [];
             // Reset the counter so everyone is happy
             pktnr = 0;
@@ -805,7 +805,9 @@ receivers[11] = exports.receiveSpawnEntity = function (d) {
 
 receivers[12] = exports.receiveUpdateEntity = function (d) {
     if (d[2].ph) {
-        simulator.updateBody(d[1], d[2].ph);
+        if (!simulator.areColliding(0, d[1])) {
+            simulator.updateBody(d[1], d[2].ph);
+        }
     }
 };
 
