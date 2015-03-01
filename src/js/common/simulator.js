@@ -80,6 +80,18 @@ exports.getId = function (body) {
     return idLookup.indexOf(body);
 };
 
+exports.areColliding = function (id1, id2) {
+    var b1 = idLookup[id1],
+        b2 = idLookup[id2];
+    for (var i = 0; i < world.contacts.length; i++) {
+        var c = world.contacts[i];
+        if ((c.bi == b1 && c.bj == b2) || (c.bj == b1 && c.bi == b2)) {
+            return true;
+        }
+    }
+    return false;
+};
+
 exports.add = function (body, id) {
     if (!body.material) {
         body.material = materials.defaultMaterial;
