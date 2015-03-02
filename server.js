@@ -71,11 +71,12 @@ var bodyI = 0;
 function update(time) {
     simulator.update(time);
     // Pick Object to broadcast
+    var playerBodies = server.players.map(function (p) {
+        return p.body;
+    });
     var bodies = simulator.world.bodies.filter(function (b) {
         // Filter out players
-        return server.players.map(function (p) {
-                return p.body;
-            }).indexOf(b) >= 0;
+        return playerBodies.indexOf(b) < 0;
     });
     if (bodies.length > 0) {
         if (bodyI >= bodies.length) {
