@@ -25,8 +25,11 @@
 function Clock(period, callback, thisArg) {
     this.period = period;
     this.callback = callback;
-    this.id = -1;
     this.thisArg = thisArg;
+    if (Clock.useWorker) {
+        this.worker = new Worker(Clock.blobUrl);
+        this.worker.onmessage = loopfn(this);
+    }
 }
 
 function loopfn(self) {
@@ -39,11 +42,19 @@ function loopfn(self) {
 }
 
 Clock.prototype.start = function () {
-    this.id = setInterval(loopfn(this), this.period);
+    if (Clock.useWorker) {
+        this.worker.postMessage(['start', this.period]);
+    } else {
+        this.id = setInterval(loopfn(this), this.period);
+    }
 };
 
 Clock.prototype.stop = function () {
-    clearInterval(this.id);
+    if (Clock.useWorker) {
+        this.worker.postMessage(['stop']);
+    } else {
+        clearInterval(this.id);
+    }
 };
 
 Clock.startNew = function (period, callback, thisArg) {
@@ -51,5 +62,25 @@ Clock.startNew = function (period, callback, thisArg) {
     obj.start();
     return obj;
 };
+
+if (!!window.Worker) {
+    Clock.useWorker = true;
+
+    /*//code before minification
+var id;
+onmessage = function (e) {
+    if (e.data[0] === 'start') {
+        id = setInterval(function () {
+            postMessage(0);
+        }, e.data[1]);
+    } else if (data[0] === 'stop') {
+        clearTimeout(id);
+    }
+}
+     */
+    var blob = new Blob(["var i;onmessage=function(t){'start'===t.data[0]?i=setInterval(function(){postMessage(0)},t.data[1]):'stop'===data[0]&&clearTimeout(i)}"]);
+
+    Clock.blobUrl = window.URL.createObjectURL(blob);
+}
 
 module.exports = Clock;
