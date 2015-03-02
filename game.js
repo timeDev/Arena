@@ -102,7 +102,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
-},{"../client/controls":5,"../client/display":6,"../client/rcon":8,"../client/scene-manager":9,"../common/arena":10,"../common/settings":13,"../console/builtins":14,"../console/engine":16,"../dom/console":21,"../phys/simulator":27,"../util/clock":31}],8:[function(require,module,exports){
+},{"../client/controls":5,"../client/display":6,"../client/rcon":8,"../client/scene-manager":9,"../common/arena":10,"../common/settings":13,"../console/builtins":14,"../console/engine":16,"../dom/console":21,"../phys/simulator":28,"../util/clock":32}],8:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -136,7 +136,7 @@ var
 // Local
     cvarCache;
 
-client.rconHandler = {
+protocol.rconHandler = {
     status: function (msg) {
         console.log(msg);
     },
@@ -154,20 +154,20 @@ client.rconHandler = {
 
 exports.cacheCvars = function () {
     cvarCache = {};
-    client.sendRconQueryAll();
+    protocol.sendRconQueryAll();
 };
 
 exports.execute = function (str) {
-    client.sendRconCommand(str);
+    protocol.sendRconCommand(str);
 };
 
 exports.setCvar = function (name, value) {
-    client.sendRconCommand(name, value);
+    protocol.sendRconCommand(name, value);
 };
 
 exports.getCvar = function (name) {
     // Refresh even if we already know it
-    client.sendRconQuery(name);
+    protocol.sendRconQuery(name);
     return cvarCache[name];
 };
 
@@ -181,15 +181,15 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
         {name: 'cmd', type: 'string'}]
 }], 'rcon', function (match) {
     if (match.matchI === 0) {
-        client.sendRconAuthorize(match.pwd);
+        protocol.sendRconAuthorize(match.pwd);
     } else if (match.matchI === 1) {
-        client.sendRconStatus();
+        protocol.sendRconStatus();
     } else if (match.matchI === 2) {
-        client.sendRconCommand(match.cmd);
+        protocol.sendRconCommand(match.cmd);
     }
 });
 
-},{"../console/command":15,"../console/engine":16,"../dom/console":21,"./../net/client":23}],6:[function(require,module,exports){
+},{"../console/command":15,"../console/engine":16,"../dom/console":21,"./../net/client":24}],6:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -224,8 +224,9 @@ var
     chat = require('../dom/chat'),
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
+    makeOverlay = require('../dom/overlay'),
 // Local
-    scene, camera, renderer,
+    scene, camera, renderer, overlay,
 // Function
     render, start;
 
@@ -233,12 +234,12 @@ var
 scene = new THREE.Scene();
 camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
+scene.add(new THREE.AmbientLight());
+
 renderer = new THREE.WebGLRenderer();
 // The -5 is to hide scrollbars
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.domElement.onclick = function () {
-    input.trylockpointer(renderer.domElement);
-};
+
 window.addEventListener('resize', function () {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / (window.innerHeight);
@@ -246,7 +247,16 @@ window.addEventListener('resize', function () {
 });
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight());
+overlay = makeOverlay("<p>Click to play!<p>Use the mouse to look around, WASD to walk, SPACE to jump<p>Have fun!");
+
+input.pointerlocked.add(overlay.hide);
+input.pointerunlocked.add(overlay.show);
+input.escape.add(overlay.show);
+
+overlay.domElement.onclick = function () {
+    input.trylockpointer(overlay.domElement);
+};
+document.body.appendChild(overlay.domElement);
 
 makeDraggable(console.domElement);
 document.body.appendChild(console.domElement);
@@ -300,7 +310,7 @@ command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
     camera.updateProjectionMatrix();
 });
 
-},{"../common/settings":13,"../console/command":15,"../dom/chat":20,"../dom/console":21,"../dom/draggable":22,"../vendor/Stats":36,"../vendor/three":39,"./../util/input":32}],36:[function(require,module,exports){
+},{"../common/settings":13,"../console/command":15,"../dom/chat":20,"../dom/console":21,"../dom/draggable":22,"../dom/overlay":23,"../vendor/Stats":37,"../vendor/three":40,"./../util/input":33}],37:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -450,6 +460,52 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
+},{}],23:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+module.exports = function (text, cl) {
+    var domElement = document.createElement('div');
+    domElement.classList.add('overlay');
+    if (cl) {
+        domElement.classList.add(cl);
+    }
+    domElement.insertAdjacentHTML('afterbegin', text);
+    domElement.style.height = window.innerHeight;
+    domElement.style.width = window.innerWidth;
+
+    return {
+        domElement: domElement,
+        hide: function () {
+            domElement.style.display = 'none';
+        },
+        show: function () {
+            domElement.style.display = 'flex';
+        }
+    }
+};
+
 },{}],22:[function(require,module,exports){
 /*
  * The MIT License (MIT)
@@ -613,7 +669,7 @@ exports.update = function (dt) {
     }
 
     physBody.velocity.vadd(changeVel, physBody.velocity);
-    client.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
+    protocol.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
     yawObj.position.copy(physBody.position);
 
     input.resetDelta();
@@ -653,7 +709,7 @@ exports.firstPersonCam = function (camera) {
     yawObj.add(pitchObj);
 };
 
-},{"../common/settings":13,"../console/command":15,"../phys/materials":26,"../vendor/cannon":37,"../vendor/three":39,"./../net/client":23,"./../util/input":32,"./../util/keycode":33}],32:[function(require,module,exports){
+},{"../common/settings":13,"../console/command":15,"../phys/materials":27,"../vendor/cannon":38,"../vendor/three":40,"./../net/client":24,"./../util/input":33,"./../util/keycode":34}],33:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -855,7 +911,7 @@ exports.resetDelta = function () {
     mousepos[3] = 0.0;
 };
 
-},{"signals":3}],23:[function(require,module,exports){
+},{"signals":3}],24:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1092,7 +1148,7 @@ exports.sendRconQueryAll = function () {
     sendRaw([207]);
 };
 
-},{"../common/arena":10,"../dom/chat":20,"../phys/simulator":27,"./../client/client":4,"./../client/controls":5,"./../client/level":7}],20:[function(require,module,exports){
+},{"../common/arena":10,"../dom/chat":20,"../phys/simulator":28,"./../client/client":4,"./../client/controls":5,"./../client/level":7}],20:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1209,7 +1265,7 @@ exports.fade = function () {
     fadeWaitId = -1;
 };
 
-},{"../util/keycode":33}],7:[function(require,module,exports){
+},{"../util/keycode":34}],7:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1277,7 +1333,7 @@ exports.load = function (str) {
     });
 };
 
-},{"../common/level":11,"../console/command":15,"../util/ocl":34,"../vendor/SeXHR":35,"./scene-manager":9}],4:[function(require,module,exports){
+},{"../common/level":11,"../console/command":15,"../util/ocl":35,"../vendor/SeXHR":36,"./scene-manager":9}],4:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1317,9 +1373,9 @@ exports.connection = null;
 
 exports.connect = function (address) {
     exports.connection = new Connection();
-    exports.connection.message.add(client.receive);
+    exports.connection.message.add(protocol.receive);
     exports.connection.connect(address);
-    client.sendLogon("Bob");
+    protocol.sendLogon("Bob");
 };
 
 // Maps player ids to entity ids
@@ -1349,7 +1405,7 @@ command("connect <address>",
         exports.connect(match.address);
     });
 
-},{"../common/settings":13,"../console/command":15,"../net/connection":24,"../phys/materials":26,"../vendor/cannon":37,"../vendor/three":39,"./../net/client":23,"./scene-manager":9}],9:[function(require,module,exports){
+},{"../common/settings":13,"../console/command":15,"../net/connection":25,"../phys/materials":27,"../vendor/cannon":38,"../vendor/three":40,"./../net/client":24,"./scene-manager":9}],9:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1435,4 +1491,4 @@ exports.remove = function (id) {
     delete worldObjects[id];
 };
 
-},{"../phys/simulator":27}]},{},[1]);
+},{"../phys/simulator":28}]},{},[1]);

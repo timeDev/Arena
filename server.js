@@ -84,7 +84,7 @@ function update(time) {
         }
         var body = bodies[bodyI++];
         var id = simulator.getId(body);
-        server.broadcast(server.updateEntity(id, simulator.makeUpdatePacket(id)));
+        protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
     }
 }
 
@@ -93,7 +93,7 @@ function connect(c) {
     if (arena.debug) {
         console.w.log('client connected:', newPlayer);
     }
-    c.message.add(server.receive.bind(null, newPlayer));
+    c.message.add(protocol.receive.bind(null, newPlayer));
 }
 
 conListener = Connection.listen(connect);
@@ -109,7 +109,7 @@ var cmdEnv = {
         var msg = Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                server.sendRconMessage(p, msg);
+                protocol.sendRconMessage(p, msg);
             }
         });
         console.log(arguments);
@@ -119,7 +119,7 @@ var cmdEnv = {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                server.sendRconMessage(p, msg);
+                protocol.sendRconMessage(p, msg);
             }
         });
         console.error(arguments);
@@ -130,7 +130,7 @@ var cmdEnv = {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                server.sendRconMessage(p, msg);
+                protocol.sendRconMessage(p, msg);
             }
         });
         console.warn(arguments);
@@ -152,7 +152,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":10,"../console/builtins":14,"../console/engine":16,"../dom/console":21,"../net/connection":24,"../net/server":25,"../phys/simulator":27,"../server/level":28,"../server/player":29,"../server/server":30,"../util/clock":31}],29:[function(require,module,exports){
+},{"../common/arena":10,"../console/builtins":14,"../console/engine":16,"../dom/console":21,"../net/connection":25,"../net/server":26,"../phys/simulator":28,"../server/level":29,"../server/player":30,"../server/server":31,"../util/clock":32}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -229,7 +229,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":13,"../vendor/cannon":37,"../vendor/three":39,"./server":30}],28:[function(require,module,exports){
+},{"../common/settings":13,"../vendor/cannon":38,"../vendor/three":40,"./server":31}],29:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -285,7 +285,7 @@ exports.spawnObj = function (obj, id) {
 
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
-    server.broadcast(server.spawnObject(id, str));
+    protocol.broadcast(protocol.spawnObject(id, str));
     server.mapState.push({id: id, str: str});
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
@@ -294,7 +294,7 @@ exports.spawnString = function (str) {
 
 exports.clear = function () {
     ids.forEach(function (id) {
-        server.broadcast(server.killEntity(id));
+        protocol.broadcast(protocol.killEntity(id));
     });
     ids.forEach(simulator.remove);
     ids = [];
@@ -350,7 +350,7 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
     });
 });
 
-},{"../common/level":11,"../console/command":15,"../phys/simulator":27,"../util/ocl":34,"../vendor/SeXHR":35,"./../net/server":25,"./server":30}],25:[function(require,module,exports){
+},{"../common/level":11,"../console/command":15,"../phys/simulator":28,"../util/ocl":35,"../vendor/SeXHR":36,"./../net/server":26,"./server":31}],26:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -574,7 +574,7 @@ exports.sendRconMessage = function (p, msg) {
     send(p, [208, msg]);
 };
 
-},{"../common/arena":10,"../phys/simulator":27,"./../server/server":30}],30:[function(require,module,exports){
+},{"../common/arena":10,"../phys/simulator":28,"./../server/server":31}],31:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
