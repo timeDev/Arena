@@ -50,10 +50,10 @@ var
     console = require('../dom/console'),
     cmdEngine = require('../console/engine'),
     cmdBuiltins = require('../console/builtins'),
-    Connection = require('../common/connection'),
-    protocol = require('../server/protocol'),
-    simulator = require('../common/simulator'),
-    Clock = require('../common/clock'),
+    Connection = require('../net/connection'),
+    protocol = require('../net/server'),
+    simulator = require('../phys/simulator'),
+    Clock = require('../util/clock'),
     Player = require('../server/player'),
     arena = require('../common/arena'),
     level = require('../server/level'),
@@ -84,7 +84,7 @@ function update(time) {
         }
         var body = bodies[bodyI++];
         var id = simulator.getId(body);
-        protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
+        server.broadcast(server.updateEntity(id, simulator.makeUpdatePacket(id)));
     }
 }
 
@@ -93,7 +93,7 @@ function connect(c) {
     if (arena.debug) {
         console.w.log('client connected:', newPlayer);
     }
-    c.message.add(protocol.receive.bind(null, newPlayer));
+    c.message.add(server.receive.bind(null, newPlayer));
 }
 
 conListener = Connection.listen(connect);
@@ -109,7 +109,7 @@ var cmdEnv = {
         var msg = Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
+                server.sendRconMessage(p, msg);
             }
         });
         console.log(arguments);
@@ -119,7 +119,7 @@ var cmdEnv = {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
+                server.sendRconMessage(p, msg);
             }
         });
         console.error(arguments);
@@ -130,7 +130,7 @@ var cmdEnv = {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
+                server.sendRconMessage(p, msg);
             }
         });
         console.warn(arguments);
@@ -152,7 +152,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":13,"../common/clock":14,"../common/connection":15,"../common/simulator":21,"../console/builtins":22,"../console/engine":24,"../dom/console":29,"../server/level":31,"../server/player":32,"../server/protocol":33,"../server/server":34}],32:[function(require,module,exports){
+},{"../common/arena":10,"../console/builtins":14,"../console/engine":16,"../dom/console":21,"../net/connection":24,"../net/server":25,"../phys/simulator":27,"../server/level":28,"../server/player":29,"../server/server":30,"../util/clock":31}],29:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -229,7 +229,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":20,"../vendor/cannon":37,"../vendor/three":39,"./server":34}],31:[function(require,module,exports){
+},{"../common/settings":13,"../vendor/cannon":37,"../vendor/three":39,"./server":30}],28:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -258,10 +258,10 @@ require('../common/level');
 var
 // Module
     command = require('../console/command'),
-    ocl = require('../common/ocl'),
+    ocl = require('../util/ocl'),
     Sexhr = require('../vendor/SeXHR'),
-    protocol = require('./protocol'),
-    simulator = require('../common/simulator'),
+    protocol = require('./../net/server'),
+    simulator = require('../phys/simulator'),
     server = require('./server'),
 // Local
     ids = [];
@@ -285,7 +285,7 @@ exports.spawnObj = function (obj, id) {
 
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
-    protocol.broadcast(protocol.spawnObject(id, str));
+    server.broadcast(server.spawnObject(id, str));
     server.mapState.push({id: id, str: str});
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
@@ -294,7 +294,7 @@ exports.spawnString = function (str) {
 
 exports.clear = function () {
     ids.forEach(function (id) {
-        protocol.broadcast(protocol.killEntity(id));
+        server.broadcast(server.killEntity(id));
     });
     ids.forEach(simulator.remove);
     ids = [];
@@ -350,7 +350,7 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
     });
 });
 
-},{"../common/level":16,"../common/ocl":18,"../common/simulator":21,"../console/command":23,"../vendor/SeXHR":35,"./protocol":33,"./server":34}],33:[function(require,module,exports){
+},{"../common/level":11,"../console/command":15,"../phys/simulator":27,"../util/ocl":34,"../vendor/SeXHR":35,"./../net/server":25,"./server":30}],25:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -379,8 +379,8 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
 var
 // Module
     arena = require('../common/arena'),
-    server = require('./server'),
-    simulator = require('../common/simulator'),
+    server = require('./../server/server'),
+    simulator = require('../phys/simulator'),
 // Local
     players = server.players,
     receivers = [];
@@ -574,7 +574,7 @@ exports.sendRconMessage = function (p, msg) {
     send(p, [208, msg]);
 };
 
-},{"../common/arena":13,"../common/simulator":21,"./server":34}],34:[function(require,module,exports){
+},{"../common/arena":10,"../phys/simulator":27,"./../server/server":30}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -653,4 +653,4 @@ command("tpa <x> <y> <z>", {
     });
 });
 
-},{"../common/arena":13,"../console/command":23,"../console/engine":24}]},{},[2]);
+},{"../common/arena":10,"../console/command":15,"../console/engine":16}]},{},[2]);
