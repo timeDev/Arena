@@ -30,7 +30,7 @@ var
     console = require('../dom/console'),
     settings = require('../common/settings'),
     chat = require('../dom/chat'),
-    input = require('./input'),
+    input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
 // Local
     scene, camera, renderer,

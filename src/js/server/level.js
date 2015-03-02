@@ -26,10 +26,10 @@ require('../common/level');
 var
 // Module
     command = require('../console/command'),
-    ocl = require('../common/ocl'),
+    ocl = require('../util/ocl'),
     Sexhr = require('../vendor/SeXHR'),
-    protocol = require('./protocol'),
-    simulator = require('../common/simulator'),
+    protocol = require('./../net/server'),
+    simulator = require('../phys/simulator'),
     server = require('./server'),
 // Local
     ids = [];
@@ -53,7 +53,7 @@ exports.spawnObj = function (obj, id) {
 
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
-    protocol.broadcast(protocol.spawnObject(id, str));
+    server.broadcast(server.spawnObject(id, str));
     server.mapState.push({id: id, str: str});
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
@@ -62,7 +62,7 @@ exports.spawnString = function (str) {
 
 exports.clear = function () {
     ids.forEach(function (id) {
-        protocol.broadcast(protocol.killEntity(id));
+        server.broadcast(server.killEntity(id));
     });
     ids.forEach(simulator.remove);
     ids = [];

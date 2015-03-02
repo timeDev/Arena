@@ -49,10 +49,10 @@ var
     console = require('../dom/console'),
     cmdEngine = require('../console/engine'),
     cmdBuiltins = require('../console/builtins'),
-    Connection = require('../common/connection'),
-    protocol = require('../server/protocol'),
-    simulator = require('../common/simulator'),
-    Clock = require('../common/clock'),
+    Connection = require('../net/connection'),
+    protocol = require('../net/server'),
+    simulator = require('../phys/simulator'),
+    Clock = require('../util/clock'),
     Player = require('../server/player'),
     arena = require('../common/arena'),
     level = require('../server/level'),
@@ -83,7 +83,7 @@ function update(time) {
         }
         var body = bodies[bodyI++];
         var id = simulator.getId(body);
-        protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
+        server.broadcast(server.updateEntity(id, simulator.makeUpdatePacket(id)));
     }
 }
 
@@ -92,7 +92,7 @@ function connect(c) {
     if (arena.debug) {
         console.w.log('client connected:', newPlayer);
     }
-    c.message.add(protocol.receive.bind(null, newPlayer));
+    c.message.add(server.receive.bind(null, newPlayer));
 }
 
 conListener = Connection.listen(connect);
@@ -108,7 +108,7 @@ var cmdEnv = {
         var msg = Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
+                server.sendRconMessage(p, msg);
             }
         });
         console.log(arguments);
@@ -118,7 +118,7 @@ var cmdEnv = {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
+                server.sendRconMessage(p, msg);
             }
         });
         console.error(arguments);
@@ -129,7 +129,7 @@ var cmdEnv = {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
+                server.sendRconMessage(p, msg);
             }
         });
         console.warn(arguments);

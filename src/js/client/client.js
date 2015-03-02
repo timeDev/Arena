@@ -25,21 +25,21 @@
 var
 // Module
     command = require('../console/command'),
-    Connection = require('../common/connection'),
-    protocol = require('./protocol'),
+    Connection = require('../net/connection'),
+    protocol = require('./../net/client'),
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
     scenemgr = require('./scene-manager'),
-    materials = require('../common/materials');
+    materials = require('../phys/materials');
 
 exports.connection = null;
 
 exports.connect = function (address) {
     exports.connection = new Connection();
-    exports.connection.message.add(protocol.receive);
+    exports.connection.message.add(client.receive);
     exports.connection.connect(address);
-    protocol.sendLogon("Bob");
+    client.sendLogon("Bob");
 };
 
 // Maps player ids to entity ids

@@ -25,7 +25,7 @@
 var
 // Module
     CANNON = require('../vendor/cannon'),
-    ocl = require('./ocl'),
+    ocl = require('./../util/ocl'),
     materials = require('./materials'),
 // Local
     world,

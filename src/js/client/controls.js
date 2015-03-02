@@ -24,14 +24,14 @@
 /*global require, module, exports */
 var
 // Module
-    input = require('./input'),
-    keycode = require('./keycode'),
+    input = require('./../util/input'),
+    keycode = require('./../util/keycode'),
     THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
     command = require('../console/command'),
-    protocol = require('./protocol'),
-    materials = require('../common/materials'),
+    protocol = require('./../net/client'),
+    materials = require('../phys/materials'),
 // Local
     paused = true, shape, physBody,
     onground = false, jumpPrg = Infinity,
@@ -103,7 +103,7 @@ exports.update = function (dt) {
     }
 
     physBody.velocity.vadd(changeVel, physBody.velocity);
-    protocol.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
+    client.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
     yawObj.position.copy(physBody.position);
 
     input.resetDelta();

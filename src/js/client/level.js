@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    ocl = require('../common/ocl'),
+    ocl = require('../util/ocl'),
     scenemgr = require('./scene-manager'),
     command = require('../console/command'),
     Sexhr = require('../vendor/SeXHR'),

@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    simulator = require('../common/simulator'),
+    simulator = require('../phys/simulator'),
 // Local
     sceneObjects = [],
     worldObjects = [];

@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    ocl = require('./ocl'),
+    ocl = require('./../util/ocl'),
     arena = require('./arena'),
     Sexhr = require('../vendor/SeXHR'),
 // Local
@@ -48,7 +48,7 @@ function clone (obj) {
         }
     }
     return temp;
-};
+}
 
 exports.load = function (name, cb) {
     if (propList[name] === undefined) {

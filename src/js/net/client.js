@@ -26,8 +26,8 @@
 var
 // Module
     arena = require('../common/arena'),
-    client = require('./client'),
-    simulator = require('../common/simulator'),
+    client = require('./../client/client'),
+    simulator = require('../phys/simulator'),
     chat = require('../dom/chat'),
 // Local
     receivers = [];
@@ -84,7 +84,7 @@ receivers[1] = exports.receivePlayerData = function (d) {
             // Only correct position as player acceleration is pretty high
             var corr = {x: data.p[0] - pkt.p[0], y: data.p[1] - pkt.p[1], z: data.p[2] - pkt.p[2]};
             // Avoid cyclic deps
-            var controls = require('./controls');
+            var controls = require('./../client/controls');
             //noinspection JSCheckFunctionSignatures
             controls.physBody.position.vadd(corr, controls.physBody.position);
             controls.sceneObj.position.copy(controls.physBody.position);
@@ -129,7 +129,7 @@ receivers[4] = exports.receiveChatMsg = function (d) {
 
 receivers[10] = exports.receiveSpawnObject = function (d) {
     // Avoid cyclic dependency -> load module in function
-    require('./level').spawnFromDesc(d[2], d[1]);
+    require('./../client/level').spawnFromDesc(d[2], d[1]);
 };
 
 // Spawn entity by name 11 id name meta S>C
@@ -159,7 +159,7 @@ receivers[14] = exports.receiveSpawnMany = function (d) {
     for (var i = 0; i < d[1].length; i++) {
         var obj = d[1][i];
         if (obj.str) {
-            require('./level').spawnFromDesc(obj.str, obj.id);
+            require('./../client/level').spawnFromDesc(obj.str, obj.id);
         }
     }
 };

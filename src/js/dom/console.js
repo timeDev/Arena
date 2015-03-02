@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    keycode = require('../client/keycode'),
+    keycode = require('../util/keycode'),
 // Local
     domElement = document.createElement('div'),
     inElement = document.createElement('input'),

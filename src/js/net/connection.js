@@ -23,7 +23,7 @@
  */
 /*global require, module, exports */
 var Signal = require('signals'),
-    key = require('./arena').peerJsKey;
+    key = require('./../common/arena').peerJsKey;
 
 require('../vendor/peer');
 

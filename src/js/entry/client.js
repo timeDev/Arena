@@ -43,10 +43,10 @@ if (!String.format) {
     };
 }
 
-var Clock = require('../common/clock'),
+var Clock = require('../util/clock'),
     settings = require('../common/settings'),
     controls = require('../client/controls'),
-    simulator = require('../common/simulator'),
+    simulator = require('../phys/simulator'),
     cmdEngine = require('../console/engine'),
     cmdBuiltins = require('../console/builtins'),
     scenemgr = require('../client/scene-manager'),

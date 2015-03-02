@@ -26,8 +26,8 @@
 var
 // Module
     arena = require('../common/arena'),
-    server = require('./server'),
-    simulator = require('../common/simulator'),
+    server = require('./../server/server'),
+    simulator = require('../phys/simulator'),
 // Local
     players = server.players,
     receivers = [];

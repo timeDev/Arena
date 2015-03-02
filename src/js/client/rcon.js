@@ -26,12 +26,12 @@ var
 // Module
     command = require('../console/command'),
     cmdEngine = require('../console/engine'),
-    protocol = require('./protocol'),
+    protocol = require('./../net/client'),
     console = require('../dom/console'),
 // Local
     cvarCache;
 
-protocol.rconHandler = {
+client.rconHandler = {
     status: function (msg) {
         console.log(msg);
     },
@@ -49,20 +49,20 @@ protocol.rconHandler = {
 
 exports.cacheCvars = function () {
     cvarCache = {};
-    protocol.sendRconQueryAll();
+    client.sendRconQueryAll();
 };
 
 exports.execute = function (str) {
-    protocol.sendRconCommand(str);
+    client.sendRconCommand(str);
 };
 
 exports.setCvar = function (name, value) {
-    protocol.sendRconCommand(name, value);
+    client.sendRconCommand(name, value);
 };
 
 exports.getCvar = function (name) {
     // Refresh even if we already know it
-    protocol.sendRconQuery(name);
+    client.sendRconQuery(name);
     return cvarCache[name];
 };
 
@@ -76,10 +76,10 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
         {name: 'cmd', type: 'string'}]
 }], 'rcon', function (match) {
     if (match.matchI === 0) {
-        protocol.sendRconAuthorize(match.pwd);
+        client.sendRconAuthorize(match.pwd);
     } else if (match.matchI === 1) {
-        protocol.sendRconStatus();
+        client.sendRconStatus();
     } else if (match.matchI === 2) {
-        protocol.sendRconCommand(match.cmd);
+        client.sendRconCommand(match.cmd);
     }
 });

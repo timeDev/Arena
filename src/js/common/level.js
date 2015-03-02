@@ -26,7 +26,7 @@ var
 // Module
     THREE = require('../vendor/three'),
     CANNON = require('../vendor/cannon'),
-    ocl = require('./ocl'),
+    ocl = require('./../util/ocl'),
     arena = require('./arena'),
     props = require('./props');
 
