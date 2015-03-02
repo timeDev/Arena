@@ -37,9 +37,9 @@ exports.connection = null;
 
 exports.connect = function (address) {
     exports.connection = new Connection();
-    exports.connection.message.add(client.receive);
+    exports.connection.message.add(protocol.receive);
     exports.connection.connect(address);
-    client.sendLogon("Bob");
+    protocol.sendLogon("Bob");
 };
 
 // Maps player ids to entity ids

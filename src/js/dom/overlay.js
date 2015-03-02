@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,23 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-exports.major = 0;
-exports.minor = 4;
-exports.revision = 1;
-exports.build = 0;
-exports.timestamp = "2015-03-02T21:45:50.813Z";
+module.exports = function (text, cl) {
+    var domElement = document.createElement('div');
+    domElement.classList.add('overlay');
+    if (cl) {
+        domElement.classList.add(cl);
+    }
+    domElement.insertAdjacentHTML('afterbegin', text);
+    domElement.style.height = window.innerHeight;
+    domElement.style.width = window.innerWidth;
 
-exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
-exports.versionString = exports.versionArray.join(".");
+    return {
+        domElement: domElement,
+        hide: function () {
+            domElement.style.display = 'none';
+        },
+        show: function () {
+            domElement.style.display = 'flex';
+        }
+    }
+};

@@ -103,7 +103,7 @@ exports.update = function (dt) {
     }
 
     physBody.velocity.vadd(changeVel, physBody.velocity);
-    client.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
+    protocol.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
     yawObj.position.copy(physBody.position);
 
     input.resetDelta();

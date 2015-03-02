@@ -32,8 +32,9 @@ var
     chat = require('../dom/chat'),
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
+    makeOverlay = require('../dom/overlay'),
 // Local
-    scene, camera, renderer,
+    scene, camera, renderer, overlay,
 // Function
     render, start;
 
@@ -41,12 +42,12 @@ var
 scene = new THREE.Scene();
 camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
+scene.add(new THREE.AmbientLight());
+
 renderer = new THREE.WebGLRenderer();
 // The -5 is to hide scrollbars
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.domElement.onclick = function () {
-    input.trylockpointer(renderer.domElement);
-};
+
 window.addEventListener('resize', function () {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / (window.innerHeight);
@@ -54,7 +55,16 @@ window.addEventListener('resize', function () {
 });
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight());
+overlay = makeOverlay("<p>Click to play!<p>Use the mouse to look around, WASD to walk, SPACE to jump<p>Have fun!");
+
+input.pointerlocked.add(overlay.hide);
+input.pointerunlocked.add(overlay.show);
+input.escape.add(overlay.show);
+
+overlay.domElement.onclick = function () {
+    input.trylockpointer(overlay.domElement);
+};
+document.body.appendChild(overlay.domElement);
 
 makeDraggable(console.domElement);
 document.body.appendChild(console.domElement);

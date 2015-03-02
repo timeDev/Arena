@@ -31,7 +31,7 @@ var
 // Local
     cvarCache;
 
-client.rconHandler = {
+protocol.rconHandler = {
     status: function (msg) {
         console.log(msg);
     },
@@ -49,20 +49,20 @@ client.rconHandler = {
 
 exports.cacheCvars = function () {
     cvarCache = {};
-    client.sendRconQueryAll();
+    protocol.sendRconQueryAll();
 };
 
 exports.execute = function (str) {
-    client.sendRconCommand(str);
+    protocol.sendRconCommand(str);
 };
 
 exports.setCvar = function (name, value) {
-    client.sendRconCommand(name, value);
+    protocol.sendRconCommand(name, value);
 };
 
 exports.getCvar = function (name) {
     // Refresh even if we already know it
-    client.sendRconQuery(name);
+    protocol.sendRconQuery(name);
     return cvarCache[name];
 };
 
@@ -76,10 +76,10 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
         {name: 'cmd', type: 'string'}]
 }], 'rcon', function (match) {
     if (match.matchI === 0) {
-        client.sendRconAuthorize(match.pwd);
+        protocol.sendRconAuthorize(match.pwd);
     } else if (match.matchI === 1) {
-        client.sendRconStatus();
+        protocol.sendRconStatus();
     } else if (match.matchI === 2) {
-        client.sendRconCommand(match.cmd);
+        protocol.sendRconCommand(match.cmd);
     }
 });

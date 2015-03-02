@@ -83,7 +83,7 @@ function update(time) {
         }
         var body = bodies[bodyI++];
         var id = simulator.getId(body);
-        server.broadcast(server.updateEntity(id, simulator.makeUpdatePacket(id)));
+        protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
     }
 }
 
@@ -92,7 +92,7 @@ function connect(c) {
     if (arena.debug) {
         console.w.log('client connected:', newPlayer);
     }
-    c.message.add(server.receive.bind(null, newPlayer));
+    c.message.add(protocol.receive.bind(null, newPlayer));
 }
 
 conListener = Connection.listen(connect);
@@ -108,7 +108,7 @@ var cmdEnv = {
         var msg = Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                server.sendRconMessage(p, msg);
+                protocol.sendRconMessage(p, msg);
             }
         });
         console.log(arguments);
@@ -118,7 +118,7 @@ var cmdEnv = {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                server.sendRconMessage(p, msg);
+                protocol.sendRconMessage(p, msg);
             }
         });
         console.error(arguments);
@@ -129,7 +129,7 @@ var cmdEnv = {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
         server.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
-                server.sendRconMessage(p, msg);
+                protocol.sendRconMessage(p, msg);
             }
         });
         console.warn(arguments);

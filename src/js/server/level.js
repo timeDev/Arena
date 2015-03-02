@@ -53,7 +53,7 @@ exports.spawnObj = function (obj, id) {
 
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
-    server.broadcast(server.spawnObject(id, str));
+    protocol.broadcast(protocol.spawnObject(id, str));
     server.mapState.push({id: id, str: str});
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
@@ -62,7 +62,7 @@ exports.spawnString = function (str) {
 
 exports.clear = function () {
     ids.forEach(function (id) {
-        server.broadcast(server.killEntity(id));
+        protocol.broadcast(protocol.killEntity(id));
     });
     ids.forEach(simulator.remove);
     ids = [];
