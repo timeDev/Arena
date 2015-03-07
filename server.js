@@ -70,6 +70,7 @@ var bodyI = 0;
 
 function update(time) {
     simulator.update(time);
+    server.gameState.time += time;
     // Pick Object to broadcast
     var playerBodies = server.players.map(function (p) {
         return p.body;
@@ -152,7 +153,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":10,"../console/builtins":14,"../console/engine":16,"../dom/console":21,"../net/connection":25,"../net/server":26,"../phys/simulator":28,"../server/level":29,"../server/player":30,"../server/server":31,"../util/clock":32}],30:[function(require,module,exports){
+},{"../common/arena":11,"../console/builtins":15,"../console/engine":17,"../dom/console":22,"../net/connection":26,"../net/server":27,"../phys/simulator":29,"../server/level":30,"../server/player":31,"../server/server":32,"../util/clock":33}],31:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -229,7 +230,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":13,"../vendor/cannon":38,"../vendor/three":40,"./server":31}],29:[function(require,module,exports){
+},{"../common/settings":14,"../vendor/cannon":39,"../vendor/three":41,"./server":32}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -350,7 +351,7 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
     });
 });
 
-},{"../common/level":11,"../console/command":15,"../phys/simulator":28,"../util/ocl":35,"../vendor/SeXHR":36,"./../net/server":26,"./server":31}],26:[function(require,module,exports){
+},{"../common/level":12,"../console/command":16,"../phys/simulator":29,"../util/ocl":36,"../vendor/SeXHR":37,"./../net/server":27,"./server":32}],27:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -454,6 +455,7 @@ receivers[3] = exports.receiveLogon = function (p, d) {
             pos: player.body.position.toArray()
         });
     }
+    exports.sendGameState(p, server.gameState);
     server.players.push(p);
     simulator.add(p.body, p.entityId);
 };
@@ -525,6 +527,18 @@ exports.sendSpawnMany = function (p, list) {
     send(p, [14, list]);
 };
 
+// ===
+
+// Game state 20 state S>C
+
+exports.sendGameState = function (p, state) {
+    send(p, [20, state]);
+};
+
+exports.gameState = function (state) {
+    return [20, state];
+};
+
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C
@@ -574,7 +588,7 @@ exports.sendRconMessage = function (p, msg) {
     send(p, [208, msg]);
 };
 
-},{"../common/arena":10,"../phys/simulator":28,"./../server/server":31}],31:[function(require,module,exports){
+},{"../common/arena":11,"../phys/simulator":29,"./../server/server":32}],32:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -615,8 +629,13 @@ exports.newId = function () {
 
 exports.mapState = [];
 
+exports.gameState = {
+    started: true,
+    time: 0.0
+};
+
 exports.getServerStatusMsg = function () {
-    return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
+    return String.format("Running version {0} | {1} player(s) | Running for {2}s", arena.version, players.length, exports.gameState.time);
 };
 
 exports.executeCommand = null;
@@ -653,4 +672,4 @@ command("tpa <x> <y> <z>", {
     });
 });
 
-},{"../common/arena":10,"../console/command":15,"../console/engine":16}]},{},[2]);
+},{"../common/arena":11,"../console/command":16,"../console/engine":17}]},{},[2]);
