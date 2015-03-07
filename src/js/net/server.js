@@ -101,6 +101,7 @@ receivers[3] = exports.receiveLogon = function (p, d) {
             pos: player.body.position.toArray()
         });
     }
+    exports.sendGameState(p, server.gameState);
     server.players.push(p);
     simulator.add(p.body, p.entityId);
 };
@@ -170,6 +171,18 @@ exports.killEntity = function (id) {
 
 exports.sendSpawnMany = function (p, list) {
     send(p, [14, list]);
+};
+
+// ===
+
+// Game state 20 state S>C
+
+exports.sendGameState = function (p, state) {
+    send(p, [20, state]);
+};
+
+exports.gameState = function (state) {
+    return [20, state];
 };
 
 // RCON protocol

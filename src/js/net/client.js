@@ -164,6 +164,14 @@ receivers[14] = exports.receiveSpawnMany = function (d) {
     }
 };
 
+// ===
+
+// Game state 20 state S>C
+
+receivers[20] = exports.receiveGameState = function (d) {
+    client.updateGameState(d[1]);
+};
+
 // RCON protocol
 // rcon status 200 - C>S | msg S>C
 // rcon error 201 msg S>C

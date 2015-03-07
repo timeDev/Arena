@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,39 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-exports.major = 0;
-exports.minor = 4;
-exports.revision = 1;
-exports.build = 11;
-exports.timestamp = "2015-03-07T23:27:18.796Z";
+var
+// Module
+    makeOverlay = require('../dom/overlay'),
+// Local
+    overlays = {},
+    active = null;
 
-exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
-exports.versionString = exports.versionArray.join(".");
+Object.defineProperty(exports, 'active', {
+    get: function () {
+        return active;
+    }
+});
+
+exports.reference = document.body;
+
+exports.show = function (name) {
+    console.log(overlays, name);
+    exports.hide();
+    overlays[name].show();
+    active = name;
+};
+
+exports.hide = function () {
+    if (active !== null) {
+        overlays[active].hide();
+        active = null;
+    }
+};
+
+exports.add = function (name, text, cl) {
+    var ol = makeOverlay(text, cl);
+    overlays[name] = ol;
+    exports.reference.parentNode.insertBefore(ol.domElement, exports.reference.nextSibling);
+    ol.hide();
+    return ol;
+};

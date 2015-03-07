@@ -69,6 +69,7 @@ var bodyI = 0;
 
 function update(time) {
     simulator.update(time);
+    server.gameState.time += time;
     // Pick Object to broadcast
     var playerBodies = server.players.map(function (p) {
         return p.body;

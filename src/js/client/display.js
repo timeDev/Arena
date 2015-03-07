@@ -32,9 +32,9 @@ var
     chat = require('../dom/chat'),
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
-    makeOverlay = require('../dom/overlay'),
+    overlay = require('./overlay-mgr'),
 // Local
-    scene, camera, renderer, overlay,
+    scene, camera, renderer,
 // Function
     render, start;
 
@@ -55,16 +55,20 @@ window.addEventListener('resize', function () {
 });
 document.body.appendChild(renderer.domElement);
 
-overlay = makeOverlay("<p>Click to play!<p>Use the mouse to look around, WASD to walk, SPACE to jump<p>Have fun!");
+overlay.reference = renderer.domElement;
 
-input.pointerlocked.add(overlay.hide);
-input.pointerunlocked.add(overlay.show);
-input.escape.add(overlay.show);
+var ol = overlay.add('pause', "<p>Click to play!<p>Use the mouse to look around, WASD to walk, SPACE to jump<p>Have fun!");
 
-overlay.domElement.onclick = function () {
-    input.trylockpointer(overlay.domElement);
+ol.domElement.onclick = renderer.domElement.onclick = function () {
+    input.trylockpointer(renderer.domElement);
 };
-document.body.appendChild(overlay.domElement);
+
+input.pointerlocked.add(function () {
+    if (overlay.active == 'pause')
+        overlay.hide();
+});
+input.pointerunlocked.add(overlay.show.bind(null, 'pause'));
+input.escape.add(overlay.show.bind(null, 'pause'));
 
 makeDraggable(console.domElement);
 document.body.appendChild(console.domElement);

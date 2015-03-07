@@ -38,8 +38,13 @@ exports.newId = function () {
 
 exports.mapState = [];
 
+exports.gameState = {
+    started: true,
+    time: 0.0
+};
+
 exports.getServerStatusMsg = function () {
-    return String.format("Running version {0} | {1} player(s)", arena.version, players.length);
+    return String.format("Running version {0} | {1} player(s) | Running for {2}s", arena.version, players.length, exports.gameState.time);
 };
 
 exports.executeCommand = null;

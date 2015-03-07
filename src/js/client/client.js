@@ -31,7 +31,8 @@ var
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
     scenemgr = require('./scene-manager'),
-    materials = require('../phys/materials');
+    materials = require('../phys/materials'),
+    overlay = require('./overlay-mgr');
 
 exports.connection = null;
 
@@ -60,6 +61,23 @@ exports.spawnPlayer = function (pid, data) {
     scenemgr.addToScene(mesh, eid);
     body.position.copy(pos);
     scenemgr.addToWorld(body, eid);
+};
+
+exports.gameState = {};
+
+exports.updateGameState = function (state) {
+    if (state.started === true && overlay.active == 'sv-startup') {
+        overlay.show('pause');
+    }
+    if (state.started === false && overlay.active != 'sv-startup') {
+        overlay.show('sv-startup');
+    }
+
+    for (var k in state) {
+        if (state.hasOwnProperty(k)) {
+            exports.gameState[k] = state[k];
+        }
+    }
 };
 
 command("connect <address>",

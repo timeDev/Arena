@@ -51,7 +51,9 @@ var Clock = require('../util/clock'),
     cmdBuiltins = require('../console/builtins'),
     scenemgr = require('../client/scene-manager'),
     arena = require('../common/arena'),
-    console = require('../dom/console');
+    client = require('../client/client'),
+    console = require('../dom/console'),
+    overlay = require('../client/overlay-mgr');
 
 require('../client/rcon');
 
@@ -62,9 +64,11 @@ if (arena.debug) {
 }
 
 function update(time) {
-    controls.update(time);
-    simulator.update(time);
-    scenemgr.copyWorldToScene();
+    if (client.gameState.started) {
+        controls.update(time);
+        simulator.update(time);
+        scenemgr.copyWorldToScene();
+    }
 }
 
 settings.api.init();
@@ -81,6 +85,9 @@ console.executeFn = window.c = function (str) {
 // Entry point
 function entrypoint() {
     var display = require('../client/display');
+
+    overlay.add('sv-startup', 'The server has not yet startet the game.<p>Please wait.');
+    overlay.show('sv-startup');
 
     scenemgr.init(display.scene);
 
