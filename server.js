@@ -113,8 +113,8 @@ var cmdEnv = {
                 protocol.sendRconMessage(p, msg);
             }
         });
-        console.log(arguments);
-        console.w.log(arguments);
+        console.log.apply(console, arguments);
+        console.w.log.apply(console.w, arguments);
     },
     error: function () {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
@@ -123,8 +123,8 @@ var cmdEnv = {
                 protocol.sendRconMessage(p, msg);
             }
         });
-        console.error(arguments);
-        console.w.error(arguments);
+        console.error.apply(console, arguments);
+        console.w.error.apply(console.w, arguments);
     }
     ,
     warn: function () {
@@ -134,8 +134,8 @@ var cmdEnv = {
                 protocol.sendRconMessage(p, msg);
             }
         });
-        console.warn(arguments);
-        console.w.warn(arguments);
+        console.warn.apply(console, arguments);
+        console.w.warn.apply(console.w, arguments);
     }
 };
 
