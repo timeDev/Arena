@@ -163,6 +163,7 @@ exports.getCfgString = function () {
             str += k + " " + toValueString(registry[k].getter()) + ";";
         }
     }
+    return str;
 };
 
 // Low level access

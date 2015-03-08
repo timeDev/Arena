@@ -38,7 +38,6 @@ Object.defineProperty(exports, 'active', {
 exports.reference = document.body;
 
 exports.show = function (name) {
-    console.log(overlays, name);
     exports.hide();
     overlays[name].show();
     active = name;

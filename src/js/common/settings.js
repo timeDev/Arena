@@ -88,11 +88,11 @@ module.exports = {
             if (cfg == null) {
                 window.localStorage.setItem('config', cfg = ";");
             }
-            cmdEngine.executeString(cfg, window.console, {});
+            cmdEngine.executeString(cfg, window.console);
         }
     }
 };
 
 command("cfg_write [file]", {optional: [{name: 'file', type: 'string'}]}, 'cfg_write', function (match) {
-    window.localStorage.setItem(match.file ? match.file : 'config', commands.getCfgString());
+    window.localStorage.setItem(match.file ? match.file : 'config', cmdEngine.getCfgString());
 });

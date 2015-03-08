@@ -78,7 +78,7 @@ onmessage = function (e) {
     }
 }
      */
-    var blob = new Blob(["var i;onmessage=function(t){'start'===t.data[0]?i=setInterval(function(){postMessage(0)},t.data[1]):'stop'===data[0]&&clearTimeout(i)}"]);
+    var blob = new Blob(["var i;onmessage=function(t){'start'===t.data[0]?i=setInterval(function(){postMessage(0)},t.data[1]):'stop'===data[0]&&clearTimeout(i)}"],{type:'application/javascript'});
 
     Clock.blobUrl = window.URL.createObjectURL(blob);
 }

@@ -73,7 +73,7 @@ function executeCmdline(cmdline) {
 
 function executeCmd(name, args) {
     var argsList = args.map(executeValue);
-    exports.commandEngine.executeCommand(name, argsList);
+    return exports.commandEngine.executeCommand(name, argsList);
 }
 
 function executeValue(value) {

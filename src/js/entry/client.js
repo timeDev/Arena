@@ -57,7 +57,7 @@ var Clock = require('../util/clock'),
 
 require('../client/rcon');
 
-console.log("Playing Arena version {0}", arena.version);
+console.log("Playing Arena version", arena.version);
 if (arena.debug) {
     console.warn("Debug mode is enabled");
     window.debugging = true;
