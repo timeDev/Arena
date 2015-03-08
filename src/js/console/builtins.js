@@ -33,9 +33,11 @@ engine.registerCommand('echo', function (args) {
         engine.env.error("Syntax: echo <str> [args]");
     }
     var str = args[0];
-    str = str.replace(/\{(\d+)}/g, function (match, number) {
-        return args[number + 1] !== undefined ? args[number + 1] : match;
-    });
+    if (typeof str === 'string') {
+        str = str.replace(/\{(\d+)}/g, function (match, number) {
+            return args[number + 1] !== undefined ? args[number + 1] : match;
+        });
+    }
     engine.env.log(str);
     return str;
 });

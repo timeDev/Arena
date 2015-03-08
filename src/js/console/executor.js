@@ -67,7 +67,7 @@ function executeCmdline(cmdline) {
         stack.last.returned = true;
         return stack.last.retval = executeCmdline(cmdline.body);
     } else if (cmdline.type === 'ass') {
-        return stack.last[cmdline.name] = cmdline.value;
+        return stack.last[cmdline.name] = executeValue(cmdline.value);
     }
 }
 
