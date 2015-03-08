@@ -191,4 +191,13 @@ command("cvar create|delete|list|handle", [
     }
 });
 
+command("exec <name>", {mandatory: [{name: 'name', type: 'string'}]}, 'exec', function (match) {
+    var name = match.name;
+    var cmd = window.localStorage.getItem(name);
+    if (cmd === null) {
+        this.error("Storage item not found: " + name);
+    }
+    engine.executeString(cmd, this);
+});
+
 module.exports.registered = true;
