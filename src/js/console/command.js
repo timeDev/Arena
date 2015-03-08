@@ -44,3 +44,6 @@ module.exports.make = function (syntaxMsg, syntax, handler) {
         }
     }
 };
+
+// For easy imports
+exports.engine = engine;

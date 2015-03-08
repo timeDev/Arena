@@ -34,13 +34,15 @@ var
     materials = require('../phys/materials'),
     overlay = require('./overlay-mgr');
 
+exports.playerName = "Bob";
+
 exports.connection = null;
 
 exports.connect = function (address) {
     exports.connection = new Connection();
     exports.connection.message.add(protocol.receive);
     exports.connection.connect(address);
-    protocol.sendLogon("Bob");
+    protocol.sendLogon(exports.playerName);
 };
 
 // Maps player ids to entity ids
@@ -86,3 +88,5 @@ command("connect <address>",
     function (match) {
         exports.connect(match.address);
     });
+
+command.engine.registerCvar('name', exports, 'playerName');
