@@ -57,6 +57,7 @@ var
     Player = require('../server/player'),
     arena = require('../common/arena'),
     level = require('../server/level'),
+    settings = require('../common/settings'),
 // Local
     conListener;
 
@@ -144,6 +145,9 @@ console.executeFn = window.c = server.executeCommand = function (str) {
     return cmdEngine.executeString(str, cmdEnv);
 };
 
+settings.api.init();
+settings.api.loadCfg();
+
 function initDom() {
     document.body.appendChild(console.domElement);
 }
@@ -153,7 +157,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":11,"../console/builtins":15,"../console/engine":17,"../dom/console":22,"../net/connection":26,"../net/server":27,"../phys/simulator":29,"../server/level":30,"../server/player":31,"../server/server":32,"../util/clock":33}],31:[function(require,module,exports){
+},{"../common/arena":11,"../common/settings":14,"../console/builtins":15,"../console/engine":17,"../dom/console":22,"../net/connection":26,"../net/server":27,"../phys/simulator":29,"../server/level":30,"../server/player":31,"../server/server":32,"../util/clock":33}],31:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *

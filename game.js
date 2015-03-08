@@ -73,6 +73,7 @@ function update(time) {
 }
 
 settings.api.init();
+settings.api.loadCfg();
 
 if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
