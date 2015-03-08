@@ -25,6 +25,7 @@
 var
 // Module
     cmdEngine = require('../console/engine'),
+    command = require('../console/command'),
 // Local
     keys;
 
@@ -83,11 +84,15 @@ module.exports = {
             }
         },
         loadCfg: function () {
-            var cfg = window.localStorage.getItem('arena_settings');
-            commands.execute(cfg);
-        },
-        writeCfg: function () {
-            window.localStorage.setItem('arena_settings', commands.getCfgString());
+            var cfg = window.localStorage.getItem('config');
+            if (cfg == null) {
+                window.localStorage.setItem('config', cfg = ";");
+            }
+            cmdEngine.executeString(cfg, window.console, {});
         }
     }
 };
+
+command("cfg_write [file]", {optional: [{name: 'file', type: 'string'}]}, 'cfg_write', function (match) {
+    window.localStorage.setItem(match.file ? match.file : 'config', commands.getCfgString());
+});

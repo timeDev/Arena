@@ -56,6 +56,7 @@ var
     Player = require('../server/player'),
     arena = require('../common/arena'),
     level = require('../server/level'),
+    settings = require('../common/settings'),
 // Local
     conListener;
 
@@ -142,6 +143,9 @@ var cmdEnv = {
 console.executeFn = window.c = server.executeCommand = function (str) {
     return cmdEngine.executeString(str, cmdEnv);
 };
+
+settings.api.init();
+settings.api.loadCfg();
 
 function initDom() {
     document.body.appendChild(console.domElement);
