@@ -58,7 +58,7 @@ var Clock = require('../util/clock'),
 
 require('../client/rcon');
 
-console.log("Playing Arena version {0}", arena.version);
+console.log("Playing Arena version", arena.version);
 if (arena.debug) {
     console.warn("Debug mode is enabled");
     window.debugging = true;
@@ -1528,7 +1528,6 @@ Object.defineProperty(exports, 'active', {
 exports.reference = document.body;
 
 exports.show = function (name) {
-    console.log(overlays, name);
     exports.hide();
     overlays[name].show();
     active = name;
