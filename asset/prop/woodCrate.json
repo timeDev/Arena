@@ -1,7 +1,5 @@
 {
-    "class": [ "cbox", "body", "model", "mesh", "compound" ],
-    "body": { "mass": 150 },
-    "cbox": [ 2, 2, 2 ],
-    "mesh": "",
+    "class": [ "model", "body", "cbox" ],
+    "body": { "mass": 150, "friction": 1.5, "restitution": 0.1 },
     "model": "woodCrate"
 }

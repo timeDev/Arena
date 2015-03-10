@@ -67,25 +67,23 @@ if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
 }
 
-var bodyI = 0;
+var meshI = 0;
 
 function update(time) {
     simulator.update(time);
     server.gameState.time += time;
     // Pick Object to broadcast
-    var playerBodies = server.players.map(function (p) {
-        return p.body;
+    var playerMeshes = server.players.map(function (p) {
+        return p.entityId;
     });
-    var bodies = simulator.world.bodies.filter(function (b) {
-        // Filter out players
-        return playerBodies.indexOf(b) < 0;
+    var meshIds = simulator.scene.children.map(simulator.getId).filter(function (m) {
+        return m > 0 && playerMeshes.indexOf(m) < 0;
     });
-    if (bodies.length > 0) {
-        if (bodyI >= bodies.length) {
-            bodyI = 0;
+    if (meshIds.length > 0) {
+        if (meshI >= meshIds.length) {
+            meshI = 0;
         }
-        var body = bodies[bodyI++];
-        var id = simulator.getId(body);
+        var id = meshIds[meshI++];
         protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
     }
 }
@@ -157,7 +155,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":11,"../common/settings":14,"../console/builtins":15,"../console/engine":17,"../dom/console":22,"../net/connection":26,"../net/server":27,"../phys/simulator":29,"../server/level":30,"../server/player":31,"../server/server":32,"../util/clock":33}],31:[function(require,module,exports){
+},{"../common/arena":14,"../common/settings":17,"../console/builtins":18,"../console/engine":20,"../dom/console":25,"../net/connection":29,"../net/server":30,"../phys/simulator":31,"../server/level":32,"../server/player":33,"../server/server":34,"../util/clock":35}],33:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -181,13 +179,12 @@ if (document.readyState === 'interactive') {
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 /*global require, module, exports */
 var
 // Module
-    CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
+    PHYSI = require('../vendor/physi'),
     server = require('./server');
 
 function Player(connection) {
@@ -197,8 +194,8 @@ function Player(connection) {
     this.entityId = server.newId();
     this.playerId = Player.newId();
 
-    this.body = new CANNON.Body({mass: settings.player.mass});
-    this.body.addShape(new CANNON.Sphere(settings.player.radius));
+    this.mesh = new PHYSI.SphereMesh(new THREE.SphereGeometry(settings.player.radius),
+        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
 }
 
 Player.prototype.updateBody = function (state) {
@@ -207,23 +204,25 @@ Player.prototype.updateBody = function (state) {
         if (v.length > settings.player.speed) {
             v.setLength(settings.player.speed);
         }
-        this.body.velocity.copy(v);
+        this.mesh.setLinearVelocity(v);
     }
     if (state.p) {
         var p = new THREE.Vector3(state.p[0], state.p[1], state.p[2]);
-        var len = p.distanceTo(this.body.position);
+        var len = p.distanceTo(this.mesh.position);
         // Use 1.3 tolerance
         if (len > settings.player.speed * 1.3) {
-            p.sub(this.body.position);
+            p.sub(this.mesh.position);
             p.setLength(settings.player.speed);
-            p.add(this.body.position);
+            p.add(this.mesh.position);
         }
-        this.body.position.copy(p);
+        this.mesh.position.copy(p);
+        this.mesh.__dirtyPosition = true;
     }
 };
 
 Player.prototype.teleport = function (x, y, z) {
-    this.body.position.set(x, y, z);
+    this.mesh.position.set(x, y, z);
+    this.mesh.__dirtyPosition = true;
 };
 
 Player.newId = function () {
@@ -234,7 +233,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":14,"../vendor/cannon":39,"../vendor/three":41,"./server":32}],30:[function(require,module,exports){
+},{"../common/settings":17,"../vendor/physi":44,"../vendor/three":46,"./server":34}],32:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -281,9 +280,10 @@ exports.spawnObj = function (obj, id) {
         console.warn("Skipping map object without position.");
         return;
     }
-    if (obj.body) {
-        obj.body.position.copy(obj.pos);
-        simulator.add(obj.body, id);
+    if (obj.mesh) {
+        obj.mesh.position.copy(obj.pos);
+        obj.mesh.__dirtyPosition = true;
+        simulator.add(obj.mesh, id);
         ids.push(id);
     }
 };
@@ -355,7 +355,7 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
     });
 });
 
-},{"../common/level":12,"../console/command":16,"../phys/simulator":29,"../util/ocl":36,"../vendor/SeXHR":37,"./../net/server":27,"./server":32}],27:[function(require,module,exports){
+},{"../common/level":15,"../console/command":19,"../phys/simulator":31,"../util/ocl":39,"../vendor/SeXHR":40,"./../net/server":30,"./server":34}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -439,7 +439,11 @@ exports.sendPlayerData = function (p, plId, type, data) {
 
 receivers[1] = exports.receivePlayerData = function (p, d) {
     p.updateBody(d[1]);
-    exports.broadcast([1, p.playerId, 1, {p: p.body.position.toArray(), v: p.body.velocity.toArray(), pnr: d[2]}]);
+    exports.broadcast([1, p.playerId, 1, {
+        p: p.mesh.position.toArray(),
+        v: p.mesh.getLinearVelocity().toArray(),
+        pnr: d[2]
+    }]);
 };
 
 // Logon 3 name C>S
@@ -452,16 +456,16 @@ receivers[3] = exports.receiveLogon = function (p, d) {
         var player = server.players[i];
         exports.sendPlayerData(player, p.playerId, 2, {
             id: p.entityId,
-            pos: p.body.position.toArray()
+            pos: p.mesh.position.toArray()
         });
         exports.sendPlayerData(p, player.playerId, 2, {
             id: player.entityId,
-            pos: player.body.position.toArray()
+            pos: player.mesh.position.toArray()
         });
     }
     exports.sendGameState(p, server.gameState);
     server.players.push(p);
-    simulator.add(p.body, p.entityId);
+    simulator.add(p.mesh, p.entityId);
 };
 
 // Chat Message 4 msg C<>S
@@ -592,7 +596,7 @@ exports.sendRconMessage = function (p, msg) {
     send(p, [208, msg]);
 };
 
-},{"../common/arena":11,"../phys/simulator":29,"./../server/server":32}],32:[function(require,module,exports){
+},{"../common/arena":14,"../phys/simulator":31,"./../server/server":34}],34:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -676,4 +680,4 @@ command("tpa <x> <y> <z>", {
     });
 });
 
-},{"../common/arena":11,"../console/command":16,"../console/engine":17}]},{},[2]);
+},{"../common/arena":14,"../console/command":19,"../console/engine":20}]},{},[2]);

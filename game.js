@@ -50,7 +50,6 @@ var Clock = require('../util/clock'),
     simulator = require('../phys/simulator'),
     cmdEngine = require('../console/engine'),
     cmdBuiltins = require('../console/builtins'),
-    scenemgr = require('../client/scene-manager'),
     arena = require('../common/arena'),
     client = require('../client/client'),
     console = require('../dom/console'),
@@ -68,7 +67,6 @@ function update(time) {
     if (client.gameState.started) {
         controls.update(time);
         simulator.update(time);
-        scenemgr.copyWorldToScene();
     }
 }
 
@@ -91,14 +89,9 @@ function entrypoint() {
     overlay.add('sv-startup', 'The server has not yet startet the game.<p>Please wait.');
     overlay.show('sv-startup');
 
-    scenemgr.init(display.scene);
-
     controls.firstPersonCam(display.camera);
-    controls.sceneObj.position.set(0, 2, 0);
-    controls.physBody.position.set(0, 2, 0);
-    controls.physBody.linearDamping = 0.95;
-    display.scene.add(controls.sceneObj);
-    simulator.add(controls.physBody, 0);
+    controls.mesh.position.set(0, 2, 0);
+    simulator.add(controls.mesh, 0);
 
     display.render();
 
@@ -110,7 +103,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
-},{"../client/client":4,"../client/controls":5,"../client/display":6,"../client/overlay-mgr":8,"../client/rcon":9,"../client/scene-manager":10,"../common/arena":11,"../common/settings":14,"../console/builtins":15,"../console/engine":17,"../dom/console":22,"../phys/simulator":29,"../util/clock":33}],9:[function(require,module,exports){
+},{"../client/client":8,"../client/controls":9,"../client/display":10,"../client/overlay-mgr":12,"../client/rcon":13,"../common/arena":14,"../common/settings":17,"../console/builtins":18,"../console/engine":20,"../dom/console":25,"../phys/simulator":31,"../util/clock":35}],13:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -197,7 +190,7 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
     }
 });
 
-},{"../console/command":16,"../console/engine":17,"../dom/console":22,"./../net/client":25}],6:[function(require,module,exports){
+},{"../console/command":19,"../console/engine":20,"../dom/console":25,"./../net/client":28}],10:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -233,13 +226,14 @@ var
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
     overlay = require('./overlay-mgr'),
+    simulator = require('../phys/simulator'),
 // Local
     scene, camera, renderer,
 // Function
     render, start;
 
 // -- Setup --
-scene = new THREE.Scene();
+scene = simulator.scene;
 camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
 scene.add(new THREE.AmbientLight());
@@ -322,7 +316,7 @@ command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
     camera.updateProjectionMatrix();
 });
 
-},{"../common/settings":14,"../console/command":16,"../dom/chat":21,"../dom/console":22,"../dom/draggable":23,"../vendor/Stats":38,"../vendor/three":41,"./../util/input":34,"./overlay-mgr":8}],38:[function(require,module,exports){
+},{"../common/settings":17,"../console/command":19,"../dom/chat":24,"../dom/console":25,"../dom/draggable":26,"../phys/simulator":31,"../vendor/Stats":41,"../vendor/three":46,"./../util/input":37,"./overlay-mgr":12}],41:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -472,7 +466,7 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
-},{}],23:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -529,7 +523,7 @@ module.exports = function (domElement) {
     });
 };
 
-},{}],4:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -559,11 +553,10 @@ var
     command = require('../console/command'),
     Connection = require('../net/connection'),
     protocol = require('./../net/client'),
-    CANNON = require('../vendor/cannon'),
+    PHYSI = require('../vendor/physi'),
+    simulator = require('../phys/simulator'),
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
-    scenemgr = require('./scene-manager'),
-    materials = require('../phys/materials'),
     overlay = require('./overlay-mgr');
 
 exports.playerName = "Bob";
@@ -585,16 +578,12 @@ exports.spawnPlayer = function (pid, data) {
     exports.players[pid] = eid;
     var pos = data.pos;
     pos = {x: pos[0], y: pos[1], z: pos[2]};
-    var body = new CANNON.Body({mass: settings.player.mass});
-    body.addShape(new CANNON.Sphere(settings.player.radius));
-    body.material = materials.playerMaterial;
-    body.fixedRotation = true;
-    body.updateMassProperties();
-    var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));
+    var mesh = new PHYSI.SphereMesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}), settings.player.mass);
     mesh.position.copy(pos);
-    scenemgr.addToScene(mesh, eid);
-    body.position.copy(pos);
-    scenemgr.addToWorld(body, eid);
+    mesh.addEventListener('ready', function () {
+        mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
+    });
+    simulator.add(mesh, eid);
 };
 
 exports.gameState = {};
@@ -623,7 +612,7 @@ command("connect <address>",
 
 command.engine.registerCvar('name', exports, 'playerName');
 
-},{"../common/settings":14,"../console/command":16,"../net/connection":26,"../phys/materials":28,"../vendor/cannon":39,"../vendor/three":41,"./../net/client":25,"./overlay-mgr":8,"./scene-manager":10}],25:[function(require,module,exports){
+},{"../common/settings":17,"../console/command":19,"../net/connection":29,"../phys/simulator":31,"../vendor/physi":44,"../vendor/three":46,"./../net/client":28,"./overlay-mgr":12}],28:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -711,9 +700,7 @@ receivers[1] = exports.receivePlayerData = function (d) {
             var corr = {x: data.p[0] - pkt.p[0], y: data.p[1] - pkt.p[1], z: data.p[2] - pkt.p[2]};
             // Avoid cyclic deps
             var controls = require('./../client/controls');
-            //noinspection JSCheckFunctionSignatures
-            controls.physBody.position.vadd(corr, controls.physBody.position);
-            controls.sceneObj.position.copy(controls.physBody.position);
+            controls.mesh.position.add(corr);
             delete unackPkts[pnr];
         } else {
             simulator.updateBody(eid, data);
@@ -868,7 +855,7 @@ exports.sendRconQueryAll = function () {
     sendRaw([207]);
 };
 
-},{"../common/arena":11,"../dom/chat":21,"../phys/simulator":29,"./../client/client":4,"./../client/controls":5,"./../client/level":7}],21:[function(require,module,exports){
+},{"../common/arena":14,"../dom/chat":24,"../phys/simulator":31,"./../client/client":8,"./../client/controls":9,"./../client/level":11}],24:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -985,7 +972,7 @@ exports.fade = function () {
     fadeWaitId = -1;
 };
 
-},{"../util/keycode":35}],7:[function(require,module,exports){
+},{"../util/keycode":38}],11:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1013,9 +1000,8 @@ exports.fade = function () {
 var
 // Module
     ocl = require('../util/ocl'),
-    scenemgr = require('./scene-manager'),
     command = require('../console/command'),
-    Sexhr = require('../vendor/SeXHR'),
+    simulator = require('../phys/simulator'),
 // Local
     ids = [];
 
@@ -1032,11 +1018,9 @@ exports.spawn = function (obj, id) {
     }
     if (obj.mesh) {
         obj.mesh.position.copy(obj.pos);
-        ids.push(scenemgr.addToScene(obj.mesh, id));
-    }
-    if (obj.body) {
-        obj.body.position.copy(obj.pos);
-        ids.push(scenemgr.addToWorld(obj.body, id));
+        obj.mesh.__dirtyPosition = true;
+        simulator.add(obj.mesh, id);
+        ids.push(id);
     }
 };
 
@@ -1053,7 +1037,7 @@ exports.load = function (str) {
     });
 };
 
-},{"../common/level":12,"../console/command":16,"../util/ocl":36,"../vendor/SeXHR":37,"./scene-manager":10}],5:[function(require,module,exports){
+},{"../common/level":15,"../console/command":19,"../phys/simulator":31,"../util/ocl":39}],9:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1083,17 +1067,16 @@ var
     input = require('./../util/input'),
     keycode = require('./../util/keycode'),
     THREE = require('../vendor/three'),
-    CANNON = require('../vendor/cannon'),
+    PHYSI = require('../vendor/physi'),
     settings = require('../common/settings'),
     command = require('../console/command'),
     protocol = require('./../net/client'),
-    materials = require('../phys/materials'),
 // Local
-    paused = true, shape, physBody,
-    onground = false, jumpPrg = Infinity,
+    paused = true,
+    onground = true, jumpPrg = 0,
     pitchObj = new THREE.Object3D(), yawObj = new THREE.Object3D(),
-    vec3a = new THREE.Vector3(), contactNormal = new CANNON.Vec3(),
-    upAxis = new CANNON.Vec3(0, 1, 0);
+    vec3a = new THREE.Vector3(),
+    downAxis = new THREE.Vector3(0, -1, 0);
 
 input.pointerlocked.add(function () {
     paused = false;
@@ -1138,7 +1121,7 @@ exports.update = function (dt) {
         vec3a.applyQuaternion(yawObj.quaternion);
     }
 
-    var vel = physBody.velocity, changeVel = new THREE.Vector3().subVectors(vec3a, vel);
+    var vel = mesh.getLinearVelocity(), changeVel = new THREE.Vector3().subVectors(vec3a, vel);
     if (changeVel.length > accdt) {
         changeVel.setLength(accdt);
     }
@@ -1158,48 +1141,39 @@ exports.update = function (dt) {
         jumpPrg += dt;
     }
 
-    physBody.velocity.vadd(changeVel, physBody.velocity);
-    protocol.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
-    yawObj.position.copy(physBody.position);
+    mesh.setLinearVelocity(vel.add(changeVel));
+    protocol.sendPlayerData({p: mesh.position.toArray(), v: vel.toArray()});
 
     input.resetDelta();
 };
 
-physBody = new CANNON.Body({mass: settings.player.mass});
-shape = new CANNON.Sphere(settings.player.radius);
-physBody.addShape(shape);
-physBody.material = materials.playerMaterial;
-physBody.fixedRotation = true;
-physBody.updateMassProperties();
+var mesh = new PHYSI.SphereMesh(new THREE.SphereGeometry(settings.player.radius),
+    PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
 
-physBody.addEventListener('collide', function (e) {
-    var contact = e.contact;
+mesh.addEventListener('ready', function () {
+    mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
+});
 
-    // contact.bi and contact.bj are the colliding bodies, and contact.ni is the collision normal.
-    // We do not yet know which one is which! Let's check.
-    if (contact.bi.id === physBody.id) { // bi is the player body, flip the contact normal
-        contact.ni.negate(contactNormal);
-    } else {
-        contactNormal.copy(contact.ni); // bi is something else. Keep the normal as it is
-    }
-    // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
-    if (contactNormal.dot(upAxis) > 0.5) { // Use a "good" threshold value between 0 and 1 here!
+mesh.addEventListener('collision', function (other_object, relative_velocity, relative_rotation, contact_normal) {
+    // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+    if (contact_normal.dot(downAxis) > 0.5) {
         onground = true;
         jumpPrg = 0;
     }
 });
 
+mesh.add(yawObj);
+
 yawObj.rotation.y = 1.25 * Math.PI;
 
-exports.physBody = physBody;
-exports.sceneObj = yawObj;
+exports.mesh = mesh;
 
 exports.firstPersonCam = function (camera) {
     pitchObj.add(camera);
     yawObj.add(pitchObj);
 };
 
-},{"../common/settings":14,"../console/command":16,"../phys/materials":28,"../vendor/cannon":39,"../vendor/three":41,"./../net/client":25,"./../util/input":34,"./../util/keycode":35}],34:[function(require,module,exports){
+},{"../common/settings":17,"../console/command":19,"../vendor/physi":44,"../vendor/three":46,"./../net/client":28,"./../util/input":37,"./../util/keycode":38}],37:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1401,93 +1375,7 @@ exports.resetDelta = function () {
     mousepos[3] = 0.0;
 };
 
-},{"signals":3}],10:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-var
-// Module
-    simulator = require('../phys/simulator'),
-// Local
-    sceneObjects = [],
-    worldObjects = [];
-
-exports.init = function (scene) {
-    exports.scene = scene;
-};
-
-exports.addToScene = function (obj, id) {
-    obj.tracker = {id: id, type: "scene"};
-    exports.scene.add(obj);
-    sceneObjects[id] = obj;
-};
-
-exports.addToWorld = function (obj, id) {
-    obj.tracker = {id: id, type: "world"};
-    simulator.add(obj, id);
-    worldObjects[id] = obj;
-};
-
-exports.addLink = function (s, w) {
-    this.addToScene(s);
-    this.addToWorld(w);
-    this.link(s, w);
-};
-
-exports.copyWorldToScene = function () {
-    var i, w, s;
-    for (i = 0; i < worldObjects.length; i++) {
-        if (worldObjects[i] !== undefined && sceneObjects[i] !== undefined) {
-            w = worldObjects[i];
-            s = sceneObjects[i];
-            s.position.copy(w.position);
-            s.quaternion.copy(w.quaternion);
-        }
-    }
-};
-
-exports.copySceneToWorld = function () {
-    var i, s, w;
-    for (i = 0; i < sceneObjects.length; i++) {
-        if (sceneObjects[i] !== undefined && worldObjects[i] !== undefined) {
-            s = worldObjects[i];
-            w = sceneObjects[i];
-            w.position.copy(s.position);
-            w.quaternion.copy(s.quaternion);
-        }
-    }
-};
-
-exports.remove = function (id) {
-    var s = sceneObjects[id];
-    exports.scene.remove(s);
-    simulator.remove(id);
-    delete sceneObjects[id];
-    delete worldObjects[id];
-};
-
-},{"../phys/simulator":29}],8:[function(require,module,exports){
+},{"signals":6}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1548,7 +1436,7 @@ exports.add = function (name, text, cl) {
     return ol;
 };
 
-},{"../dom/overlay":24}],24:[function(require,module,exports){
+},{"../dom/overlay":27}],27:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *

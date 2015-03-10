@@ -1,18 +1,16 @@
 [
     {
-        "class": [ "obj", "rbox", "matbasic", "mesh", "cbox", "body", "compound" ],
+        "class": [ "obj", "rbox", "matbasic", "body", "cbox" ],
         "obj": { "pos": [ 15, 12.5, 15 ] },
         "rbox": [ 2, 2, 2 ],
-        "cbox": [ 2, 2, 2 ],
-        "body": { "mass": 100 },
+        "body": { "mass": 100, "friction": 1.5, "restitution": 0.05 },
         "matbasic": { "color": 255 }
     },
     {
-        "class": [ "obj", "rbox", "matbasic", "mesh", "cbox", "body", "compound" ],
+        "class": [ "obj", "rbox", "matbasic", "body", "cbox" ],
         "obj": { "pos": [ 50, -0.011, 50 ] },
         "rbox": [ 100, 0.01, 100 ],
-        "cbox": [ 100, 0.01, 100 ],
-        "body": { "mass": 0 },
+        "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
         "matbasic": { "color": 8421504 }
     },
     {
