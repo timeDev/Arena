@@ -22,18 +22,15 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-var CANNON = require('../vendor/cannon');
-
-exports.defaultMaterial = new CANNON.Material('default');
-exports.playerMaterial = new CANNON.Material('player');
-exports.groundMaterial = new CANNON.Material('ground');
-
-exports.cmPlayerDefault = new CANNON.ContactMaterial(exports.playerMaterial, exports.defaultMaterial, {
-    friction: 0.01,
-    restitution: 0.1
-});
-
-exports.cmPlayerGround = new CANNON.ContactMaterial(exports.playerMaterial, exports.groundMaterial, {
-    friction: 0.01,
-    restitution: 0.1
-});
+module.exports = function (self) {
+    var id;
+    self.onmessage = function (e) {
+        if (e.data[0] === 'start') {
+            id = setInterval(function () {
+                self.postMessage(0);
+            }, e.data[1]);
+        } else if (e.data[0] === 'stop') {
+            clearTimeout(id);
+        }
+    }
+};

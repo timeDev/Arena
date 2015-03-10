@@ -27,17 +27,16 @@ var
     input = require('./../util/input'),
     keycode = require('./../util/keycode'),
     THREE = require('../vendor/three'),
-    CANNON = require('../vendor/cannon'),
+    PHYSI = require('../vendor/physi'),
     settings = require('../common/settings'),
     command = require('../console/command'),
     protocol = require('./../net/client'),
-    materials = require('../phys/materials'),
 // Local
-    paused = true, shape, physBody,
-    onground = false, jumpPrg = Infinity,
+    paused = true,
+    onground = true, jumpPrg = 0,
     pitchObj = new THREE.Object3D(), yawObj = new THREE.Object3D(),
-    vec3a = new THREE.Vector3(), contactNormal = new CANNON.Vec3(),
-    upAxis = new CANNON.Vec3(0, 1, 0);
+    vec3a = new THREE.Vector3(),
+    downAxis = new THREE.Vector3(0, -1, 0);
 
 input.pointerlocked.add(function () {
     paused = false;
@@ -82,7 +81,7 @@ exports.update = function (dt) {
         vec3a.applyQuaternion(yawObj.quaternion);
     }
 
-    var vel = physBody.velocity, changeVel = new THREE.Vector3().subVectors(vec3a, vel);
+    var vel = mesh.getLinearVelocity(), changeVel = new THREE.Vector3().subVectors(vec3a, vel);
     if (changeVel.length > accdt) {
         changeVel.setLength(accdt);
     }
@@ -102,41 +101,32 @@ exports.update = function (dt) {
         jumpPrg += dt;
     }
 
-    physBody.velocity.vadd(changeVel, physBody.velocity);
-    protocol.sendPlayerData({p: physBody.position.toArray(), v: physBody.velocity.toArray()});
-    yawObj.position.copy(physBody.position);
+    mesh.setLinearVelocity(vel.add(changeVel));
+    protocol.sendPlayerData({p: mesh.position.toArray(), v: vel.toArray()});
 
     input.resetDelta();
 };
 
-physBody = new CANNON.Body({mass: settings.player.mass});
-shape = new CANNON.Sphere(settings.player.radius);
-physBody.addShape(shape);
-physBody.material = materials.playerMaterial;
-physBody.fixedRotation = true;
-physBody.updateMassProperties();
+var mesh = new PHYSI.SphereMesh(new THREE.SphereGeometry(settings.player.radius),
+    PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
 
-physBody.addEventListener('collide', function (e) {
-    var contact = e.contact;
+mesh.addEventListener('ready', function () {
+    mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
+});
 
-    // contact.bi and contact.bj are the colliding bodies, and contact.ni is the collision normal.
-    // We do not yet know which one is which! Let's check.
-    if (contact.bi.id === physBody.id) { // bi is the player body, flip the contact normal
-        contact.ni.negate(contactNormal);
-    } else {
-        contactNormal.copy(contact.ni); // bi is something else. Keep the normal as it is
-    }
-    // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
-    if (contactNormal.dot(upAxis) > 0.5) { // Use a "good" threshold value between 0 and 1 here!
+mesh.addEventListener('collision', function (other_object, relative_velocity, relative_rotation, contact_normal) {
+    // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+    if (contact_normal.dot(downAxis) > 0.5) {
         onground = true;
         jumpPrg = 0;
     }
 });
 
+mesh.add(yawObj);
+
 yawObj.rotation.y = 1.25 * Math.PI;
 
-exports.physBody = physBody;
-exports.sceneObj = yawObj;
+exports.mesh = mesh;
 
 exports.firstPersonCam = function (camera) {
     pitchObj.add(camera);

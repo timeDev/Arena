@@ -25,7 +25,7 @@
 var
 // Module
     THREE = require('../vendor/three'),
-    CANNON = require('../vendor/cannon'),
+    PHYSI = require('../vendor/physi'),
     ocl = require('./../util/ocl'),
     arena = require('./arena'),
     props = require('./props');
@@ -48,30 +48,20 @@ ocl.define('mesh', function () {
 
 ocl.define('prop', function (name) {
     var ctx = this;
-    this.propName = name;
+    ctx.propName = name;
     this.ocl.suspend();
     props.load(name, function (prop) {
         ctx.prop = prop;
         ctx.mesh = prop.mesh;
-        ctx.body = prop.body;
-        ctx.link = prop.link;
         ctx.ocl.resume();
     });
 });
 
-ocl.define('compound', function () {
-    this.link = true;
-});
-
 ocl.define('body', function (params) {
-    params = params || {mass: 0};
-    this.body = new CANNON.Body(params);
-    if (this.shape) {
-        this.body.addShape(this.shape);
+    if (params.friction !== undefined && params.restitution !== undefined) {
+        this.mat = PHYSI.createMaterial(this.mat, params.friction, params.restitution);
     }
-    for (var i = 1; i < arguments.length; i++) {
-        this.body.addShape(arguments[i].shape);
-    }
+    this.mass = params.mass;
 });
 
 ocl.define('model', function (modelName) {
@@ -115,20 +105,20 @@ ocl.define('rcir', function (params) {
 
 // Collision objects
 
-ocl.define('cbox', function (x, y, z) {
-    this.shape = new CANNON.Box(new CANNON.Vec3(x / 2, y / 2, z / 2));
+ocl.define('cbox', function () {
+    this.mesh = new PHYSI.BoxMesh(this.geo, this.mat, this.mass);
 });
 
-ocl.define('csph', function (radius) {
-    this.shape = new CANNON.Sphere(radius);
+ocl.define('csph', function () {
+    this.mesh = new PHYSI.SphereMesh(this.geo, this.mat, this.mass);
 });
 
-ocl.define('ccyl', function (radiusTop, radiusBottom, height, numSegments) {
-    this.shape = new CANNON.Cylinder(radiusTop, radiusBottom, height, numSegments);
+ocl.define('ccyl', function () {
+    this.mesh = new PHYSI.CylinderMesh(this.geo, this.mat, this.mass);
 });
 
 ocl.define('cpla', function () {
-    this.shape = new CANNON.Plane();
+    this.mesh = new PHYSI.PlaneMesh(this.geo, this.mat, this.mass);
 });
 
 // Material

@@ -33,13 +33,14 @@ var
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
     overlay = require('./overlay-mgr'),
+    simulator = require('../phys/simulator'),
 // Local
     scene, camera, renderer,
 // Function
     render, start;
 
 // -- Setup --
-scene = new THREE.Scene();
+scene = simulator.scene;
 camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
 scene.add(new THREE.AmbientLight());

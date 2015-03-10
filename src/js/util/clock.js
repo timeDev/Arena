@@ -22,14 +22,14 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
+var work = require('webworkify');
+
 function Clock(period, callback, thisArg) {
     this.period = period;
     this.callback = callback;
     this.thisArg = thisArg;
-    if (Clock.useWorker) {
-        this.worker = new Worker(Clock.blobUrl);
-        this.worker.onmessage = loopfn(this);
-    }
+    this.worker = work(require('./clock_worker.js'));
+    this.worker.onmessage = loopfn(this);
 }
 
 function loopfn(self) {
@@ -42,19 +42,11 @@ function loopfn(self) {
 }
 
 Clock.prototype.start = function () {
-    if (Clock.useWorker) {
-        this.worker.postMessage(['start', this.period]);
-    } else {
-        this.id = setInterval(loopfn(this), this.period);
-    }
+    this.worker.postMessage(['start', this.period]);
 };
 
 Clock.prototype.stop = function () {
-    if (Clock.useWorker) {
-        this.worker.postMessage(['stop']);
-    } else {
-        clearInterval(this.id);
-    }
+    this.worker.postMessage(['stop']);
 };
 
 Clock.startNew = function (period, callback, thisArg) {
@@ -62,25 +54,5 @@ Clock.startNew = function (period, callback, thisArg) {
     obj.start();
     return obj;
 };
-
-if (!!window.Worker) {
-    Clock.useWorker = true;
-
-    /*//code before minification
-var id;
-onmessage = function (e) {
-    if (e.data[0] === 'start') {
-        id = setInterval(function () {
-            postMessage(0);
-        }, e.data[1]);
-    } else if (data[0] === 'stop') {
-        clearTimeout(id);
-    }
-}
-     */
-    var blob = new Blob(["var i;onmessage=function(t){'start'===t.data[0]?i=setInterval(function(){postMessage(0)},t.data[1]):'stop'===data[0]&&clearTimeout(i)}"],{type:'application/javascript'});
-
-    Clock.blobUrl = window.URL.createObjectURL(blob);
-}
 
 module.exports = Clock;

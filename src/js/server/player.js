@@ -21,13 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 /*global require, module, exports */
 var
 // Module
-    CANNON = require('../vendor/cannon'),
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
+    PHYSI = require('../vendor/physi'),
     server = require('./server');
 
 function Player(connection) {
@@ -37,8 +36,8 @@ function Player(connection) {
     this.entityId = server.newId();
     this.playerId = Player.newId();
 
-    this.body = new CANNON.Body({mass: settings.player.mass});
-    this.body.addShape(new CANNON.Sphere(settings.player.radius));
+    this.mesh = new PHYSI.SphereMesh(new THREE.SphereGeometry(settings.player.radius),
+        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
 }
 
 Player.prototype.updateBody = function (state) {
@@ -47,23 +46,25 @@ Player.prototype.updateBody = function (state) {
         if (v.length > settings.player.speed) {
             v.setLength(settings.player.speed);
         }
-        this.body.velocity.copy(v);
+        this.mesh.setLinearVelocity(v);
     }
     if (state.p) {
         var p = new THREE.Vector3(state.p[0], state.p[1], state.p[2]);
-        var len = p.distanceTo(this.body.position);
+        var len = p.distanceTo(this.mesh.position);
         // Use 1.3 tolerance
         if (len > settings.player.speed * 1.3) {
-            p.sub(this.body.position);
+            p.sub(this.mesh.position);
             p.setLength(settings.player.speed);
-            p.add(this.body.position);
+            p.add(this.mesh.position);
         }
-        this.body.position.copy(p);
+        this.mesh.position.copy(p);
+        this.mesh.__dirtyPosition = true;
     }
 };
 
 Player.prototype.teleport = function (x, y, z) {
-    this.body.position.set(x, y, z);
+    this.mesh.position.set(x, y, z);
+    this.mesh.__dirtyPosition = true;
 };
 
 Player.newId = function () {

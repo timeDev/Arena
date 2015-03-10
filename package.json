@@ -18,6 +18,7 @@
     "make": "gulp --cwd ./build make"
   },
   "dependencies": {
-    "signals": "^1.0.0"
+    "signals": "^1.0.0",
+    "webworkify": "^1.0.2"
   }
 }

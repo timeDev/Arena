@@ -27,11 +27,10 @@ var
     command = require('../console/command'),
     Connection = require('../net/connection'),
     protocol = require('./../net/client'),
-    CANNON = require('../vendor/cannon'),
+    PHYSI = require('../vendor/physi'),
+    simulator = require('../phys/simulator'),
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
-    scenemgr = require('./scene-manager'),
-    materials = require('../phys/materials'),
     overlay = require('./overlay-mgr');
 
 exports.playerName = "Bob";
@@ -53,16 +52,12 @@ exports.spawnPlayer = function (pid, data) {
     exports.players[pid] = eid;
     var pos = data.pos;
     pos = {x: pos[0], y: pos[1], z: pos[2]};
-    var body = new CANNON.Body({mass: settings.player.mass});
-    body.addShape(new CANNON.Sphere(settings.player.radius));
-    body.material = materials.playerMaterial;
-    body.fixedRotation = true;
-    body.updateMassProperties();
-    var mesh = new THREE.Mesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}));
+    var mesh = new PHYSI.SphereMesh(new THREE.SphereGeometry(settings.player.radius), new THREE.MeshBasicMaterial({color: 0xc80000}), settings.player.mass);
     mesh.position.copy(pos);
-    scenemgr.addToScene(mesh, eid);
-    body.position.copy(pos);
-    scenemgr.addToWorld(body, eid);
+    mesh.addEventListener('ready', function () {
+        mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
+    });
+    simulator.add(mesh, eid);
 };
 
 exports.gameState = {};

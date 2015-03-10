@@ -25,9 +25,8 @@
 var
 // Module
     ocl = require('../util/ocl'),
-    scenemgr = require('./scene-manager'),
     command = require('../console/command'),
-    Sexhr = require('../vendor/SeXHR'),
+    simulator = require('../phys/simulator'),
 // Local
     ids = [];
 
@@ -44,11 +43,9 @@ exports.spawn = function (obj, id) {
     }
     if (obj.mesh) {
         obj.mesh.position.copy(obj.pos);
-        ids.push(scenemgr.addToScene(obj.mesh, id));
-    }
-    if (obj.body) {
-        obj.body.position.copy(obj.pos);
-        ids.push(scenemgr.addToWorld(obj.body, id));
+        obj.mesh.__dirtyPosition = true;
+        simulator.add(obj.mesh, id);
+        ids.push(id);
     }
 };
 

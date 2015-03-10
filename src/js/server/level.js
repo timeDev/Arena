@@ -44,9 +44,10 @@ exports.spawnObj = function (obj, id) {
         console.warn("Skipping map object without position.");
         return;
     }
-    if (obj.body) {
-        obj.body.position.copy(obj.pos);
-        simulator.add(obj.body, id);
+    if (obj.mesh) {
+        obj.mesh.position.copy(obj.pos);
+        obj.mesh.__dirtyPosition = true;
+        simulator.add(obj.mesh, id);
         ids.push(id);
     }
 };

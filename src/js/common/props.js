@@ -30,26 +30,6 @@ var
 // Local
     propList = {};
 
-function clone (obj) {
-    /// <summary>Makes an instance copy of an object by calling
-    /// the constructor and copying properties recursively.</summary>
-    if (obj === null || typeof (obj) !== 'object')
-        return obj;
-
-    if (typeof obj.clone === 'function') {
-        return obj.clone();
-    }
-
-    var temp = new obj.constructor();
-
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            temp[key] = clone(obj[key]);
-        }
-    }
-    return temp;
-}
-
 exports.load = function (name, cb) {
     if (propList[name] === undefined) {
         new Sexhr().req({
@@ -58,18 +38,15 @@ exports.load = function (name, cb) {
                 if (err) {
                     throw err;
                 }
-                ocl.load(res.text, function (prop) {
-                    propList[name] = prop;
-                    cb(exports.get(name));
-                });
+                propList[name] = res.text;
+                exports.get(name, cb);
             }
         });
     } else {
-        // Make sure the call is delayed
-        setTimeout(cb(exports.get(name)), 1);
+        exports.get(name, cb);
     }
 };
 
-exports.get = function (name) {
-    return clone(propList[name]);
+exports.get = function (name, cb) {
+    ocl.load(propList[name], cb);
 };

@@ -66,25 +66,23 @@ if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
 }
 
-var bodyI = 0;
+var meshI = 0;
 
 function update(time) {
     simulator.update(time);
     server.gameState.time += time;
     // Pick Object to broadcast
-    var playerBodies = server.players.map(function (p) {
-        return p.body;
+    var playerMeshes = server.players.map(function (p) {
+        return p.entityId;
     });
-    var bodies = simulator.world.bodies.filter(function (b) {
-        // Filter out players
-        return playerBodies.indexOf(b) < 0;
+    var meshIds = simulator.scene.children.map(simulator.getId).filter(function (m) {
+        return m > 0 && playerMeshes.indexOf(m) < 0;
     });
-    if (bodies.length > 0) {
-        if (bodyI >= bodies.length) {
-            bodyI = 0;
+    if (meshIds.length > 0) {
+        if (meshI >= meshIds.length) {
+            meshI = 0;
         }
-        var body = bodies[bodyI++];
-        var id = simulator.getId(body);
+        var id = meshIds[meshI++];
         protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
     }
 }

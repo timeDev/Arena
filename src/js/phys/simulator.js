@@ -24,85 +24,54 @@
 /*global require, module, exports */
 var
 // Module
-    CANNON = require('../vendor/cannon'),
+    PHYSI = require('../vendor/physi'),
     ocl = require('./../util/ocl'),
-    materials = require('./materials'),
+    THREE = require('../vendor/three'),
 // Local
-    world,
-    solver = new CANNON.GSSolver(),
-    split = true,
+    scene,
+    v3 = new THREE.Vector3(), // aux vector
     idLookup = [];
 
 // -- Setup --
-world = new CANNON.World();
-world.quatNormalizeSkip = 0;
-world.quatNormalizeFast = false;
+scene = new PHYSI.Scene();
 
-world.defaultContactMaterial.contactEquationStiffness = 1e9;
-world.defaultContactMaterial.contactEquationRegularizationTime = 4;
-
-world.addContactMaterial(materials.cmPlayerGround);
-world.addContactMaterial(materials.cmPlayerDefault);
-
-solver.iterations = 7;
-solver.tolerance = 0.1;
-if (split) {
-    world.solver = new CANNON.SplitSolver(solver);
-} else {
-    world.solver = solver;
-}
-
-world.gravity.set(0, -20, 0);
-world.broadphase = new CANNON.NaiveBroadphase();
-
-exports.world = world;
+exports.scene = scene;
 
 exports.update = function (time) {
-    world.step(1 / 60, time, 2);
+    scene.simulate(time, 2);
 };
 
 exports.updateBody = function (id, desc) {
-    var body = idLookup[id];
+    var mesh = idLookup[id];
     if (desc.v) {
-        body.velocity.set(desc.v[0], desc.v[1], desc.v[2]);
+        mesh.setLinearVelocity(v3.set(desc.v[0], desc.v[1], desc.v[2]));
     }
     if (desc.p) {
-        body.position.set(desc.p[0], desc.p[1], desc.p[2])
+        mesh.position.set(desc.p[0], desc.p[1], desc.p[2]);
+        mesh.__dirtyPosition = true;
     }
 };
 
 exports.makeUpdatePacket = function (id) {
-    var body = idLookup[id];
-    return {ph: {p: body.position.toArray(), v: body.velocity.toArray()}};
+    var mesh = idLookup[id];
+    return {ph: {p: mesh.position.toArray(), v: mesh.getLinearVelocity().toArray()}};
 };
 
-exports.getId = function (body) {
-    return idLookup.indexOf(body);
+exports.getId = function (mesh) {
+    return idLookup.indexOf(mesh);
 };
 
-exports.areColliding = function (id1, id2) {
-    var b1 = idLookup[id1],
-        b2 = idLookup[id2];
-    for (var i = 0; i < world.contacts.length; i++) {
-        var c = world.contacts[i];
-        if ((c.bi == b1 && c.bj == b2) || (c.bj == b1 && c.bi == b2)) {
-            return true;
-        }
-    }
-    return false;
+exports.getMesh = function (id) {
+    return idLookup[id];
 };
 
-exports.add = function (body, id) {
-    if (!body.material) {
-        body.material = materials.defaultMaterial;
-    }
-    idLookup[id] = body;
-    body.id = id;
-    world.add(body);
+exports.add = function (mesh, id) {
+    idLookup[id] = mesh;
+    scene.add(mesh);
 };
 
 exports.remove = function (id) {
-    world.remove(idLookup[id]);
+    scene.remove(idLookup[id]);
     delete idLookup[id].id;
     delete idLookup[id];
 };

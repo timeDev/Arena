@@ -49,7 +49,6 @@ var Clock = require('../util/clock'),
     simulator = require('../phys/simulator'),
     cmdEngine = require('../console/engine'),
     cmdBuiltins = require('../console/builtins'),
-    scenemgr = require('../client/scene-manager'),
     arena = require('../common/arena'),
     client = require('../client/client'),
     console = require('../dom/console'),
@@ -67,7 +66,6 @@ function update(time) {
     if (client.gameState.started) {
         controls.update(time);
         simulator.update(time);
-        scenemgr.copyWorldToScene();
     }
 }
 
@@ -90,14 +88,9 @@ function entrypoint() {
     overlay.add('sv-startup', 'The server has not yet startet the game.<p>Please wait.');
     overlay.show('sv-startup');
 
-    scenemgr.init(display.scene);
-
     controls.firstPersonCam(display.camera);
-    controls.sceneObj.position.set(0, 2, 0);
-    controls.physBody.position.set(0, 2, 0);
-    controls.physBody.linearDamping = 0.95;
-    display.scene.add(controls.sceneObj);
-    simulator.add(controls.physBody, 0);
+    controls.mesh.position.set(0, 2, 0);
+    simulator.add(controls.mesh, 0);
 
     display.render();
 

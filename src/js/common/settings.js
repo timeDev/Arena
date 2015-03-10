@@ -62,7 +62,7 @@ module.exports = {
         radius: 1.3,
         speed: 6.0,
         acc: 3.0,
-        jumpVel: 3.0,
+        jumpVel: 1.6,
         jumpDur: 0.08
     },
     graphics: {

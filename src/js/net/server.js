@@ -81,7 +81,11 @@ exports.sendPlayerData = function (p, plId, type, data) {
 
 receivers[1] = exports.receivePlayerData = function (p, d) {
     p.updateBody(d[1]);
-    exports.broadcast([1, p.playerId, 1, {p: p.body.position.toArray(), v: p.body.velocity.toArray(), pnr: d[2]}]);
+    exports.broadcast([1, p.playerId, 1, {
+        p: p.mesh.position.toArray(),
+        v: p.mesh.getLinearVelocity().toArray(),
+        pnr: d[2]
+    }]);
 };
 
 // Logon 3 name C>S
@@ -94,16 +98,16 @@ receivers[3] = exports.receiveLogon = function (p, d) {
         var player = server.players[i];
         exports.sendPlayerData(player, p.playerId, 2, {
             id: p.entityId,
-            pos: p.body.position.toArray()
+            pos: p.mesh.position.toArray()
         });
         exports.sendPlayerData(p, player.playerId, 2, {
             id: player.entityId,
-            pos: player.body.position.toArray()
+            pos: player.mesh.position.toArray()
         });
     }
     exports.sendGameState(p, server.gameState);
     server.players.push(p);
-    simulator.add(p.body, p.entityId);
+    simulator.add(p.mesh, p.entityId);
 };
 
 // Chat Message 4 msg C<>S
