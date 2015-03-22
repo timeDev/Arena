@@ -236,7 +236,11 @@ var
 scene = simulator.scene;
 camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
-scene.add(new THREE.AmbientLight());
+scene.add(new THREE.AmbientLight(0x404040));
+
+var light = new THREE.PointLight(0xffffff, 1, 20);
+light.position.set(10, 10, 10);
+scene.add(light);
 
 renderer = new THREE.WebGLRenderer();
 // The -5 is to hide scrollbars
