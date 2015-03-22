@@ -1,0 +1,30 @@
+[
+    {
+        "class": [ "obj", "rbox", "matlambert", "body", "cbox" ],
+        "obj": { "pos": [ 0, -0.005, 0 ] },
+        "rbox": [ 100, 0.01, 100 ],
+        "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
+        "matlambert": { "emissive": 6974058, "color": 8421504 }
+    },
+    {
+        "class": [ "obj", "rbox", "matlambert", "body", "cbox" ],
+        "obj": { "pos": [ 2, 1, 3 ] },
+        "rbox": [ 2, 2, 2 ],
+        "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
+        "matlambert": { "emissive": 136, "color": 255 }
+    },
+    {
+        "class": [ "obj", "rbox", "matlambert", "body", "cbox" ],
+        "obj": { "pos": [ 5, 1, 1.5 ] },
+        "rbox": [ 4, 2, 1 ],
+        "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
+        "matlambert": { "emissive": 136, "color": 255 }
+    },
+    {
+        "class": [ "obj", "rbox", "matlambert", "body", "cbox" ],
+        "obj": { "pos": [ 0, 1, 6 ] },
+        "rbox": [ 2, 2, 4 ],
+        "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
+        "matlambert": { "emissive": 136, "color": 255 }
+    }
+]
