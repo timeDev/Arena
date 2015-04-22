@@ -8,23 +8,30 @@
     },
     {
         "class": [ "obj", "rbox", "matlambert", "body", "cbox" ],
-        "obj": { "pos": [ 2, 1, 3 ] },
-        "rbox": [ 2, 2, 2 ],
+        "obj": { "pos": [ -4, 1, 6 ] },
+        "rbox": [ 4, 2, 4 ],
         "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
-        "matlambert": { "emissive": 136, "color": 255 }
+        "matlambert": { "emissive": "green", "color": "green" }
     },
     {
         "class": [ "obj", "rbox", "matlambert", "body", "cbox" ],
-        "obj": { "pos": [ 5, 1, 1.5 ] },
-        "rbox": [ 4, 2, 1 ],
+        "obj": { "pos": [ -8, 1, 3 ] },
+        "rbox": [ 4, 2, 2 ],
         "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
-        "matlambert": { "emissive": 136, "color": 255 }
+        "matlambert": { "emissive": "blue", "color": "blue" }
     },
     {
         "class": [ "obj", "rbox", "matlambert", "body", "cbox" ],
-        "obj": { "pos": [ 0, 1, 6 ] },
-        "rbox": [ 2, 2, 4 ],
+        "obj": { "pos": [ 0, 1, 12 ] },
+        "rbox": [ 8, 2, 4 ],
         "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
-        "matlambert": { "emissive": 136, "color": 255 }
+        "matlambert": { "emissive": "red", "color": "red" }
+    },
+    {
+        "class": [ "obj", "rbox", "matlambert", "body", "cbox" ],
+        "obj": { "pos": [ 4, 1, 4 ] },
+        "rbox": [ 4, 2, 4 ],
+        "body": { "mass": 0, "friction": 1.5, "restitution": 0.05 },
+        "matlambert": { "emissive": "yellow", "color": "yellow" }
     }
 ]
