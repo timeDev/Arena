@@ -45,14 +45,16 @@ exports.execute = function (commands, ctx) {
         stack.pop();
     }
     stack.push(ctx);
-    var lastVal;
     for (var i = 0; i < commands.length && !stack.last.returned; i++) {
         var cmd = commands[i];
-        lastVal = executeCmdline(cmd);
+        executeCmdline(cmd);
+        if (ctx.returned) {
+            break;
+        }
     }
     ctx = stack.pop();
     console.assert(stack.length === 0, "Stack size after execution is not zero!");
-    return ctx.retval === undefined ? lastVal : ctx.retval;
+    return ctx.retval;
 };
 
 function executeCmdline(cmdline) {
@@ -67,7 +69,15 @@ function executeCmdline(cmdline) {
         stack.last.returned = true;
         return stack.last.retval = executeCmdline(cmdline.body);
     } else if (cmdline.type === 'ass') {
-        return stack.last[cmdline.name] = executeValue(cmdline.value);
+        // Find the innermost context where the name is defined
+        var ctx = stack.last;
+        for (var i = stack.length - 1; i >= 0; i--) {
+            if (stack[i].hasOwnProperty(cmdline.name)) {
+                ctx = stack[i];
+                break;
+            }
+        }
+        return ctx[cmdline.name] = executeValue(cmdline.value);
     }
 }
 
@@ -79,7 +89,7 @@ function executeCmd(name, args) {
 function executeValue(value) {
     if (typeof value === 'string') {
         if (value[0] === '$') {
-            // Variables cannot be set yet, therefor none exist
+            // Variables cannot be set yet, therefore none exist
             var i = stack.length - 1;
             while (i >= 0 && !stack[i].hasOwnProperty(value.substr(1))) {
                 i--;
@@ -142,11 +152,13 @@ function executeExpression(expr) {
 
 function executeBlock(body) {
     stack.push({});
-    var lastVal = undefined;
     for (var i = 0; i < body.length && !stack.last.returned; i++) {
         var cmd = body[i];
-        lastVal = executeCmdline(cmd);
+        executeCmdline(cmd);
+        if (stack.last.returned) {
+            break;
+        }
     }
     var ctx = stack.pop();
-    return ctx.retval === undefined ? lastVal : ctx.retval;
+    return ctx.retval;
 }
