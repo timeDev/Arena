@@ -37,11 +37,12 @@ keys = {
     gameplay: {},
     player: {
         mass: 'sv_player_mass',
-        radius: 'sv_player_radius',
+        radius: 'sv_player_col_radius',
         speed: 'sv_player_speed',
         acc: 'sv_player_acc',
         jumpVel: 'sv_player_jumpVel',
-        jumpDur: 'sv_player_jumpDur'
+        jumpDur: 'sv_player_jumpDur',
+        height: 'sv_player_col_height'
     },
     graphics: {
         fov: 'cl_vfov'
@@ -59,11 +60,12 @@ module.exports = {
     gameplay: {},
     player: {
         mass: 80,
-        radius: 1.3,
+        radius: 0.6,
         speed: 6.0,
         acc: 3.0,
         jumpVel: 1.6,
-        jumpDur: 0.08
+        jumpDur: 0.08,
+        height: 1.8
     },
     graphics: {
         fov: 75.0

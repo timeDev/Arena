@@ -107,7 +107,7 @@ exports.update = function (dt) {
     input.resetDelta();
 };
 
-var mesh = new PHYSI.SphereMesh(new THREE.SphereGeometry(settings.player.radius),
+var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius,settings.player.height),
     PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
 
 mesh.addEventListener('ready', function () {

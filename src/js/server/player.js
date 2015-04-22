@@ -36,7 +36,7 @@ function Player(connection) {
     this.entityId = server.newId();
     this.playerId = Player.newId();
 
-    this.mesh = new PHYSI.SphereMesh(new THREE.SphereGeometry(settings.player.radius),
+    this.mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius,settings.player.height),
         PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
 }
 
