@@ -87,22 +87,37 @@ exports.registerCommand = function (name, handler) {
     registry[name] = {type: 'function', handler: handler};
 };
 
-exports.registerCvar = function (name, object, key) {
+var typesRegistry = {};
+
+exports.registerCvar = function (name, object, key, types) {
     exports.registerGetSet(name, function () {
         return object[key];
     }, function (value) {
         object[key] = value;
-    })
+    }, types);
 };
 
-exports.registerGetSet = function (name, getter, setter) {
+exports.registerGetSet = function (name, getter, setter, types) {
     if (registry[name]) {
         // warn("Command '" + name + "' already exists. Overriding.");
     }
     if (setter === undefined) {
         setter = getter;
     }
-    registry[name] = {type: 'cvar', getter: getter, setter: setter};
+    var setterWrap = types ? function (value) {
+        for (var i = 0; i < types.length; i++) {
+            if (!typesRegistry[types[i]].call(null, name, value)) {
+                return;
+            }
+        }
+        setter(value);
+    } : setter;
+
+    registry[name] = {type: 'cvar', getter: getter, setter: setterWrap, cvartypes: types};
+};
+
+exports.registerCvarType = function (name, handler) {
+    typesRegistry[name] = handler;
 };
 
 exports.registerAlias = function (name, fn) {
