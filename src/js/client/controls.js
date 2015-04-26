@@ -31,38 +31,79 @@ var
     settings = require('../common/settings'),
     command = require('../console/command'),
     protocol = require('./../net/client'),
+    scenehelper = require('../phys/scenehelper'),
 // Local
     paused = true,
     onground = true, jumpPrg = 0,
-    pitchObj = new THREE.Object3D(), yawObj = new THREE.Object3D(),
+    pitchObj = new THREE.Object3D(),
+    yawObj = new THREE.Object3D(),
     vec3a = new THREE.Vector3(),
-    downAxis = new THREE.Vector3(0, -1, 0);
+    downAxis = new THREE.Vector3(0, -1, 0),
+    mesh;
 
-input.pointerlocked.add(function () {
-    paused = false;
-    input.prevent = true;
-});
+exports.init = function (data) {
+    if (data.cameratype === "first person") {
+        exports.firstPersonCam(data.camera);
+    }
 
-input.pointerunlocked.add(function () {
-    paused = true;
-    input.prevent = false;
-});
+    input.pointerlocked.add(function () {
+        paused = false;
+        input.prevent = true;
+    });
 
-input.escape.add(function () {
-    paused = true;
-    input.prevent = false;
-});
+    input.pointerunlocked.add(function () {
+        paused = true;
+        input.prevent = false;
+    });
 
-input.bind('mouseaxis', 2, 'lookx');
-input.bind('mouseaxis', 3, 'looky');
-input.bind('key', keycode.w, 'movf');
-input.bind('key', keycode.a, 'movl');
-input.bind('key', keycode.s, 'movb');
-input.bind('key', keycode.d, 'movr');
-input.bind('key', keycode.space, 'jump');
-input.bind('mouse', 0, 'shoot');
+    input.escape.add(function () {
+        paused = true;
+        input.prevent = false;
+    });
 
-exports.update = function (dt) {
+    input.bind('mouseaxis', 2, 'lookx');
+    input.bind('mouseaxis', 3, 'looky');
+    input.bind('key', keycode.w, 'movf');
+    input.bind('key', keycode.a, 'movl');
+    input.bind('key', keycode.s, 'movb');
+    input.bind('key', keycode.d, 'movr');
+    input.bind('key', keycode.space, 'jump');
+    input.bind('mouse', 0, 'shoot');
+
+    mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height),
+        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
+
+    mesh.addEventListener('ready', function () {
+        mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
+    });
+
+    mesh.addEventListener('collision', function (other_object, relative_velocity, relative_rotation, contact_normal) {
+        // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+        if (contact_normal.dot(downAxis) > 0.5) {
+            onground = true;
+            jumpPrg = 0;
+        }
+    });
+
+    mesh.add(yawObj);
+
+    yawObj.rotation.y = 1.25 * Math.PI;
+
+    mesh.position.set(0, 2, 0);
+    scenehelper.add(mesh, 0);
+    data.playermesh = mesh;
+};
+
+exports.initDom = function () {
+};
+exports.render = function () {
+};
+
+exports.update = function (dt, data) {
+    if (!data.gameState.started) {
+        return;
+    }
+
     input.updateGamepad();
 
     var accdt = settings.player.acc * dt;
@@ -106,27 +147,6 @@ exports.update = function (dt) {
 
     input.resetDelta();
 };
-
-var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius,settings.player.height),
-    PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
-
-mesh.addEventListener('ready', function () {
-    mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
-});
-
-mesh.addEventListener('collision', function (other_object, relative_velocity, relative_rotation, contact_normal) {
-    // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
-    if (contact_normal.dot(downAxis) > 0.5) {
-        onground = true;
-        jumpPrg = 0;
-    }
-});
-
-mesh.add(yawObj);
-
-yawObj.rotation.y = 1.25 * Math.PI;
-
-exports.mesh = mesh;
 
 exports.firstPersonCam = function (camera) {
     pitchObj.add(camera);

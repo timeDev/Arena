@@ -26,25 +26,40 @@ var
     cmdEngine = require('../console/engine'),
     arena = require('../common/arena'),
     command = require('../console/command'),
+    scenehelper = require('../phys/scenehelper'),
+    protocol = require('../net/server'),
 // Local
-    players = [],
-    idCounter = 1;
+    idCounter = 1,
+    meshI = 0,
+    gamedata;
 
-exports.players = players;
+exports.init = function (data) {
+    gamedata = data;
+};
+exports.update = function (dt, data) {
+    data.gameState.time += dt;
+    // Pick Object to broadcast
+    var playerMeshes = data.players.map(function (p) {
+        return p.entityId;
+    });
+    var meshIds = game.data.scene.children.map(scenehelper.getId).filter(function (m) {
+        return m > 0 && playerMeshes.indexOf(m) < 0;
+    });
+    if (meshIds.length > 0) {
+        if (meshI >= meshIds.length) {
+            meshI = 0;
+        }
+        var id = meshIds[meshI++];
+        protocol.broadcast(protocol.updateEntity(id, scenehelper.makeUpdatePacket(id)));
+    }
+};
 
 exports.newId = function () {
     return idCounter++;
 };
 
-exports.mapState = [];
-
-exports.gameState = {
-    started: true,
-    time: 0.0
-};
-
 exports.getServerStatusMsg = function () {
-    return String.format("Running version {0} | {1} player(s) | Running for {2}s", arena.version, players.length, exports.gameState.time);
+    return String.format("Running version {0} | {1} player(s) | Running for {2}s", arena.version, gamedata.players.length, gamedata.gameState.time);
 };
 
 exports.executeCommand = null;
@@ -76,7 +91,7 @@ exports.execute = function (cmd) {
 command("tpa <x> <y> <z>", {
     mandatory: [{name: 'x', type: 'number'}, {name: 'y', type: 'number'}, {name: 'z', type: 'number'}]
 }, 'tpa', function (match) {
-    players.forEach(function (p) {
+    gamedata.players.forEach(function (p) {
         p.teleport(match.x, match.y, match.z);
     });
 });

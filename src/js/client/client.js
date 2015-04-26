@@ -28,14 +28,20 @@ var
     Connection = require('../net/connection'),
     protocol = require('./../net/client'),
     PHYSI = require('../vendor/physi'),
-    simulator = require('../phys/simulator'),
+    scenehelper = require('../phys/scenehelper'),
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
-    overlay = require('./overlay-mgr');
+    overlay = require('./overlay-mgr'),
+    // Local
+    data;
 
 exports.playerName = "Bob";
 
 exports.connection = null;
+
+exports.init = function (gamedata) {
+    data = gamedata;
+};
 
 exports.connect = function (address) {
     exports.connection = new Connection();
@@ -44,12 +50,9 @@ exports.connect = function (address) {
     protocol.sendLogon(exports.playerName);
 };
 
-// Maps player ids to entity ids
-exports.players = [];
-
 exports.spawnPlayer = function (pid, data) {
     var eid = data.id;
-    exports.players[pid] = eid;
+    data.players[pid] = eid;
     var pos = data.pos;
     pos = {x: pos[0], y: pos[1], z: pos[2]};
     var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius,settings.player.height), new THREE.MeshBasicMaterial({color: 0xc80000}), settings.player.mass);
@@ -57,10 +60,8 @@ exports.spawnPlayer = function (pid, data) {
     mesh.addEventListener('ready', function () {
         mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
     });
-    simulator.add(mesh, eid);
+    scenehelper.add(mesh, eid);
 };
-
-exports.gameState = {};
 
 exports.updateGameState = function (state) {
     if (state.started === true && overlay.active == 'sv-startup') {
@@ -72,7 +73,7 @@ exports.updateGameState = function (state) {
 
     for (var k in state) {
         if (state.hasOwnProperty(k)) {
-            exports.gameState[k] = state[k];
+            data.gameState[k] = state[k];
         }
     }
 };

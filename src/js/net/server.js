@@ -27,10 +27,14 @@ var
 // Module
     arena = require('../common/arena'),
     server = require('./../server/server'),
-    simulator = require('../phys/simulator'),
+    scenehelper = require('../phys/scenehelper'),
 // Local
-    players = server.players,
-    receivers = [];
+    receivers = [],
+    data;
+
+exports.init = function (gamedata) {
+    data = gamedata;
+};
 
 var send = exports.send = function (p, d) {
     p.connection.send(d);
@@ -40,8 +44,8 @@ var send = exports.send = function (p, d) {
 };
 
 exports.broadcast = function (d) {
-    for (var i = 0; i < players.length; i++) {
-        send(players[i], d);
+    for (var i = 0; i < data.players.length; i++) {
+        send(data.players[i], d);
     }
 };
 
@@ -93,9 +97,9 @@ receivers[1] = exports.receivePlayerData = function (p, d) {
 receivers[3] = exports.receiveLogon = function (p, d) {
     p.name = d[1];
     exports.sendPlayerData(p, p.playerId, 0, {});
-    exports.sendSpawnMany(p, server.mapState);
-    for (var i = 0; i < server.players.length; i++) {
-        var player = server.players[i];
+    exports.sendSpawnMany(p, data.mapState);
+    for (var i = 0; i < data.players.length; i++) {
+        var player = data.players[i];
         exports.sendPlayerData(player, p.playerId, 2, {
             id: p.entityId,
             pos: p.mesh.position.toArray()
@@ -105,9 +109,9 @@ receivers[3] = exports.receiveLogon = function (p, d) {
             pos: player.mesh.position.toArray()
         });
     }
-    exports.sendGameState(p, server.gameState);
-    server.players.push(p);
-    simulator.add(p.mesh, p.entityId);
+    exports.sendGameState(p, data.gameState);
+    data.players.push(p);
+    scenehelper.add(p.mesh, p.entityId);
 };
 
 // Chat Message 4 msg C<>S

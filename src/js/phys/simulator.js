@@ -22,56 +22,16 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-var
-// Module
-    PHYSI = require('../vendor/physi'),
-    ocl = require('./../util/ocl'),
-    THREE = require('../vendor/three'),
-// Local
-    scene,
-    v3 = new THREE.Vector3(), // aux vector
-    idLookup = [];
 
-// -- Setup --
-scene = new PHYSI.Scene();
-
-exports.scene = scene;
-
-exports.update = function (time) {
-    scene.simulate(time, 2);
-};
-
-exports.updateBody = function (id, desc) {
-    var mesh = idLookup[id];
-    if (desc.v) {
-        mesh.setLinearVelocity(v3.set(desc.v[0], desc.v[1], desc.v[2]));
-    }
-    if (desc.p) {
-        mesh.position.set(desc.p[0], desc.p[1], desc.p[2]);
-        mesh.__dirtyPosition = true;
+exports.update = function (dt, data) {
+    if (data.gameState.started) {
+        data.scene.simulate(dt, 2);
     }
 };
 
-exports.makeUpdatePacket = function (id) {
-    var mesh = idLookup[id];
-    return {ph: {p: mesh.position.toArray(), v: mesh.getLinearVelocity().toArray()}};
+exports.render = function () {
 };
-
-exports.getId = function (mesh) {
-    return idLookup.indexOf(mesh);
+exports.init = function () {
 };
-
-exports.getMesh = function (id) {
-    return idLookup[id];
-};
-
-exports.add = function (mesh, id) {
-    idLookup[id] = mesh;
-    scene.add(mesh);
-};
-
-exports.remove = function (id) {
-    scene.remove(idLookup[id]);
-    delete idLookup[id].id;
-    delete idLookup[id];
+exports.initDom = function () {
 };

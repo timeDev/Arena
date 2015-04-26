@@ -29,11 +29,14 @@ var
     ocl = require('../util/ocl'),
     Sexhr = require('../vendor/SeXHR'),
     protocol = require('./../net/server'),
-    simulator = require('../phys/simulator'),
+    scenehelper = require('../phys/scenehelper'),
     server = require('./server'),
 // Local
-    ids = [];
+    ids = [], data;
 
+exports.init = function(gamedata) {
+    data = gamedata;
+};
 
 exports.newIdFn = function () {
     return -1;
@@ -47,7 +50,7 @@ exports.spawnObj = function (obj, id) {
     if (obj.mesh) {
         obj.mesh.position.copy(obj.pos);
         obj.mesh.__dirtyPosition = true;
-        simulator.add(obj.mesh, id);
+        scenehelper.add(obj.mesh, id);
         ids.push(id);
     }
 };
@@ -55,7 +58,7 @@ exports.spawnObj = function (obj, id) {
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
     protocol.broadcast(protocol.spawnObject(id, str));
-    server.mapState.push({id: id, str: str});
+    data.mapState.push({id: id, str: str});
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
     });
@@ -65,10 +68,10 @@ exports.clear = function () {
     ids.forEach(function (id) {
         protocol.broadcast(protocol.killEntity(id));
     });
-    ids.forEach(simulator.remove);
+    ids.forEach(scenehelper.remove);
     ids = [];
-    while (server.mapState.length > 0) {
-        server.mapState.pop();
+    while (data.mapState.length > 0) {
+        data.mapState.pop();
     }
 };
 

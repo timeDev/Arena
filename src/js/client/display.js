@@ -33,96 +33,93 @@ var
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
     overlay = require('./overlay-mgr'),
-    simulator = require('../phys/simulator'),
 // Local
-    scene, camera, renderer,
-// Function
-    render, start;
+    scene, renderer, light, ol, renderStats;
 
-// -- Setup --
-scene = simulator.scene;
-camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
+exports.init = function (data) {
+    scene = data.scene;
 
-scene.add(new THREE.AmbientLight(0x404040));
+    scene.add(new THREE.AmbientLight(0x404040));
 
-var light = new THREE.PointLight(0xffffff, 1, 20);
-light.position.set(10, 10, 10);
-scene.add(light);
+    light = new THREE.PointLight(0xffffff, 1, 20);
+    light.position.set(10, 10, 10);
+    scene.add(light);
 
-renderer = new THREE.WebGLRenderer();
-// The -5 is to hide scrollbars
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-window.addEventListener('resize', function () {
+    renderer = new THREE.WebGLRenderer();
+    // The -5 is to hide scrollbars
     renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.aspect = window.innerWidth / (window.innerHeight);
-    camera.updateProjectionMatrix();
-});
-document.body.appendChild(renderer.domElement);
 
-overlay.reference = renderer.domElement;
+    input.pointerlocked.add(function () {
+        if (overlay.active == 'pause')
+            overlay.hide();
+    });
+    input.pointerunlocked.add(overlay.show.bind(null, 'pause'));
+    input.escape.add(overlay.show.bind(null, 'pause'));
 
-var ol = overlay.add('pause', "<p>Click to play!<p>Use the mouse to look around, WASD to walk, SPACE to jump<p>Have fun!");
+    // -- Stats --
+    renderStats = new Stats();
+    renderStats.domElement.style.position = 'absolute';
+    renderStats.domElement.style.left = '0px';
+    renderStats.domElement.style.top = '0px';
 
-ol.domElement.onclick = renderer.domElement.onclick = function () {
-    input.trylockpointer(renderer.domElement);
+    if (settings.debug.showGrid) {
+        var gridXZ = new THREE.GridHelper(100, 1),
+            gridXY = new THREE.GridHelper(100, 1),
+            gridYZ = new THREE.GridHelper(100, 1);
+
+        gridXZ.setColors(0xf00000, 0xff0000);
+        gridXY.setColors(0x00f000, 0x00ff00);
+        gridYZ.setColors(0x0000f0, 0x0000ff);
+
+        gridXZ.position.set(100, 0, 100);
+        gridXY.position.set(100, 100, 0);
+        gridYZ.position.set(0, 100, 100);
+
+        gridXY.rotation.x = Math.HALF_PI;
+        gridYZ.rotation.z = Math.HALF_PI;
+
+        scene.add(gridXZ);
+        scene.add(gridXY);
+        scene.add(gridYZ);
+    }
+
+    // -- Commands --
+    command("cl_refresh_vp", {}, 'cl_refresh_vp', function () {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        data.camera.aspect = window.innerWidth / (window.innerHeight);
+        data.camera.fov = settings.graphics.fov;
+        data.camera.updateProjectionMatrix();
+    });
 };
 
-input.pointerlocked.add(function () {
-    if (overlay.active == 'pause')
-        overlay.hide();
-});
-input.pointerunlocked.add(overlay.show.bind(null, 'pause'));
-input.escape.add(overlay.show.bind(null, 'pause'));
-
-makeDraggable(console.domElement);
-document.body.appendChild(console.domElement);
-
-document.body.appendChild(chat.domElement);
-
-// -- Stats --
-var renderStats = new Stats();
-renderStats.domElement.style.position = 'absolute';
-renderStats.domElement.style.left = '0px';
-renderStats.domElement.style.top = '0px';
-document.body.appendChild(renderStats.domElement);
-
-render = function () {
-    window.requestAnimationFrame(render);
+exports.render = function (dt, data) {
     renderStats.begin();
-    renderer.render(scene, camera);
+    renderer.render(data.scene, data.camera);
     renderStats.end();
 };
 
-if (settings.debug.showGrid) {
-    var gridXZ = new THREE.GridHelper(100, 1),
-        gridXY = new THREE.GridHelper(100, 1),
-        gridYZ = new THREE.GridHelper(100, 1);
+exports.initDom = function (data) {
+    window.addEventListener('resize', function () {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        data.camera.aspect = window.innerWidth / (window.innerHeight);
+        data.camera.updateProjectionMatrix();
+    });
+    document.body.appendChild(renderer.domElement);
 
-    gridXZ.setColors(0xf00000, 0xff0000);
-    gridXY.setColors(0x00f000, 0x00ff00);
-    gridYZ.setColors(0x0000f0, 0x0000ff);
+    overlay.reference = renderer.domElement;
 
-    gridXZ.position.set(100, 0, 100);
-    gridXY.position.set(100, 100, 0);
-    gridYZ.position.set(0, 100, 100);
+    ol = overlay.add('pause', "<p>Click to play!<p>Use the mouse to look around, WASD to walk, SPACE to jump<p>Have fun!");
 
-    gridXY.rotation.x = Math.HALF_PI;
-    gridYZ.rotation.z = Math.HALF_PI;
+    ol.domElement.onclick = renderer.domElement.onclick = function () {
+        input.trylockpointer(renderer.domElement);
+    };
 
-    scene.add(gridXZ);
-    scene.add(gridXY);
-    scene.add(gridYZ);
-}
+    makeDraggable(console.domElement);
+    document.body.appendChild(console.domElement);
+    document.body.appendChild(chat.domElement);
+    document.body.appendChild(renderStats.domElement);
+};
 
-exports.scene = scene;
-exports.render = render;
-exports.camera = camera;
+exports.update = function() {
 
-// -- Commands --
-command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.aspect = window.innerWidth / (window.innerHeight);
-    camera.fov = settings.graphics.fov;
-    camera.updateProjectionMatrix();
-});
+};

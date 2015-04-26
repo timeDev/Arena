@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,12 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-var work = require('webworkify');
+var reg = {};
 
-function Clock(period, callback) {
-    this.period = period;
-    this.worker = work(require('./clock_worker.js'));
-    this.worker.onmessage = callback;
-}
-
-Clock.prototype.start = function () {
-    this.worker.postMessage(['start', this.period]);
+module.exports = function (name) {
+    var now = window.performance.now();
+    var last = reg[name] || now;
+    var delta = (now - last) / 1000;
+    reg[name] = now;
+    return delta;
 };
-
-Clock.prototype.stop = function () {
-    this.worker.postMessage(['stop']);
-};
-
-Clock.startNew = function (period, callback) {
-    var obj = new Clock(period, callback);
-    obj.start();
-    return obj;
-};
-
-module.exports = Clock;

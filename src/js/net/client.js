@@ -27,10 +27,14 @@ var
 // Module
     arena = require('../common/arena'),
     client = require('./../client/client'),
-    simulator = require('../phys/simulator'),
     chat = require('../dom/chat'),
+    scenehelper = require('../phys/scenehelper'),
 // Local
-    receivers = [];
+    receivers = [], data;
+
+exports.init = function (gamedata) {
+    data = gamedata;
+};
 
 exports.receive = function (d) {
     if (arena.debug) {
@@ -69,26 +73,25 @@ exports.sendPlayerData = function (data) {
 };
 
 receivers[1] = exports.receivePlayerData = function (d) {
-    var eid, pid = d[1], type = d[2], data = d[3];
+    var eid, pid = d[1], type = d[2], pkdata = d[3];
     if (type === 0) {
-        client.players[pid] = 0;
+        data.players[pid] = 0;
     }
     if (type === 1) {
-        eid = client.players[pid];
+        eid = data.players[pid];
         var pcktcount = unackPkts.filter(function (e) {
             return e !== undefined;
         }).length;
         if (eid === 0) {
-            var pnr = data.pnr;
+            var pnr = pkdata.pnr;
             var pkt = unackPkts[pnr];
             // Only correct position as player acceleration is pretty high
-            var corr = {x: data.p[0] - pkt.p[0], y: data.p[1] - pkt.p[1], z: data.p[2] - pkt.p[2]};
+            var corr = {x: pkdata.p[0] - pkt.p[0], y: pkdata.p[1] - pkt.p[1], z: pkdata.p[2] - pkt.p[2]};
             // Avoid cyclic deps
-            var controls = require('./../client/controls');
-            controls.mesh.position.add(corr);
+            data.playermesh.position.add(corr);
             delete unackPkts[pnr];
         } else {
-            simulator.updateBody(eid, data);
+            scenehelper.updateBody(eid, pkdata);
         }
         if (pcktcount < 1) {
             unackPkts = [];
@@ -100,7 +103,7 @@ receivers[1] = exports.receivePlayerData = function (d) {
         client.spawnPlayer(pid, data);
     }
     if (type === 3) {
-        client.players[pid] = undefined;
+        data.players[pid] = undefined;
     }
 };
 
@@ -140,14 +143,14 @@ receivers[11] = exports.receiveSpawnEntity = function (d) {
 
 receivers[12] = exports.receiveUpdateEntity = function (d) {
     if (d[2].ph) {
-        simulator.updateBody(d[1], d[2].ph);
+        scenehelper.updateBody(d[1], d[2].ph);
     }
 };
 
 // Kill entity by id 13 id S>C
 
 receivers[13] = exports.receiveKillEntity = function (d) {
-    simulator.remove(d[1]);
+    scenehelper.remove(d[1]);
 };
 
 // Spawn many 14 list

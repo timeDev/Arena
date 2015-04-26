@@ -43,6 +43,7 @@ if (!String.format) {
     };
 }
 
+
 var
 // Module
     server = require('../server/server'),
@@ -51,40 +52,50 @@ var
     cmdBuiltins = require('../console/builtins'),
     Connection = require('../net/connection'),
     protocol = require('../net/server'),
-    simulator = require('../phys/simulator'),
-    Clock = require('../util/clock'),
     Player = require('../server/player'),
     arena = require('../common/arena'),
     level = require('../server/level'),
     settings = require('../common/settings'),
+    PHYSI = require('../vendor/physi'),
 // Local
     conListener;
+
+console.log("Playing Arena version", arena.version);
+if (arena.debug) {
+    console.warn("Debug mode is enabled");
+    window.debugging = true;
+}
+
+settings.api.init();
+settings.api.loadCfg();
+
+var game = window.game = require('../game');
+
+// Add common data
+game.data.scene = new PHYSI.Scene();
+game.data.players = [];
+game.data.bodies = []; // ID-Body lookup
+game.data.entities = []; // EntityId-BodyId lookup
+game.data.gameState = {
+    started: true,
+    time: 0.0
+};
+game.data.mapState = [];
+
+// Add components
+game.addComponent(require('../phys/simulator'));
+
+require('../phys/scenehelper').init(game.data);
+require('../net/server').init(game.data);
+server.init(game.data);
+level.init(game.data);
+
+game.init();
 
 level.newIdFn = server.newId;
 
 if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
-}
-
-var meshI = 0;
-
-function update(time) {
-    simulator.update(time);
-    server.gameState.time += time;
-    // Pick Object to broadcast
-    var playerMeshes = server.players.map(function (p) {
-        return p.entityId;
-    });
-    var meshIds = simulator.scene.children.map(simulator.getId).filter(function (m) {
-        return m > 0 && playerMeshes.indexOf(m) < 0;
-    });
-    if (meshIds.length > 0) {
-        if (meshI >= meshIds.length) {
-            meshI = 0;
-        }
-        var id = meshIds[meshI++];
-        protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
-    }
 }
 
 function connect(c) {
@@ -101,12 +112,13 @@ conListener.on('open', function (id) {
     console.writeLine("connect \"" + id + "\"", 'greenyellow');
     console.w.log("Server connection id:", id);
 });
-Clock.startNew(16, update);
+
+game.run();
 
 var cmdEnv = {
     log: function () {
         var msg = Array.prototype.join.call(arguments, " ");
-        server.players.forEach(function (p) {
+        game.data.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
                 protocol.sendRconMessage(p, msg);
             }
@@ -116,7 +128,7 @@ var cmdEnv = {
     },
     error: function () {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
-        server.players.forEach(function (p) {
+        game.data.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
                 protocol.sendRconMessage(p, msg);
             }
@@ -127,7 +139,7 @@ var cmdEnv = {
     ,
     warn: function () {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
-        server.players.forEach(function (p) {
+        game.data.players.forEach(function (p) {
             if (p.data.rconAuthorized) {
                 protocol.sendRconMessage(p, msg);
             }

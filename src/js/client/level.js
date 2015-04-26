@@ -26,15 +26,11 @@ var
 // Module
     ocl = require('../util/ocl'),
     command = require('../console/command'),
-    simulator = require('../phys/simulator'),
+    scenehelper = require('../phys/scenehelper'),
 // Local
     ids = [];
 
 require('../common/level');
-
-exports.load = function () {
-    throw "deprecated";
-};
 
 exports.spawn = function (obj, id) {
     if (!obj.pos) {
@@ -44,7 +40,7 @@ exports.spawn = function (obj, id) {
     if (obj.mesh) {
         obj.mesh.position.copy(obj.pos);
         obj.mesh.__dirtyPosition = true;
-        simulator.add(obj.mesh, id);
+        scenehelper.add(obj.mesh, id);
         ids.push(id);
     }
 };

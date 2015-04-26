@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,47 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-var work = require('webworkify');
+var
+    THREE = require('../vendor/three'),
+    v3 = new THREE.Vector3(),
+    data;
 
-function Clock(period, callback) {
-    this.period = period;
-    this.worker = work(require('./clock_worker.js'));
-    this.worker.onmessage = callback;
-}
 
-Clock.prototype.start = function () {
-    this.worker.postMessage(['start', this.period]);
+exports.init = function (gamedata) {
+    data = gamedata;
 };
 
-Clock.prototype.stop = function () {
-    this.worker.postMessage(['stop']);
+exports.updateBody = function (id, desc) {
+    var mesh = data.bodies[id];
+    if (desc.v) {
+        mesh.setLinearVelocity(v3.set(desc.v[0], desc.v[1], desc.v[2]));
+    }
+    if (desc.p) {
+        mesh.position.set(desc.p[0], desc.p[1], desc.p[2]);
+        mesh.__dirtyPosition = true;
+    }
 };
 
-Clock.startNew = function (period, callback) {
-    var obj = new Clock(period, callback);
-    obj.start();
-    return obj;
+exports.makeUpdatePacket = function (id) {
+    var mesh = data.bodies[id];
+    return {ph: {p: mesh.position.toArray(), v: mesh.getLinearVelocity().toArray()}};
 };
 
-module.exports = Clock;
+exports.getId = function (mesh) {
+    return data.bodies.indexOf(mesh);
+};
+
+exports.getMesh = function (id) {
+    return data.bodies[id];
+};
+
+exports.add = function (mesh, id) {
+    data.bodies[id] = mesh;
+    data.scene.add(mesh);
+};
+
+exports.remove = function (id) {
+    data.scene.remove(data.bodies[id]);
+    delete data.bodies[id].id;
+    delete data.bodies[id];
+};

@@ -43,18 +43,16 @@ if (!String.format) {
     };
 }
 
-var Clock = require('../util/clock'),
+
+var arena = require('../common/arena'),
     settings = require('../common/settings'),
-    controls = require('../client/controls'),
-    simulator = require('../phys/simulator'),
+    console = require('../dom/console'),
+    PHYSI = require('../vendor/physi'),
+    THREE = require('../vendor/three'),
     cmdEngine = require('../console/engine'),
     cmdBuiltins = require('../console/builtins'),
-    arena = require('../common/arena'),
-    client = require('../client/client'),
-    console = require('../dom/console'),
     overlay = require('../client/overlay-mgr');
 
-require('../client/rcon');
 
 console.log("Playing Arena version", arena.version);
 if (arena.debug) {
@@ -62,15 +60,36 @@ if (arena.debug) {
     window.debugging = true;
 }
 
-function update(time) {
-    if (client.gameState.started) {
-        controls.update(time);
-        simulator.update(time);
-    }
-}
-
 settings.api.init();
 settings.api.loadCfg();
+
+var game = window.game = require('../game');
+
+// Add common data
+game.data.clientside = true;
+game.data.scene = new PHYSI.Scene();
+game.data.bodies = []; // ID-Body lookup
+game.data.entities = []; // EntityId-BodyId lookup
+
+game.data.server = {};
+game.data.players = [];
+game.data.gameState = {};
+
+game.data.cameratype = "first person";
+game.data.camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
+
+// Add components
+game.addComponent(require('../client/display'));
+game.addComponent(require('../client/controls'));
+game.addComponent(require('../phys/simulator'));
+
+require('../phys/scenehelper').init(game.data);
+require('../client/client').init(game.data);
+require('../net/client').init(game.data);
+
+game.init();
+
+require('../client/rcon');
 
 if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
@@ -83,18 +102,12 @@ console.executeFn = window.c = function (str) {
 
 // Entry point
 function entrypoint() {
-    var display = require('../client/display');
+    game.initDom();
 
     overlay.add('sv-startup', 'The server has not yet startet the game.<p>Please wait.');
     overlay.show('sv-startup');
 
-    controls.firstPersonCam(display.camera);
-    controls.mesh.position.set(0, 2, 0);
-    simulator.add(controls.mesh, 0);
-
-    display.render();
-
-    Clock.startNew(16, update);
+    game.run();
 }
 
 if (document.readyState === 'interactive') {
