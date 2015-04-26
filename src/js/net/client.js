@@ -65,11 +65,13 @@ receivers[0] = exports.receiveKeepAlive = function (d) {
 // 2 = connect, 3 = disconnect
 
 var pktnr = 0,
-    unackPkts = [];
+    unackPkts = [],
+    packetStat = 0;
 
 exports.sendPlayerData = function (data) {
     sendRaw([1, data, ++pktnr]);
     unackPkts[pktnr] = data;
+    packetStat++;
 };
 
 receivers[1] = exports.receivePlayerData = function (d) {
@@ -79,21 +81,18 @@ receivers[1] = exports.receivePlayerData = function (d) {
     }
     if (type === 1) {
         eid = data.players[pid];
-        var pcktcount = unackPkts.filter(function (e) {
-            return e !== undefined;
-        }).length;
         if (eid === 0) {
             var pnr = pkdata.pnr;
             var pkt = unackPkts[pnr];
             // Only correct position as player acceleration is pretty high
             var corr = {x: pkdata.p[0] - pkt.p[0], y: pkdata.p[1] - pkt.p[1], z: pkdata.p[2] - pkt.p[2]};
-            // Avoid cyclic deps
             data.playermesh.position.add(corr);
             delete unackPkts[pnr];
+            packetStat--;
         } else {
             scenehelper.updateBody(eid, pkdata);
         }
-        if (pcktcount < 1) {
+        if (packetStat < 1) {
             unackPkts = [];
             // Reset the counter so everyone is happy
             pktnr = 0;
