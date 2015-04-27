@@ -127,7 +127,7 @@ exports.update = function (dt, data) {
         changeVel.setLength(accdt);
     }
 
-    changeVel.y = -1;
+    changeVel.y = -40 * dt;
 
     if (onground === false) {
         changeVel.multiplyScalar(0.1);
@@ -137,7 +137,7 @@ exports.update = function (dt, data) {
         if (onground) {
             changeVel.multiplyScalar(1.2);
         }
-        changeVel.y = settings.player.jumpVel;
+        changeVel.y = settings.player.jumpVel * dt;
         onground = false;
         jumpPrg += dt;
     }
