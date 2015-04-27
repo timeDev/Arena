@@ -84,10 +84,10 @@ game.data.mapState = [];
 
 // Add components
 game.addComponent(require('../phys/simulator'));
+game.addComponent(server);
 
 require('../phys/scenehelper').init(game.data);
 require('../net/server').init(game.data);
-server.init(game.data);
 level.init(game.data);
 
 game.init();

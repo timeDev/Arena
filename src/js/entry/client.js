@@ -97,7 +97,7 @@ if (!cmdBuiltins.registered) {
 
 // Add command shorthand
 console.executeFn = window.c = function (str) {
-    return cmdEngine.executeString(str, window.console);
+    return cmdEngine.executeString(str, require('../dom/console'));
 };
 
 // Entry point
