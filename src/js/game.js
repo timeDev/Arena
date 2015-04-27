@@ -74,7 +74,7 @@ exports.run = function () {
     if (exports.data.clientside) {
         loop = require('./util/renderloop')(exports.render);
     }
-    clock = new (require('./util/clock'))(1 / 60, exports.update);
+    clock = new (require('./util/clock'))(16, exports.update);
     exports.start();
 };
 
