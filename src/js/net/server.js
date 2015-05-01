@@ -58,16 +58,15 @@ packets[14] = makePacket(['list'], 14, 'spawnMany');
 // 20:Game State [S->C] state
 packets[20] = makePacket(['state'], 20, 'gameState');
 
-exports.init = function () {
-};
-
-exports.receive = function (d) {
+exports.receive = function (p, d) {
     if (arena.debug) {
         console.log("[in]", d);
     }
     var type = d[0];
     var pck = packets[type].receive(d);
+    pck.player = p;
     queue.push(pck);
+    p.data.timer = Date.now();
 };
 
 exports.update = function (dt, data) {
@@ -75,10 +74,6 @@ exports.update = function (dt, data) {
     queue = [];
 
     handleCommon(data);
-};
-
-exports.send = function (player, pck) {
-    packets[pck.id].send(sendRaw.bind(player), pck);
 };
 
 exports.makePacket = function (type) {
@@ -120,159 +115,18 @@ exports.init = function (gamedata) {
     data = gamedata;
 };
 
-var send = exports.send = function (p, d) {
-    p.connection.send(d);
+exports.send = function (player, pck) {
+    packets[pck.id].send(sendRaw.bind(player), pck);
     if (arena.debug) {
-        console.log("[out]", p.playerId, ",", d);
+        console.log("[out]", player.playerId, ",", pck);
     }
 };
 
-exports.broadcast = function (d) {
+exports.broadcast = function (pck) {
     for (var i = 0; i < data.players.length; i++) {
-        send(data.players[i], d);
+        packets[pck.id].send(sendRaw.bind(data.players[i]), pck);
     }
-};
-
-exports.receive = function (p, d) {
     if (arena.debug) {
-        console.log("[in]", p.playerId, ",", d);
+        console.log("[out] [broadcast] ,", pck);
     }
-    var type = d[0];
-    receivers[type](p, d);
-    p.data.timer = Date.now();
-};
-
-// KeepAlive 0 num S<>C
-
-exports.sendKeepAlive = function (p) {
-    var num = Math.random();
-    p.data.lastKeepAlive = num;
-    send(p, [0, num]);
-};
-
-receivers[0] = exports.receiveKeepAlive = function (p, d) {
-    var num = d[1];
-    if (p.data.lastKeepAlive === num) {
-        p.data.lastKeepAlive = -1;
-    }
-};
-
-// PlayerData 1 playerId type data S>C
-//            1 data pktnr C>S
-// Types:
-// 0 = welcome, 1 = position
-// 2 = connect, 3 = disconnect
-
-exports.sendPlayerData = function (p, plId, type, data) {
-    send(p, [1, plId, type, data]);
-};
-
-receivers[1] = exports.receivePlayerData = function (p, d) {
-    p.updateBody(d[1]);
-    exports.broadcast([1, p.playerId, 1, {
-        p: p.mesh.position.toArray(),
-        v: p.mesh.getLinearVelocity().toArray(),
-        pnr: d[2]
-    }]);
-};
-
-// Logon 3 name C>S
-
-receivers[3] = exports.receiveLogon = function (p, d) {
-    p.name = d[1];
-    exports.sendPlayerData(p, p.playerId, 0, {});
-    exports.sendSpawnMany(p, data.mapState);
-    for (var i = 0; i < data.players.length; i++) {
-        var player = data.players[i];
-        exports.sendPlayerData(player, p.playerId, 2, {
-            id: p.entityId,
-            pos: p.mesh.position.toArray()
-        });
-        exports.sendPlayerData(p, player.playerId, 2, {
-            id: player.entityId,
-            pos: player.mesh.position.toArray()
-        });
-    }
-    exports.sendGameState(p, data.gameState);
-    data.players.push(p);
-    scenehelper.add(p.mesh, p.entityId);
-};
-
-// Chat Message 4 msg C<>S
-
-exports.sendChatMsg = function (p, msg) {
-    send(p, [4, msg]);
-};
-
-exports.chatMsg = function (msg) {
-    return [4, msg];
-};
-
-receivers[4] = exports.receiveChatMsg = function (p, d) {
-    var origMsg = d[1];
-    var playerName = p.name;
-    var msg = playerName + ": " + origMsg + "<br>";
-    // TODO: filter event exploits
-    exports.broadcast(exports.chatMsg(msg));
-};
-
-// === Entities ===
-
-// Spawn object from string 10 id string S>C
-
-exports.sendSpawnObject = function (p, id, str) {
-    send(p, [10, id, str]);
-};
-
-exports.spawnObject = function (id, str) {
-    return [10, id, str];
-};
-
-// Spawn entity by name 11 id name meta S>C
-
-exports.sendSpawnEntity = function (p, id, name, meta) {
-    send(p, [11, id, name, meta]);
-};
-
-exports.spawnEntity = function (id, name, meta) {
-    return [11, id, name, meta];
-};
-
-// Update entity by id 12 id meta S>C
-
-exports.sendUpdateEntity = function (p, id, meta) {
-    send(p, [12, id, meta]);
-};
-
-exports.updateEntity = function (id, meta) {
-    return [12, id, meta];
-};
-
-// Kill entity by id 13 id S>C
-
-exports.sendKillEntity = function (p, id) {
-    send(p, [13, id]);
-};
-
-exports.killEntity = function (id) {
-    return [13, id];
-};
-
-// Spawn many 14 list
-// list: array of {id,str/name,meta}
-
-exports.sendSpawnMany = function (p, list) {
-    send(p, [14, list]);
-};
-
-// ===
-
-// Game state 20 state S>C
-
-exports.sendGameState = function (p, state) {
-    send(p, [20, state]);
-};
-
-exports.gameState = function (state) {
-    return [20, state];
 };

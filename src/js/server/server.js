@@ -50,7 +50,43 @@ exports.update = function (dt, data) {
             meshI = 0;
         }
         var id = meshIds[meshI++];
-        protocol.broadcast(protocol.updateEntity(id, scenehelper.makeUpdatePacket(id)));
+        protocol.broadcast(protocol.makePacket('updateEnt', id, scenehelper.makeUpdatePacket(id)));
+    }
+
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i], player = pck.player;
+        if (pck.type == 'playerDataS') {
+            player.updateBody(pck.data);
+            exports.broadcast(exports.makePacket('playerDataC', p.playerId, 1, {
+                p: player.mesh.position.toArray(),
+                v: player.mesh.getLinearVelocity().toArray(),
+                pnr: pck.pknr
+            }));
+        } else if(pck.type == 'logon') {
+            player.name = pck.name;
+            exports.send(player, exports.makePacket('playerDataC', player.playerId, 0, {}));
+            exports.send(player, exports.makePacket('spawnMany', player, data.mapState));
+            for (var j = 0; j < data.players.length; j++) {
+                var player2 = data.players[j];
+                exports.send(player2, exports.makePacket('playerDataC', player.playerId, 2, {
+                    id: player.entityId,
+                    pos: player.mesh.position.toArray()
+                }));
+                exports.send(player, exports.makePacket('playerDataC', player2.playerId, 2, {
+                    id: player2.entityId,
+                    pos: player2.mesh.position.toArray()
+                }));
+            }
+            exports.send(player, exports.makePacket('gameState', data.gameState));
+            data.players.push(player);
+            scenehelper.add(player.mesh, player.entityId);
+        } else if(pck.type == 'chatMsg') {
+            var origMsg = pck.msg;
+            var playerName = player.name;
+            var msg = playerName + ": " + origMsg + "<br>";
+            // TODO: filter event exploits
+            exports.broadcast(exports.makePacket('chatMsg', msg));
+        }
     }
 };
 

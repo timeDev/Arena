@@ -34,7 +34,7 @@ var
 // Local
     ids = [], data;
 
-exports.init = function(gamedata) {
+exports.init = function (gamedata) {
     data = gamedata;
 };
 
@@ -57,7 +57,7 @@ exports.spawnObj = function (obj, id) {
 
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
-    protocol.broadcast(protocol.spawnObject(id, str));
+    protocol.broadcast(protocol.makePacket('spawnObj', id, str));
     data.mapState.push({id: id, str: str});
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
@@ -66,7 +66,7 @@ exports.spawnString = function (str) {
 
 exports.clear = function () {
     ids.forEach(function (id) {
-        protocol.broadcast(protocol.killEntity(id));
+        protocol.broadcast(protocol.makePacket('killEntity', id));
     });
     ids.forEach(scenehelper.remove);
     ids = [];
