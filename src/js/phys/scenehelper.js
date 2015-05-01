@@ -32,6 +32,22 @@ exports.init = function (gamedata) {
     data = gamedata;
 };
 
+exports.initDom = function () {
+};
+exports.render = function () {
+};
+
+exports.update = function (dt, data) {
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i];
+        if(pck.type == 'updateEnt' && pck.data.ph) {
+            exports.updateBody(pck.eid, pck.data.ph);
+        } else if(pck.type == 'killEnt' && pck.data.ph) {
+            exports.remove(pck.eid);
+        }
+    }
+};
+
 exports.updateBody = function (id, desc) {
     var mesh = data.bodies[id];
     if (desc.v) {

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,33 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-exports.major = 0;
-exports.minor = 7;
-exports.revision = 0;
-exports.build = 103;
-exports.timestamp = "2015-04-27T19:21:01.417Z";
 
-exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
-exports.versionString = exports.versionArray.join(".");
+module.exports = function (mapping, id, type) {
+    function receive(d) {
+        return make.apply(this, d.slice(1));
+    }
+
+    function make() {
+        var pck = {id: id, type: type};
+        for (var i = 0; i < mapping.length && i < arguments.length; i++) {
+            pck[mapping[i]] = arguments[i];
+        }
+        return pck;
+    }
+
+    function send(sendfn, pck) {
+        var arr = [id];
+        for (var i = 0; i < mapping.length; i++) {
+            arr[i + 1] = pck[mapping[i]];
+        }
+        sendfn(arr);
+    }
+
+    return {
+        receive: receive,
+        make: make,
+        send: send,
+        id: id,
+        type: type
+    };
+};

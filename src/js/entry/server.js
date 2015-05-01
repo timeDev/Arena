@@ -119,9 +119,9 @@ var cmdEnv = {
     log: function () {
         var msg = Array.prototype.join.call(arguments, " ");
         game.data.players.forEach(function (p) {
-            if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
-            }
+            //if (p.data.rconAuthorized) {
+            //    protocol.sendRconMessage(p, msg);
+            //}
         });
         console.log.apply(console, arguments);
         console.w.log.apply(console.w, arguments);
@@ -129,9 +129,9 @@ var cmdEnv = {
     error: function () {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
         game.data.players.forEach(function (p) {
-            if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
-            }
+            //if (p.data.rconAuthorized) {
+            //    protocol.sendRconMessage(p, msg);
+            //}
         });
         console.error.apply(console, arguments);
         console.w.error.apply(console.w, arguments);
@@ -140,9 +140,9 @@ var cmdEnv = {
     warn: function () {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
         game.data.players.forEach(function (p) {
-            if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
-            }
+            //if (p.data.rconAuthorized) {
+            //    protocol.sendRconMessage(p, msg);
+            //}
         });
         console.warn.apply(console, arguments);
         console.w.warn.apply(console.w, arguments);

@@ -106,20 +106,18 @@ exports.update = function (dt, data) {
 
     input.updateGamepad();
 
+    for (var i = 0; i < data.packets.length; i++) {
+        if (data.packets[i].type === 'playerDataC') {
+            handlePlayerData(data, data.packets[i]);
+        }
+    }
+
     var accdt = settings.player.acc * dt;
     if (paused) {
         vec3a.set(0, 0, 0);
     } else {
-        yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
-        pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
-        pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
-
-        vec3a.set((input.check('movr') - input.check('movl')), 0, (input.check('movb') - input.check('movf')));
-        if (vec3a.length() > 1) {
-            vec3a.normalize();
-        }
-        vec3a.multiplyScalar(settings.player.speed);
-        vec3a.applyQuaternion(yawObj.quaternion);
+        updateView();
+        updateMovement();
     }
 
     var vel = mesh.getLinearVelocity(), changeVel = new THREE.Vector3().subVectors(vec3a, vel);
@@ -143,10 +141,65 @@ exports.update = function (dt, data) {
     }
 
     mesh.setLinearVelocity(vel.add(changeVel));
-    protocol.sendPlayerData({p: mesh.position.toArray(), v: vel.toArray()});
+    sendPlayerData({p: mesh.position.toArray(), v: vel.toArray()});
 
     input.resetDelta();
 };
+
+function updateView() {
+    yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
+    pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
+    pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
+}
+
+function updateMovement() {
+    vec3a.set((input.check('movr') - input.check('movl')), 0, (input.check('movb') - input.check('movf')));
+    if (vec3a.length() > 1) {
+        vec3a.normalize();
+    }
+    vec3a.multiplyScalar(settings.player.speed);
+    vec3a.applyQuaternion(yawObj.quaternion);
+}
+
+var pktnr = 0,
+    unackPkts = [],
+    packetStat = 0;
+
+function handlePlayerData(data, pck) {
+    var pid = pck.pid, action = pck.action, pkdata = pck.data, eid;
+    if (action === 0) {
+        data.players[pid] = 0;
+    }
+    if (action === 1) {
+        eid = data.players[pid];
+        if (eid === 0) {
+            var pnr = pkdata.pnr;
+            var pkt = unackPkts[pnr];
+            // Only correct position as player acceleration is pretty high
+            var corr = {x: pkdata.p[0] - pkt.p[0], y: pkdata.p[1] - pkt.p[1], z: pkdata.p[2] - pkt.p[2]};
+            data.playermesh.position.add(corr);
+            delete unackPkts[pnr];
+            packetStat--;
+        } else {
+            scenehelper.updateBody(eid, pkdata);
+        }
+        if (packetStat < 1) {
+            unackPkts = [];
+            // Reset the counter so everyone is happy
+            pktnr = 0;
+        }
+    }
+    // Action 2 handled by cl/client
+    if (action === 3) {
+        data.players[pid] = undefined;
+    }
+}
+
+function sendPlayerData(data) {
+    protocol.send(protocol.makePacket('playerDataS', data, ++pktnr));
+    unackPkts[pktnr] = data;
+    packetStat++;
+}
 
 exports.firstPersonCam = function (camera) {
     pitchObj.add(camera);

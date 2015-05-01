@@ -26,14 +26,39 @@
 var
 // Module
     arena = require('../common/arena'),
-    client = require('./../client/client'),
-    chat = require('../dom/chat'),
-    scenehelper = require('../phys/scenehelper'),
+    makePacket = require('./packet'),
 // Local
-    receivers = [], data;
+    packets = [], queue = [], data;
+
+// 0:KeepAlive [S<->C] num
+packets[0] = makePacket(['num'], 0, 'keepAlive');
+// 1:PlayerDataC [S->C] pid action data
+packets[1] = makePacket(['pid', 'action', 'data'], 1, 'playerDataC');
+// 2:PlayerDataS [C->S] data pknr
+packets[2] = makePacket(['data', 'pknr'], 2, 'playerDataS');
+// 3:Logon [C->S] name
+packets[3] = makePacket(['name'], 3, 'logon');
+// 4:Chat Message [S<->C] msg
+packets[4] = makePacket(['msg'], 4, 'chatMsg');
+// 10:Spawn Object from String [S->C] id string
+packets[10] = makePacket(['eid', 'string'], 10, 'spawnObj');
+// 11:Spawn entity by name [S->C] id name meta
+packets[11] = makePacket(['eid', 'name', 'meta'], 11, 'spawnEnt');
+// 12:Update Entity [S->C] id data
+packets[12] = makePacket(['eid', 'data'], 12, 'updateEnt');
+// 13:Kill entity [S->C] id
+packets[13] = makePacket(['eid'], 13, 'killEnt');
+// 14:Spawn many [S->C] list
+packets[14] = makePacket(['list'], 14, 'spawnMany');
+// 20:Game State [S->C] state
+packets[20] = makePacket(['state'], 20, 'gameState');
 
 exports.init = function (gamedata) {
     data = gamedata;
+};
+exports.initDom = function () {
+};
+exports.render = function () {
 };
 
 exports.receive = function (d) {
@@ -41,203 +66,52 @@ exports.receive = function (d) {
         console.log("[in]", d);
     }
     var type = d[0];
-    receivers[type](d);
+    var pck = packets[type].receive(d);
+    queue.push(pck);
+};
+
+exports.update = function (dt, data) {
+    data.packets = queue;
+    queue = [];
+
+    handleCommon(data);
+};
+
+exports.send = function (pck) {
+    packets[pck.id].send(sendRaw, pck);
+};
+
+exports.makePacket = function (type) {
+    for (var i = 0; i < packets.length && typeof type === 'string'; i++) {
+        if (packets[i] && packets[i].type === type) {
+            type = packets[i].id;
+            break;
+        }
+    }
+    if (typeof type !== 'number' || !packets[type]) {
+        throw "Invalid packet id: " + type;
+    }
+    var args = [];
+    for (var j = 1; j < arguments.length; j++) {
+        args[i - 1] = (arguments[i]);
+    }
+    return packets[type].make.apply(this, args);
 };
 
 function sendRaw(d) {
-    client.connection.send(d);
+    data.connection.send(d);
     if (arena.debug) {
         console.log("[out]", d);
     }
 }
 
-// KeepAlive 0 num S<>C
-
-receivers[0] = exports.receiveKeepAlive = function (d) {
-    // Send it right back
-    sendRaw(d);
-};
-
-// PlayerData 1 playerId type data S>C
-//            1 data pktnr C>S
-// Types:
-// 0 = welcome, 1 = position
-// 2 = connect, 3 = disconnect
-
-var pktnr = 0,
-    unackPkts = [],
-    packetStat = 0;
-
-exports.sendPlayerData = function (data) {
-    sendRaw([1, data, ++pktnr]);
-    unackPkts[pktnr] = data;
-    packetStat++;
-};
-
-receivers[1] = exports.receivePlayerData = function (d) {
-    var eid, pid = d[1], type = d[2], pkdata = d[3];
-    if (type === 0) {
-        data.players[pid] = 0;
-    }
-    if (type === 1) {
-        eid = data.players[pid];
-        if (eid === 0) {
-            var pnr = pkdata.pnr;
-            var pkt = unackPkts[pnr];
-            // Only correct position as player acceleration is pretty high
-            var corr = {x: pkdata.p[0] - pkt.p[0], y: pkdata.p[1] - pkt.p[1], z: pkdata.p[2] - pkt.p[2]};
-            data.playermesh.position.add(corr);
-            delete unackPkts[pnr];
-            packetStat--;
-        } else {
-            scenehelper.updateBody(eid, pkdata);
-        }
-        if (packetStat < 1) {
-            unackPkts = [];
-            // Reset the counter so everyone is happy
-            pktnr = 0;
+function handleCommon(data) {
+    // Handle all easy packets (simple response) here
+    for(var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i];
+        if(pck.type === 'keepAlive') {
+            // Send it right back
+            exports.send(pck);
         }
     }
-    if (type === 2) {
-        client.spawnPlayer(pid, data);
-    }
-    if (type === 3) {
-        data.players[pid] = undefined;
-    }
-};
-
-// Logon 3 name C>S
-
-exports.sendLogon = function (name) {
-    sendRaw([3, name]);
-};
-
-// Chat Message 4 msg C<>S
-
-chat.submitFn = exports.sendChatMsg = function (str) {
-    sendRaw([4, str]);
-};
-
-receivers[4] = exports.receiveChatMsg = function (d) {
-    chat.refresh();
-    chat.write(d[1]);
-};
-
-// === Entities ===
-
-// Spawn object from string 10 id string S>C
-
-receivers[10] = exports.receiveSpawnObject = function (d) {
-    // Avoid cyclic dependency -> load module in function
-    require('./../client/level').spawnFromDesc(d[2], d[1]);
-};
-
-// Spawn entity by name 11 id name meta S>C
-
-receivers[11] = exports.receiveSpawnEntity = function (d) {
-    throw 'Not implemented';
-};
-
-// Update entity by id 12 id meta S>C
-
-receivers[12] = exports.receiveUpdateEntity = function (d) {
-    if (d[2].ph) {
-        scenehelper.updateBody(d[1], d[2].ph);
-    }
-};
-
-// Kill entity by id 13 id S>C
-
-receivers[13] = exports.receiveKillEntity = function (d) {
-    scenehelper.remove(d[1]);
-};
-
-// Spawn many 14 list
-// list: array of {id,str/name,meta}
-
-receivers[14] = exports.receiveSpawnMany = function (d) {
-    for (var i = 0; i < d[1].length; i++) {
-        var obj = d[1][i];
-        if (obj.str) {
-            require('./../client/level').spawnFromDesc(obj.str, obj.id);
-        }
-    }
-};
-
-// ===
-
-// Game state 20 state S>C
-
-receivers[20] = exports.receiveGameState = function (d) {
-    client.updateGameState(d[1]);
-};
-
-// RCON protocol
-// rcon status 200 - C>S | msg S>C
-// rcon error 201 msg S>C
-// rcon command 202 str C>S
-// rcon query 203 cvarname C>S
-// rcon cvar 204 cvarname value S>C
-// rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
-// rcon authorize 206 password C>S
-// rcon queryall 207 C>S
-// rcon consolemessage 208 msg S>C
-// Important: messages are not encrypted! Do not reuse the rcon password
-// for things like email and stuff! Someone getting into your server
-// should not be a big deal, as you can easily restart it via ssh or whatever
-
-var rconHandler;
-Object.defineProperty(exports, 'rconHandler', {
-    get: function () {
-        return rconHandler;
-    },
-    set: function (val) {
-        rconHandler = val;
-    }
-});
-
-receivers[200] = exports.receiveRconStatus = function (d) {
-    rconHandler.status(d[1]);
-};
-
-receivers[201] = exports.receiveRconError = function (d) {
-    rconHandler.error(d[1]);
-};
-
-receivers[204] = exports.receiveRconCvar = function (d) {
-    if (arena.debug) {
-        console.log("RCON response:", d[1], d[2]);
-    }
-    rconHandler.cvar(d[1], d[2]);
-};
-
-receivers[205] = exports.receiveRconRevCmd = function (d) {
-    if (arena.debug) {
-        console.log("Server command:", d[1]);
-    }
-    rconHandler.command(d[1]);
-};
-
-receivers[208] = exports.receiveRconMessage = function (d) {
-    rconHandler.status(d[1]);
-};
-
-exports.sendRconStatus = function () {
-    sendRaw([200]);
-};
-
-exports.sendRconCommand = function (str) {
-    sendRaw([202, str]);
-};
-
-exports.sendRconQuery = function (cvar) {
-    sendRaw([203, cvar]);
-};
-
-exports.sendRconAuthorize = function (pwd) {
-    sendRaw([206, pwd]);
-};
-
-exports.sendRconQueryAll = function () {
-    sendRaw([207]);
-};
+}

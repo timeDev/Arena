@@ -79,14 +79,14 @@ game.data.cameratype = "first person";
 game.data.camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
 // Add components
+game.addComponent(require('../net/client'));
 game.addComponent(require('../client/display'));
 game.addComponent(require('../client/controls'));
 game.addComponent(require('../phys/simulator'));
+game.addComponent(require('../client/client'));
+game.addComponent(require('../client/chat'));
 
 require('../phys/scenehelper').init(game.data);
-require('../client/client').init(game.data);
-require('../net/client').init(game.data);
-
 game.init();
 
 require('../client/rcon');

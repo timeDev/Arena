@@ -22,13 +22,35 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
+
 var
 // Module
     keycode = require('../util/keycode'),
+    protocol = require('../net/client'),
 // Local
     domElement = document.createElement('div'),
     inElement = document.createElement('input'),
     outElement = document.createElement('div');
+
+exports.init = function () {
+};
+
+exports.initDom = function () {
+    document.body.appendChild(domElement);
+};
+
+exports.render = function () {
+};
+
+exports.update = function (dt, data) {
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i];
+        if(pck.type == 'chatMsg') {
+            exports.write(pck.msg);
+            exports.refresh();
+        }
+    }
+};
 
 domElement.classList.add("chat-container");
 inElement.classList.add("chat-input");
@@ -45,14 +67,10 @@ domElement.appendChild(inElement);
 inElement.addEventListener('keypress', function (e) {
     var which = e.which || e.charCode || e.keyCode;
     if (which === keycode.enter) {
-        exports.submitFn(inElement.value);
+        protocol.send(protocol.makePacket('chatMsg', inElement.value));
         inElement.value = "";
     }
 });
-
-exports.submitFn = null;
-
-exports.domElement = domElement;
 
 exports.write = function (str) {
     outElement.insertAdjacentHTML('beforeend', str);

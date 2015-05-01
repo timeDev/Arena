@@ -29,7 +29,6 @@ var
     command = require('../console/command'),
     console = require('../dom/console'),
     settings = require('../common/settings'),
-    chat = require('../dom/chat'),
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
     overlay = require('./overlay-mgr'),
@@ -116,7 +115,6 @@ exports.initDom = function (data) {
 
     makeDraggable(console.domElement);
     document.body.appendChild(console.domElement);
-    document.body.appendChild(chat.domElement);
     document.body.appendChild(renderStats.domElement);
 };
 

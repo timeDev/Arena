@@ -28,9 +28,93 @@ var
     arena = require('../common/arena'),
     server = require('./../server/server'),
     scenehelper = require('../phys/scenehelper'),
+    makePacket = require('./packet'),
 // Local
     receivers = [],
+    packets = [],
+    queue = [],
     data;
+
+// 0:KeepAlive [S<->C] num
+packets[0] = makePacket(['num'], 0, 'keepAlive');
+// 1:PlayerDataC [S->C] pid action data
+packets[1] = makePacket(['pid', 'action', 'data'], 1, 'playerDataC');
+// 2:PlayerDataS [C->S] data pknr
+packets[2] = makePacket(['data', 'pknr'], 2, 'playerDataS');
+// 3:Logon [C->S] name
+packets[3] = makePacket(['name'], 3, 'logon');
+// 4:Chat Message [S<->C] msg
+packets[4] = makePacket(['msg'], 4, 'chatMsg');
+// 10:Spawn Object from String [S->C] id string
+packets[10] = makePacket(['id', 'string'], 10, 'spawnObj');
+// 11:Spawn entity by name [S->C] id name meta
+packets[11] = makePacket(['id', 'name', 'meta'], 11, 'spawnEnt');
+// 12:Update Entity [S->C] id data
+packets[12] = makePacket(['id', 'data'], 12, 'updateEnt');
+// 13:Kill entity [S->C] id
+packets[13] = makePacket(['id'], 13, 'killEnt');
+// 14:Spawn many [S->C] list
+packets[14] = makePacket(['list'], 14, 'spawnMany');
+// 20:Game State [S->C] state
+packets[20] = makePacket(['state'], 20, 'gameState');
+
+exports.init = function () {
+};
+
+exports.receive = function (d) {
+    if (arena.debug) {
+        console.log("[in]", d);
+    }
+    var type = d[0];
+    var pck = packets[type].receive(d);
+    queue.push(pck);
+};
+
+exports.update = function (dt, data) {
+    data.packets = queue;
+    queue = [];
+
+    handleCommon(data);
+};
+
+exports.send = function (player, pck) {
+    packets[pck.id].send(sendRaw.bind(player), pck);
+};
+
+exports.makePacket = function (type) {
+    for (var i = 0; i < packets.length && typeof type === 'string'; i++) {
+        if (packets[i] && packets[i].type === type) {
+            type = packets[i].id;
+            break;
+        }
+    }
+    if (typeof type !== 'number' || !packets[type]) {
+        throw "Invalid packet id: " + type;
+    }
+    var args = [];
+    for (var j = 1; j < arguments.length; j++) {
+        args[i - 1] = (arguments[i]);
+    }
+    return packets[type].make.apply(this, args);
+};
+
+function sendRaw(p, d) {
+    p.connection.send(d);
+    if (arena.debug) {
+        console.log("[out]", d);
+    }
+}
+
+function handleCommon(data) {
+    // Handle all easy packets (simple response) here
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i];
+        if (pck.type === 'keepAlive') {
+            // Send it right back
+            exports.send(pck);
+        }
+    }
+}
 
 exports.init = function (gamedata) {
     data = gamedata;
@@ -191,53 +275,4 @@ exports.sendGameState = function (p, state) {
 
 exports.gameState = function (state) {
     return [20, state];
-};
-
-// RCON protocol
-// rcon status 200 - C>S | msg S>C
-// rcon error 201 msg S>C
-// rcon command 202 str C>S
-// rcon query 203 cvarname C>S
-// rcon cvar 204 cvarname value S>C
-// rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
-// rcon authorize 206 password C>S
-// rcon queryall 207 C>S
-// rcon consolemessage 208 msg S>C
-// Important: messages are not encrypted! Do not reuse the rcon password
-// for things like email and stuff! Someone getting into your server
-// should not be a big deal, as you can easily restart it via ssh or whatever
-
-receivers[200] = exports.receiveRconStatus = function (p /*, d*/) {
-    send(p, [200, server.getServerStatusMsg()]);
-};
-
-receivers[202] = exports.receiveRconCmd = function (p, d) {
-    if (!p.data.rconAuthorized) {
-        send(p, [201, "not authorized"]);
-        return;
-    }
-    server.executeCommand(d[1]);
-};
-
-receivers[203] = exports.receiveRconQuery = function (p, d) {
-    var response = server.getCvar(d[1], p.data.rconAuthorized);
-    send(p, [204, d[1], response]);
-};
-
-receivers[206] = exports.receiveRconAuthorize = function (p, d) {
-    if (server.matchesRconPassword(d[1])) {
-        p.data.rconAuthorized = true;
-    }
-};
-
-receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
-    var responseList = server.getCvarList(p.data.rconAuthorized);
-    for (var i = 0; i < responseList.length; i++) {
-        var res = responseList[i];
-        send(p, [204, res[0], res[1]]);
-    }
-};
-
-exports.sendRconMessage = function (p, msg) {
-    send(p, [208, msg]);
 };
