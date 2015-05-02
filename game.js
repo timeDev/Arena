@@ -44,18 +44,16 @@ if (!String.format) {
     };
 }
 
-var Clock = require('../util/clock'),
+
+var arena = require('../common/arena'),
     settings = require('../common/settings'),
-    controls = require('../client/controls'),
-    simulator = require('../phys/simulator'),
+    console = require('../dom/console'),
+    PHYSI = require('../vendor/physi'),
+    THREE = require('../vendor/three'),
     cmdEngine = require('../console/engine'),
     cmdBuiltins = require('../console/builtins'),
-    arena = require('../common/arena'),
-    client = require('../client/client'),
-    console = require('../dom/console'),
     overlay = require('../client/overlay-mgr');
 
-require('../client/rcon');
 
 console.log("Playing Arena version", arena.version);
 if (arena.debug) {
@@ -63,15 +61,38 @@ if (arena.debug) {
     window.debugging = true;
 }
 
-function update(time) {
-    if (client.gameState.started) {
-        controls.update(time);
-        simulator.update(time);
-    }
-}
-
 settings.api.init();
 settings.api.loadCfg();
+
+var game = window.game = require('../game');
+
+// Add common data
+game.data.clientside = true;
+game.data.scene = new PHYSI.Scene();
+game.data.bodies = []; // ID-Body lookup
+game.data.entities = []; // EntityId-BodyId lookup
+
+game.data.server = {};
+game.data.players = [];
+game.data.gameState = {};
+game.data.packets = [];
+
+game.data.cameratype = "first person";
+game.data.camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
+
+// Add components
+game.addComponent(require('../net/client'));
+game.addComponent(require('../client/display'));
+game.addComponent(require('../client/controls'));
+game.addComponent(require('../phys/simulator'));
+game.addComponent(require('../client/client'));
+game.addComponent(require('../client/chat'));
+game.addComponent(require('../client/level'));
+
+require('../phys/scenehelper').init(game.data);
+game.init();
+
+require('../client/rcon');
 
 if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
@@ -79,23 +100,17 @@ if (!cmdBuiltins.registered) {
 
 // Add command shorthand
 console.executeFn = window.c = function (str) {
-    return cmdEngine.executeString(str, window.console);
+    return cmdEngine.executeString(str, require('../dom/console'));
 };
 
 // Entry point
 function entrypoint() {
-    var display = require('../client/display');
+    game.initDom();
 
     overlay.add('sv-startup', 'The server has not yet startet the game.<p>Please wait.');
     overlay.show('sv-startup');
 
-    controls.firstPersonCam(display.camera);
-    controls.mesh.position.set(0, 2, 0);
-    simulator.add(controls.mesh, 0);
-
-    display.render();
-
-    Clock.startNew(16, update);
+    game.run();
 }
 
 if (document.readyState === 'interactive') {
@@ -103,7 +118,8 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
-},{"../client/client":8,"../client/controls":9,"../client/display":10,"../client/overlay-mgr":12,"../client/rcon":13,"../common/arena":14,"../common/settings":17,"../console/builtins":18,"../console/engine":20,"../dom/console":25,"../phys/simulator":31,"../util/clock":35}],13:[function(require,module,exports){
+
+},{"../client/chat":8,"../client/client":9,"../client/controls":10,"../client/display":11,"../client/level":12,"../client/overlay-mgr":13,"../client/rcon":14,"../common/arena":15,"../common/settings":18,"../console/builtins":19,"../console/engine":21,"../dom/console":25,"../game":28,"../net/client":29,"../phys/scenehelper":34,"../phys/simulator":35,"../vendor/physi":50,"../vendor/three":52}],14:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -190,7 +206,94 @@ command("rcon auth <pwd> | status | cmd <cmd>", [{
     }
 });
 
-},{"../console/command":19,"../console/engine":20,"../dom/console":25,"./../net/client":28}],10:[function(require,module,exports){
+},{"../console/command":20,"../console/engine":21,"../dom/console":25,"./../net/client":29}],12:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+// Module
+    ocl = require('../util/ocl'),
+    command = require('../console/command'),
+    scenehelper = require('../phys/scenehelper'),
+// Local
+    ids = [];
+
+require('../common/level');
+
+exports.spawn = function (obj, id) {
+    if (!obj.pos) {
+        console.warn("Skipping map object without position.");
+        return;
+    }
+    if (obj.mesh) {
+        obj.mesh.position.copy(obj.pos);
+        obj.mesh.__dirtyPosition = true;
+        scenehelper.add(obj.mesh, id);
+        ids.push(id);
+    }
+};
+
+exports.spawnFromDesc = function (desc, id) {
+    ocl.load(desc, function (obj) {
+        exports.spawn(obj, id);
+    });
+};
+
+exports.load = function (str) {
+    ocl.load(str, function (objList) {
+        objList.forEach(exports.spawn);
+        console.log("Level loaded");
+    });
+};
+
+exports.init = function () {
+};
+
+exports.initDom = function () {
+};
+
+exports.render = function (dt, data) {
+
+};
+
+exports.update = function (dt, data) {
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i];
+        if(pck.type == 'spawnObj') {
+            exports.spawnFromDesc(pck.string, pck.eid);
+        } else if(pck.type == 'spawnMany') {
+            for (var j = 0; j < pck.list.length; j++) {
+                var obj = pck.list[j];
+                if (obj.str) {
+                    exports.spawnFromDesc(obj.str, obj.id);
+                }
+            }
+        }
+    }
+};
+
+},{"../common/level":16,"../console/command":20,"../phys/scenehelper":34,"../util/ocl":44}],11:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -222,105 +325,100 @@ var
     command = require('../console/command'),
     console = require('../dom/console'),
     settings = require('../common/settings'),
-    chat = require('../dom/chat'),
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
     overlay = require('./overlay-mgr'),
-    simulator = require('../phys/simulator'),
 // Local
-    scene, camera, renderer,
-// Function
-    render, start;
+    scene, renderer, light, ol, renderStats;
 
-// -- Setup --
-scene = simulator.scene;
-camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
+exports.init = function (data) {
+    scene = data.scene;
 
-scene.add(new THREE.AmbientLight(0x404040));
+    scene.add(new THREE.AmbientLight(0x404040));
 
-var light = new THREE.PointLight(0xffffff, 1, 20);
-light.position.set(10, 10, 10);
-scene.add(light);
+    light = new THREE.PointLight(0xffffff, 1, 20);
+    light.position.set(10, 10, 10);
+    scene.add(light);
 
-renderer = new THREE.WebGLRenderer();
-// The -5 is to hide scrollbars
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-window.addEventListener('resize', function () {
+    renderer = new THREE.WebGLRenderer();
+    // The -5 is to hide scrollbars
     renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.aspect = window.innerWidth / (window.innerHeight);
-    camera.updateProjectionMatrix();
-});
-document.body.appendChild(renderer.domElement);
 
-overlay.reference = renderer.domElement;
+    input.pointerlocked.add(function () {
+        if (overlay.active == 'pause')
+            overlay.hide();
+    });
+    input.pointerunlocked.add(overlay.show.bind(null, 'pause'));
+    input.escape.add(overlay.show.bind(null, 'pause'));
 
-var ol = overlay.add('pause', "<p>Click to play!<p>Use the mouse to look around, WASD to walk, SPACE to jump<p>Have fun!");
+    // -- Stats --
+    renderStats = new Stats();
+    renderStats.domElement.style.position = 'absolute';
+    renderStats.domElement.style.left = '0px';
+    renderStats.domElement.style.top = '0px';
 
-ol.domElement.onclick = renderer.domElement.onclick = function () {
-    input.trylockpointer(renderer.domElement);
+    if (settings.debug.showGrid) {
+        var gridXZ = new THREE.GridHelper(100, 1),
+            gridXY = new THREE.GridHelper(100, 1),
+            gridYZ = new THREE.GridHelper(100, 1);
+
+        gridXZ.setColors(0xf00000, 0xff0000);
+        gridXY.setColors(0x00f000, 0x00ff00);
+        gridYZ.setColors(0x0000f0, 0x0000ff);
+
+        gridXZ.position.set(100, 0, 100);
+        gridXY.position.set(100, 100, 0);
+        gridYZ.position.set(0, 100, 100);
+
+        gridXY.rotation.x = Math.HALF_PI;
+        gridYZ.rotation.z = Math.HALF_PI;
+
+        scene.add(gridXZ);
+        scene.add(gridXY);
+        scene.add(gridYZ);
+    }
+
+    // -- Commands --
+    command("cl_refresh_vp", {}, 'cl_refresh_vp', function () {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        data.camera.aspect = window.innerWidth / (window.innerHeight);
+        data.camera.fov = settings.graphics.fov;
+        data.camera.updateProjectionMatrix();
+    });
 };
 
-input.pointerlocked.add(function () {
-    if (overlay.active == 'pause')
-        overlay.hide();
-});
-input.pointerunlocked.add(overlay.show.bind(null, 'pause'));
-input.escape.add(overlay.show.bind(null, 'pause'));
-
-makeDraggable(console.domElement);
-document.body.appendChild(console.domElement);
-
-document.body.appendChild(chat.domElement);
-
-// -- Stats --
-var renderStats = new Stats();
-renderStats.domElement.style.position = 'absolute';
-renderStats.domElement.style.left = '0px';
-renderStats.domElement.style.top = '0px';
-document.body.appendChild(renderStats.domElement);
-
-render = function () {
-    window.requestAnimationFrame(render);
+exports.render = function (dt, data) {
     renderStats.begin();
-    renderer.render(scene, camera);
+    renderer.render(data.scene, data.camera);
     renderStats.end();
 };
 
-if (settings.debug.showGrid) {
-    var gridXZ = new THREE.GridHelper(100, 1),
-        gridXY = new THREE.GridHelper(100, 1),
-        gridYZ = new THREE.GridHelper(100, 1);
+exports.initDom = function (data) {
+    window.addEventListener('resize', function () {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        data.camera.aspect = window.innerWidth / (window.innerHeight);
+        data.camera.updateProjectionMatrix();
+    });
+    document.body.appendChild(renderer.domElement);
 
-    gridXZ.setColors(0xf00000, 0xff0000);
-    gridXY.setColors(0x00f000, 0x00ff00);
-    gridYZ.setColors(0x0000f0, 0x0000ff);
+    overlay.reference = renderer.domElement;
 
-    gridXZ.position.set(100, 0, 100);
-    gridXY.position.set(100, 100, 0);
-    gridYZ.position.set(0, 100, 100);
+    ol = overlay.add('pause', "<p>Click to play!<p>Use the mouse to look around, WASD to walk, SPACE to jump<p>Have fun!");
 
-    gridXY.rotation.x = Math.HALF_PI;
-    gridYZ.rotation.z = Math.HALF_PI;
+    ol.domElement.onclick = renderer.domElement.onclick = function () {
+        input.trylockpointer(renderer.domElement);
+    };
 
-    scene.add(gridXZ);
-    scene.add(gridXY);
-    scene.add(gridYZ);
-}
+    makeDraggable(console.domElement);
+    document.body.appendChild(console.domElement);
+    document.body.appendChild(renderStats.domElement);
+};
 
-exports.scene = scene;
-exports.render = render;
-exports.camera = camera;
+exports.update = function() {
 
-// -- Commands --
-command("cl_refresh_vp", {}, 'cl_refresh_vp', function (match) {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.aspect = window.innerWidth / (window.innerHeight);
-    camera.fov = settings.graphics.fov;
-    camera.updateProjectionMatrix();
-});
+};
 
-},{"../common/settings":17,"../console/command":19,"../dom/chat":24,"../dom/console":25,"../dom/draggable":26,"../phys/simulator":31,"../vendor/Stats":41,"../vendor/three":46,"./../util/input":37,"./overlay-mgr":12}],41:[function(require,module,exports){
+},{"../common/settings":18,"../console/command":20,"../dom/console":25,"../dom/draggable":26,"../vendor/Stats":47,"../vendor/three":52,"./../util/input":42,"./overlay-mgr":13}],47:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -527,521 +625,7 @@ module.exports = function (domElement) {
     });
 };
 
-},{}],8:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-var
-// Module
-    command = require('../console/command'),
-    Connection = require('../net/connection'),
-    protocol = require('./../net/client'),
-    PHYSI = require('../vendor/physi'),
-    simulator = require('../phys/simulator'),
-    settings = require('../common/settings'),
-    THREE = require('../vendor/three'),
-    overlay = require('./overlay-mgr');
-
-exports.playerName = "Bob";
-
-exports.connection = null;
-
-exports.connect = function (address) {
-    exports.connection = new Connection();
-    exports.connection.message.add(protocol.receive);
-    exports.connection.connect(address);
-    protocol.sendLogon(exports.playerName);
-};
-
-// Maps player ids to entity ids
-exports.players = [];
-
-exports.spawnPlayer = function (pid, data) {
-    var eid = data.id;
-    exports.players[pid] = eid;
-    var pos = data.pos;
-    pos = {x: pos[0], y: pos[1], z: pos[2]};
-    var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius,settings.player.height), new THREE.MeshBasicMaterial({color: 0xc80000}), settings.player.mass);
-    mesh.position.copy(pos);
-    mesh.addEventListener('ready', function () {
-        mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
-    });
-    simulator.add(mesh, eid);
-};
-
-exports.gameState = {};
-
-exports.updateGameState = function (state) {
-    if (state.started === true && overlay.active == 'sv-startup') {
-        overlay.show('pause');
-    }
-    if (state.started === false && overlay.active != 'sv-startup') {
-        overlay.show('sv-startup');
-    }
-
-    for (var k in state) {
-        if (state.hasOwnProperty(k)) {
-            exports.gameState[k] = state[k];
-        }
-    }
-};
-
-command("connect <address>",
-    {mandatory: [{name: 'address', type: 'string'}]},
-    'connect',
-    function (match) {
-        exports.connect(match.address);
-    });
-
-command.engine.registerCvar('name', exports, 'playerName');
-
-},{"../common/settings":17,"../console/command":19,"../net/connection":29,"../phys/simulator":31,"../vendor/physi":44,"../vendor/three":46,"./../net/client":28,"./overlay-mgr":12}],28:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-
-var
-// Module
-    arena = require('../common/arena'),
-    client = require('./../client/client'),
-    simulator = require('../phys/simulator'),
-    chat = require('../dom/chat'),
-// Local
-    receivers = [];
-
-exports.receive = function (d) {
-    if (arena.debug) {
-        console.log("[in]", d);
-    }
-    var type = d[0];
-    receivers[type](d);
-};
-
-function sendRaw(d) {
-    client.connection.send(d);
-    if (arena.debug) {
-        console.log("[out]", d);
-    }
-}
-
-// KeepAlive 0 num S<>C
-
-receivers[0] = exports.receiveKeepAlive = function (d) {
-    // Send it right back
-    sendRaw(d);
-};
-
-// PlayerData 1 playerId type data S>C
-//            1 data pktnr C>S
-// Types:
-// 0 = welcome, 1 = position
-// 2 = connect, 3 = disconnect
-
-var pktnr = 0,
-    unackPkts = [];
-
-exports.sendPlayerData = function (data) {
-    sendRaw([1, data, ++pktnr]);
-    unackPkts[pktnr] = data;
-};
-
-receivers[1] = exports.receivePlayerData = function (d) {
-    var eid, pid = d[1], type = d[2], data = d[3];
-    if (type === 0) {
-        client.players[pid] = 0;
-    }
-    if (type === 1) {
-        eid = client.players[pid];
-        var pcktcount = unackPkts.filter(function (e) {
-            return e !== undefined;
-        }).length;
-        if (eid === 0) {
-            var pnr = data.pnr;
-            var pkt = unackPkts[pnr];
-            // Only correct position as player acceleration is pretty high
-            var corr = {x: data.p[0] - pkt.p[0], y: data.p[1] - pkt.p[1], z: data.p[2] - pkt.p[2]};
-            // Avoid cyclic deps
-            var controls = require('./../client/controls');
-            controls.mesh.position.add(corr);
-            delete unackPkts[pnr];
-        } else {
-            simulator.updateBody(eid, data);
-        }
-        if (pcktcount < 1) {
-            unackPkts = [];
-            // Reset the counter so everyone is happy
-            pktnr = 0;
-        }
-    }
-    if (type === 2) {
-        client.spawnPlayer(pid, data);
-    }
-    if (type === 3) {
-        client.players[pid] = undefined;
-    }
-};
-
-// Logon 3 name C>S
-
-exports.sendLogon = function (name) {
-    sendRaw([3, name]);
-};
-
-// Chat Message 4 msg C<>S
-
-chat.submitFn = exports.sendChatMsg = function (str) {
-    sendRaw([4, str]);
-};
-
-receivers[4] = exports.receiveChatMsg = function (d) {
-    chat.refresh();
-    chat.write(d[1]);
-};
-
-// === Entities ===
-
-// Spawn object from string 10 id string S>C
-
-receivers[10] = exports.receiveSpawnObject = function (d) {
-    // Avoid cyclic dependency -> load module in function
-    require('./../client/level').spawnFromDesc(d[2], d[1]);
-};
-
-// Spawn entity by name 11 id name meta S>C
-
-receivers[11] = exports.receiveSpawnEntity = function (d) {
-    throw 'Not implemented';
-};
-
-// Update entity by id 12 id meta S>C
-
-receivers[12] = exports.receiveUpdateEntity = function (d) {
-    if (d[2].ph) {
-        simulator.updateBody(d[1], d[2].ph);
-    }
-};
-
-// Kill entity by id 13 id S>C
-
-receivers[13] = exports.receiveKillEntity = function (d) {
-    simulator.remove(d[1]);
-};
-
-// Spawn many 14 list
-// list: array of {id,str/name,meta}
-
-receivers[14] = exports.receiveSpawnMany = function (d) {
-    for (var i = 0; i < d[1].length; i++) {
-        var obj = d[1][i];
-        if (obj.str) {
-            require('./../client/level').spawnFromDesc(obj.str, obj.id);
-        }
-    }
-};
-
-// ===
-
-// Game state 20 state S>C
-
-receivers[20] = exports.receiveGameState = function (d) {
-    client.updateGameState(d[1]);
-};
-
-// RCON protocol
-// rcon status 200 - C>S | msg S>C
-// rcon error 201 msg S>C
-// rcon command 202 str C>S
-// rcon query 203 cvarname C>S
-// rcon cvar 204 cvarname value S>C
-// rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
-// rcon authorize 206 password C>S
-// rcon queryall 207 C>S
-// rcon consolemessage 208 msg S>C
-// Important: messages are not encrypted! Do not reuse the rcon password
-// for things like email and stuff! Someone getting into your server
-// should not be a big deal, as you can easily restart it via ssh or whatever
-
-var rconHandler;
-Object.defineProperty(exports, 'rconHandler', {
-    get: function () {
-        return rconHandler;
-    },
-    set: function (val) {
-        rconHandler = val;
-    }
-});
-
-receivers[200] = exports.receiveRconStatus = function (d) {
-    rconHandler.status(d[1]);
-};
-
-receivers[201] = exports.receiveRconError = function (d) {
-    rconHandler.error(d[1]);
-};
-
-receivers[204] = exports.receiveRconCvar = function (d) {
-    if (arena.debug) {
-        console.log("RCON response:", d[1], d[2]);
-    }
-    rconHandler.cvar(d[1], d[2]);
-};
-
-receivers[205] = exports.receiveRconRevCmd = function (d) {
-    if (arena.debug) {
-        console.log("Server command:", d[1]);
-    }
-    rconHandler.command(d[1]);
-};
-
-receivers[208] = exports.receiveRconMessage = function (d) {
-    rconHandler.status(d[1]);
-};
-
-exports.sendRconStatus = function () {
-    sendRaw([200]);
-};
-
-exports.sendRconCommand = function (str) {
-    sendRaw([202, str]);
-};
-
-exports.sendRconQuery = function (cvar) {
-    sendRaw([203, cvar]);
-};
-
-exports.sendRconAuthorize = function (pwd) {
-    sendRaw([206, pwd]);
-};
-
-exports.sendRconQueryAll = function () {
-    sendRaw([207]);
-};
-
-},{"../common/arena":14,"../dom/chat":24,"../phys/simulator":31,"./../client/client":8,"./../client/controls":9,"./../client/level":11}],24:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-var
-// Module
-    keycode = require('../util/keycode'),
-// Local
-    domElement = document.createElement('div'),
-    inElement = document.createElement('input'),
-    outElement = document.createElement('div');
-
-domElement.classList.add("chat-container");
-inElement.classList.add("chat-input");
-outElement.classList.add("chat-output");
-
-domElement.style.position = 'absolute';
-domElement.style.left = '0';
-domElement.style.bottom = '0';
-
-domElement.insertAdjacentHTML('afterbegin', "Chat<br>");
-domElement.appendChild(outElement);
-domElement.appendChild(inElement);
-
-inElement.addEventListener('keypress', function (e) {
-    var which = e.which || e.charCode || e.keyCode;
-    if (which === keycode.enter) {
-        exports.submitFn(inElement.value);
-        inElement.value = "";
-    }
-});
-
-exports.submitFn = null;
-
-exports.domElement = domElement;
-
-exports.write = function (str) {
-    outElement.insertAdjacentHTML('beforeend', str);
-    outElement.scrollTop = outElement.scrollHeight;
-};
-
-exports.refresh = function () {
-    window.clearInterval(fadeId);
-    window.clearTimeout(fadeWaitId);
-    if (!focused) {
-        fadeWaitId = window.setTimeout(exports.fade, 3000);
-    }
-};
-
-document.addEventListener('keydown', function (e) {
-    var which = e.which || e.charCode || e.keyCode;
-    var el = document.activeElement;
-    if (el && (el.tagName.toLowerCase() == 'input' && el.type == 'text' ||
-        el.tagName.toLowerCase() == 'textarea')) {
-        // focused element is a text input or textarea
-        return;
-    }
-    if (which === keycode.t) {
-        exports.focus();
-        e.preventDefault();
-    }
-}, false);
-
-var focused;
-
-exports.focus = function () {
-    focused = true;
-    exports.refresh();
-    domElement.style.display = '';
-    domElement.style.opacity = '1';
-    domElement.style.filter = '';
-    inElement.focus();
-};
-
-inElement.addEventListener('blur', function () {
-    focused = false;
-    exports.fade();
-}, false);
-
-var fadeId = -1, fadeWaitId = -1;
-
-exports.fade = function () {
-    var op = 1;  // initial opacity
-    fadeId = setInterval(function () {
-        if (op <= 0.05) {
-            clearInterval(fadeId);
-            fadeId = -1;
-            domElement.style.display = 'none';
-        }
-        domElement.style.opacity = op;
-        domElement.style.filter = "alpha(opacity=" + op * 100 + ")";
-        op *= 0.95;
-    }, 20);
-    fadeWaitId = -1;
-};
-
-},{"../util/keycode":38}],11:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports */
-var
-// Module
-    ocl = require('../util/ocl'),
-    command = require('../console/command'),
-    simulator = require('../phys/simulator'),
-// Local
-    ids = [];
-
-require('../common/level');
-
-exports.load = function () {
-    throw "deprecated";
-};
-
-exports.spawn = function (obj, id) {
-    if (!obj.pos) {
-        console.warn("Skipping map object without position.");
-        return;
-    }
-    if (obj.mesh) {
-        obj.mesh.position.copy(obj.pos);
-        obj.mesh.__dirtyPosition = true;
-        simulator.add(obj.mesh, id);
-        ids.push(id);
-    }
-};
-
-exports.spawnFromDesc = function (desc, id) {
-    ocl.load(desc, function (obj) {
-        exports.spawn(obj, id);
-    });
-};
-
-exports.load = function (str) {
-    ocl.load(str, function (objList) {
-        objList.forEach(exports.spawn);
-        console.log("Level loaded");
-    });
-};
-
-},{"../common/level":15,"../console/command":19,"../phys/simulator":31,"../util/ocl":39}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1075,54 +659,93 @@ var
     settings = require('../common/settings'),
     command = require('../console/command'),
     protocol = require('./../net/client'),
+    scenehelper = require('../phys/scenehelper'),
 // Local
     paused = true,
     onground = true, jumpPrg = 0,
-    pitchObj = new THREE.Object3D(), yawObj = new THREE.Object3D(),
+    pitchObj = new THREE.Object3D(),
+    yawObj = new THREE.Object3D(),
     vec3a = new THREE.Vector3(),
-    downAxis = new THREE.Vector3(0, -1, 0);
+    downAxis = new THREE.Vector3(0, -1, 0),
+    mesh;
 
-input.pointerlocked.add(function () {
-    paused = false;
-    input.prevent = true;
-});
+exports.init = function (data) {
+    if (data.cameratype === "first person") {
+        exports.firstPersonCam(data.camera);
+    }
 
-input.pointerunlocked.add(function () {
-    paused = true;
-    input.prevent = false;
-});
+    input.pointerlocked.add(function () {
+        paused = false;
+        input.prevent = true;
+    });
 
-input.escape.add(function () {
-    paused = true;
-    input.prevent = false;
-});
+    input.pointerunlocked.add(function () {
+        paused = true;
+        input.prevent = false;
+    });
 
-input.bind('mouseaxis', 2, 'lookx');
-input.bind('mouseaxis', 3, 'looky');
-input.bind('key', keycode.w, 'movf');
-input.bind('key', keycode.a, 'movl');
-input.bind('key', keycode.s, 'movb');
-input.bind('key', keycode.d, 'movr');
-input.bind('key', keycode.space, 'jump');
-input.bind('mouse', 0, 'shoot');
+    input.escape.add(function () {
+        paused = true;
+        input.prevent = false;
+    });
 
-exports.update = function (dt) {
+    input.bind('mouseaxis', 2, 'lookx');
+    input.bind('mouseaxis', 3, 'looky');
+    input.bind('key', keycode.w, 'movf');
+    input.bind('key', keycode.a, 'movl');
+    input.bind('key', keycode.s, 'movb');
+    input.bind('key', keycode.d, 'movr');
+    input.bind('key', keycode.space, 'jump');
+    input.bind('mouse', 0, 'shoot');
+
+    mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height),
+        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
+
+    mesh.addEventListener('ready', function () {
+        mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
+    });
+
+    mesh.addEventListener('collision', function (other_object, relative_velocity, relative_rotation, contact_normal) {
+        // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
+        if (contact_normal.dot(downAxis) > 0.5) {
+            onground = true;
+            jumpPrg = 0;
+        }
+    });
+
+    mesh.add(yawObj);
+
+    yawObj.rotation.y = 1.25 * Math.PI;
+
+    mesh.position.set(0, 2, 0);
+    scenehelper.add(mesh, 0);
+    data.playermesh = mesh;
+};
+
+exports.initDom = function () {
+};
+exports.render = function () {
+};
+
+exports.update = function (dt, data) {
     input.updateGamepad();
+
+    for (var i = 0; i < data.packets.length; i++) {
+        if (data.packets[i].type === 'playerDataC') {
+            handlePlayerData(data, data.packets[i]);
+        }
+    }
+
+    if (!data.gameState.started) {
+        return;
+    }
 
     var accdt = settings.player.acc * dt;
     if (paused) {
         vec3a.set(0, 0, 0);
     } else {
-        yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
-        pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
-        pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
-
-        vec3a.set((input.check('movr') - input.check('movl')), 0, (input.check('movb') - input.check('movf')));
-        if (vec3a.length() > 1) {
-            vec3a.normalize();
-        }
-        vec3a.multiplyScalar(settings.player.speed);
-        vec3a.applyQuaternion(yawObj.quaternion);
+        updateView();
+        updateMovement();
     }
 
     var vel = mesh.getLinearVelocity(), changeVel = new THREE.Vector3().subVectors(vec3a, vel);
@@ -1130,7 +753,7 @@ exports.update = function (dt) {
         changeVel.setLength(accdt);
     }
 
-    changeVel.y = -1;
+    changeVel.y = -40 * dt;
 
     if (onground === false) {
         changeVel.multiplyScalar(0.1);
@@ -1140,44 +763,79 @@ exports.update = function (dt) {
         if (onground) {
             changeVel.multiplyScalar(1.2);
         }
-        changeVel.y = settings.player.jumpVel;
+        changeVel.y = settings.player.jumpVel * dt;
         onground = false;
         jumpPrg += dt;
     }
 
     mesh.setLinearVelocity(vel.add(changeVel));
-    protocol.sendPlayerData({p: mesh.position.toArray(), v: vel.toArray()});
+    sendPlayerData({p: mesh.position.toArray(), v: vel.toArray()});
 
     input.resetDelta();
 };
 
-var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius,settings.player.height),
-    PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
+function updateView() {
+    yawObj.rotation.y -= input.check('lookx') * settings.mouse.sensitivityX;
+    pitchObj.rotation.x -= input.check('looky') * settings.mouse.sensitivityY;
+    pitchObj.rotation.x = Math.clamp(pitchObj.rotation.x, -Math.HALF_PI, Math.HALF_PI);
+}
 
-mesh.addEventListener('ready', function () {
-    mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
-});
-
-mesh.addEventListener('collision', function (other_object, relative_velocity, relative_rotation, contact_normal) {
-    // `this` has collided with `other_object` with an impact speed of `relative_velocity` and a rotational force of `relative_rotation` and at normal `contact_normal`
-    if (contact_normal.dot(downAxis) > 0.5) {
-        onground = true;
-        jumpPrg = 0;
+function updateMovement() {
+    vec3a.set((input.check('movr') - input.check('movl')), 0, (input.check('movb') - input.check('movf')));
+    if (vec3a.length() > 1) {
+        vec3a.normalize();
     }
-});
+    vec3a.multiplyScalar(settings.player.speed);
+    vec3a.applyQuaternion(yawObj.quaternion);
+}
 
-mesh.add(yawObj);
+var pktnr = 0,
+    unackPkts = [],
+    packetStat = 0;
 
-yawObj.rotation.y = 1.25 * Math.PI;
+function handlePlayerData(data, pck) {
+    var pid = pck.pid, action = pck.action, pkdata = pck.data, eid;
+    if (action === 0) {
+        console.log('Logged on');
+        data.players[pid] = 0;
+    }
+    if (action === 1) {
+        eid = data.players[pid];
+        if (eid === 0) {
+            var pnr = pkdata.pnr;
+            var pkt = unackPkts[pnr];
+            // Only correct position as player acceleration is pretty high
+            var corr = {x: pkdata.p[0] - pkt.p[0], y: pkdata.p[1] - pkt.p[1], z: pkdata.p[2] - pkt.p[2]};
+            data.playermesh.position.add(corr);
+            delete unackPkts[pnr];
+            packetStat--;
+        } else {
+            scenehelper.updateBody(eid, pkdata);
+        }
+        if (packetStat < 1) {
+            unackPkts = [];
+            // Reset the counter so everyone is happy
+            pktnr = 0;
+        }
+    }
+    // Action 2 handled by cl/client
+    if (action === 3) {
+        data.players[pid] = undefined;
+    }
+}
 
-exports.mesh = mesh;
+function sendPlayerData(data) {
+    protocol.send(protocol.makePacket('playerDataS', data, ++pktnr));
+    unackPkts[pktnr] = data;
+    packetStat++;
+}
 
 exports.firstPersonCam = function (camera) {
     pitchObj.add(camera);
     yawObj.add(pitchObj);
 };
 
-},{"../common/settings":17,"../console/command":19,"../vendor/physi":44,"../vendor/three":46,"./../net/client":28,"./../util/input":37,"./../util/keycode":38}],37:[function(require,module,exports){
+},{"../common/settings":18,"../console/command":20,"../phys/scenehelper":34,"../vendor/physi":50,"../vendor/three":52,"./../net/client":29,"./../util/input":42,"./../util/keycode":43}],42:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1379,7 +1037,111 @@ exports.resetDelta = function () {
     mousepos[3] = 0.0;
 };
 
-},{"signals":6}],12:[function(require,module,exports){
+},{"signals":6}],9:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var
+// Module
+    command = require('../console/command'),
+    Connection = require('../net/connection'),
+    protocol = require('./../net/client'),
+    PHYSI = require('../vendor/physi'),
+    scenehelper = require('../phys/scenehelper'),
+    settings = require('../common/settings'),
+    THREE = require('../vendor/three'),
+    overlay = require('./overlay-mgr'),
+// Local
+    data;
+
+exports.playerName = "Bob";
+
+exports.render = function () {
+};
+exports.initDom = function () {
+};
+
+exports.init = function (gamedata) {
+    data = gamedata;
+};
+
+exports.update = function (dt, data) {
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i];
+        if (pck.type === 'gameState') {
+            exports.updateGameState(pck.state);
+        } else if (pck.type === 'playerDataC' && pck.action === 2) {
+            exports.spawnPlayer(pck.pid, pck.data);
+        }
+    }
+};
+
+exports.connect = function (address) {
+    data.connection = new Connection();
+    data.connection.message.add(protocol.receive);
+    data.connection.connect(address);
+    protocol.send(protocol.makePacket('logon', exports.playerName));
+};
+
+exports.spawnPlayer = function (pid, pdata) {
+    var eid = pdata.id;
+    data.players[pid] = eid;
+    var pos = pdata.pos;
+    pos = {x: pos[0], y: pos[1], z: pos[2]};
+    var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height), new THREE.MeshBasicMaterial({color: 0xc80000}), settings.player.mass);
+    mesh.position.copy(pos);
+    mesh.addEventListener('ready', function () {
+        mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
+    });
+    scenehelper.add(mesh, eid);
+};
+
+exports.updateGameState = function (state) {
+    if (state.started === true && overlay.active == 'sv-startup') {
+        overlay.show('pause');
+    }
+    if (state.started === false && overlay.active != 'sv-startup') {
+        overlay.show('sv-startup');
+    }
+
+    for (var k in state) {
+        if (state.hasOwnProperty(k)) {
+            data.gameState[k] = state[k];
+        }
+    }
+};
+
+command("connect <address>",
+    {mandatory: [{name: 'address', type: 'string'}]},
+    'connect',
+    function (match) {
+        exports.connect(match.address);
+    });
+
+command.engine.registerCvar('name', exports, 'playerName');
+
+},{"../common/settings":18,"../console/command":20,"../net/connection":30,"../phys/scenehelper":34,"../vendor/physi":50,"../vendor/three":52,"./../net/client":29,"./overlay-mgr":13}],13:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1486,4 +1248,220 @@ module.exports = function (text, cl) {
     }
 };
 
-},{}]},{},[1]);
+},{}],8:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+
+var
+// Module
+    keycode = require('../util/keycode'),
+    protocol = require('../net/client'),
+// Local
+    domElement = document.createElement('div'),
+    inElement = document.createElement('input'),
+    outElement = document.createElement('div');
+
+exports.init = function () {
+};
+
+exports.initDom = function () {
+    document.body.appendChild(domElement);
+};
+
+exports.render = function () {
+};
+
+exports.update = function (dt, data) {
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i];
+        if(pck.type == 'chatMsg') {
+            exports.write(pck.msg);
+            exports.refresh();
+        }
+    }
+};
+
+domElement.classList.add("chat-container");
+inElement.classList.add("chat-input");
+outElement.classList.add("chat-output");
+
+domElement.style.position = 'absolute';
+domElement.style.left = '0';
+domElement.style.bottom = '0';
+
+domElement.insertAdjacentHTML('afterbegin', "Chat<br>");
+domElement.appendChild(outElement);
+domElement.appendChild(inElement);
+
+inElement.addEventListener('keypress', function (e) {
+    var which = e.which || e.charCode || e.keyCode;
+    if (which === keycode.enter) {
+        protocol.send(protocol.makePacket('chatMsg', inElement.value));
+        inElement.value = "";
+    }
+});
+
+exports.write = function (str) {
+    outElement.insertAdjacentHTML('beforeend', str);
+    outElement.scrollTop = outElement.scrollHeight;
+};
+
+exports.refresh = function () {
+    window.clearInterval(fadeId);
+    window.clearTimeout(fadeWaitId);
+    if (!focused) {
+        fadeWaitId = window.setTimeout(exports.fade, 3000);
+    }
+};
+
+document.addEventListener('keydown', function (e) {
+    var which = e.which || e.charCode || e.keyCode;
+    var el = document.activeElement;
+    if (el && (el.tagName.toLowerCase() == 'input' && el.type == 'text' ||
+        el.tagName.toLowerCase() == 'textarea')) {
+        // focused element is a text input or textarea
+        return;
+    }
+    if (which === keycode.t) {
+        exports.focus();
+        e.preventDefault();
+    }
+}, false);
+
+var focused;
+
+exports.focus = function () {
+    focused = true;
+    exports.refresh();
+    domElement.style.display = '';
+    domElement.style.opacity = '1';
+    domElement.style.filter = '';
+    inElement.focus();
+};
+
+inElement.addEventListener('blur', function () {
+    focused = false;
+    exports.fade();
+}, false);
+
+var fadeId = -1, fadeWaitId = -1;
+
+exports.fade = function () {
+    var op = 1;  // initial opacity
+    fadeId = setInterval(function () {
+        if (op <= 0.05) {
+            clearInterval(fadeId);
+            fadeId = -1;
+            domElement.style.display = 'none';
+        }
+        domElement.style.opacity = op;
+        domElement.style.filter = "alpha(opacity=" + op * 100 + ")";
+        op *= 0.95;
+    }, 20);
+    fadeWaitId = -1;
+};
+
+},{"../net/client":29,"../util/keycode":43}],29:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+
+var
+// Module
+    arena = require('../common/arena'),
+    protocol = require('./protocol'),
+// Local
+    packets = [], queue = [], data;
+
+exports.init = function (gamedata) {
+    data = gamedata;
+    protocol.registerPackets(packets);
+    exports.makePacket = protocol.makePacket;
+};
+exports.initDom = function () {
+};
+exports.render = function () {
+};
+
+exports.receive = function (d) {
+    if (arena.debug) {
+        console.log("[in]", d);
+    }
+    var type = d[0];
+    var pck = packets[type].receive(d);
+    queue.push(pck);
+};
+
+exports.update = function (dt, data) {
+    data.packets = queue;
+    queue = [];
+
+    handleCommon(data);
+};
+
+exports.send = function (pck) {
+    packets[pck.id].send(sendRaw, pck);
+};
+
+function sendRaw(d) {
+    data.connection.send(d);
+    if (arena.debug) {
+        console.log("[out]", d);
+    }
+}
+
+function handleCommon(data) {
+    // Handle all easy packets (simple response) here
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i];
+        if (pck.type === 'keepAlive') {
+            // Send it right back
+            exports.send(pck);
+        }
+    }
+}
+
+},{"../common/arena":15,"./protocol":32}]},{},[1]);

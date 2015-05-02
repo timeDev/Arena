@@ -44,6 +44,7 @@ if (!String.format) {
     };
 }
 
+
 var
 // Module
     server = require('../server/server'),
@@ -52,40 +53,51 @@ var
     cmdBuiltins = require('../console/builtins'),
     Connection = require('../net/connection'),
     protocol = require('../net/server'),
-    simulator = require('../phys/simulator'),
-    Clock = require('../util/clock'),
     Player = require('../server/player'),
     arena = require('../common/arena'),
     level = require('../server/level'),
     settings = require('../common/settings'),
+    PHYSI = require('../vendor/physi'),
 // Local
     conListener;
+
+console.log("Playing Arena version", arena.version);
+if (arena.debug) {
+    console.warn("Debug mode is enabled");
+    window.debugging = true;
+}
+
+settings.api.init();
+settings.api.loadCfg();
+
+var game = window.game = require('../game');
+
+// Add common data
+game.data.scene = new PHYSI.Scene();
+game.data.players = [];
+game.data.bodies = []; // ID-Body lookup
+game.data.entities = []; // EntityId-BodyId lookup
+game.data.gameState = {
+    started: true,
+    time: 0.0
+};
+game.data.mapState = [];
+game.data.packets = [];
+
+// Add components
+game.addComponent(require('../net/server'));
+game.addComponent(require('../phys/simulator'));
+game.addComponent(server);
+
+require('../phys/scenehelper').init(game.data);
+level.init(game.data);
+
+game.init();
 
 level.newIdFn = server.newId;
 
 if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
-}
-
-var meshI = 0;
-
-function update(time) {
-    simulator.update(time);
-    server.gameState.time += time;
-    // Pick Object to broadcast
-    var playerMeshes = server.players.map(function (p) {
-        return p.entityId;
-    });
-    var meshIds = simulator.scene.children.map(simulator.getId).filter(function (m) {
-        return m > 0 && playerMeshes.indexOf(m) < 0;
-    });
-    if (meshIds.length > 0) {
-        if (meshI >= meshIds.length) {
-            meshI = 0;
-        }
-        var id = meshIds[meshI++];
-        protocol.broadcast(protocol.updateEntity(id, simulator.makeUpdatePacket(id)));
-    }
 }
 
 function connect(c) {
@@ -102,25 +114,26 @@ conListener.on('open', function (id) {
     console.writeLine("connect \"" + id + "\"", 'greenyellow');
     console.w.log("Server connection id:", id);
 });
-Clock.startNew(16, update);
+
+game.run();
 
 var cmdEnv = {
     log: function () {
         var msg = Array.prototype.join.call(arguments, " ");
-        server.players.forEach(function (p) {
-            if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
-            }
+        game.data.players.forEach(function (p) {
+            //if (p.data.rconAuthorized) {
+            //    protocol.sendRconMessage(p, msg);
+            //}
         });
         console.log.apply(console, arguments);
         console.w.log.apply(console.w, arguments);
     },
     error: function () {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
-        server.players.forEach(function (p) {
-            if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
-            }
+        game.data.players.forEach(function (p) {
+            //if (p.data.rconAuthorized) {
+            //    protocol.sendRconMessage(p, msg);
+            //}
         });
         console.error.apply(console, arguments);
         console.w.error.apply(console.w, arguments);
@@ -128,10 +141,10 @@ var cmdEnv = {
     ,
     warn: function () {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
-        server.players.forEach(function (p) {
-            if (p.data.rconAuthorized) {
-                protocol.sendRconMessage(p, msg);
-            }
+        game.data.players.forEach(function (p) {
+            //if (p.data.rconAuthorized) {
+            //    protocol.sendRconMessage(p, msg);
+            //}
         });
         console.warn.apply(console, arguments);
         console.w.warn.apply(console.w, arguments);
@@ -155,7 +168,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":14,"../common/settings":17,"../console/builtins":18,"../console/engine":20,"../dom/console":25,"../net/connection":29,"../net/server":30,"../phys/simulator":31,"../server/level":32,"../server/player":33,"../server/server":34,"../util/clock":35}],33:[function(require,module,exports){
+},{"../common/arena":15,"../common/settings":18,"../console/builtins":19,"../console/engine":21,"../dom/console":25,"../game":28,"../net/connection":30,"../net/server":33,"../phys/scenehelper":34,"../phys/simulator":35,"../server/level":36,"../server/player":37,"../server/server":38,"../vendor/physi":50}],37:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -233,7 +246,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":17,"../vendor/physi":44,"../vendor/three":46,"./server":34}],32:[function(require,module,exports){
+},{"../common/settings":18,"../vendor/physi":50,"../vendor/three":52,"./server":38}],36:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -265,11 +278,14 @@ var
     ocl = require('../util/ocl'),
     Sexhr = require('../vendor/SeXHR'),
     protocol = require('./../net/server'),
-    simulator = require('../phys/simulator'),
+    scenehelper = require('../phys/scenehelper'),
     server = require('./server'),
 // Local
-    ids = [];
+    ids = [], data;
 
+exports.init = function (gamedata) {
+    data = gamedata;
+};
 
 exports.newIdFn = function () {
     return -1;
@@ -283,15 +299,15 @@ exports.spawnObj = function (obj, id) {
     if (obj.mesh) {
         obj.mesh.position.copy(obj.pos);
         obj.mesh.__dirtyPosition = true;
-        simulator.add(obj.mesh, id);
+        scenehelper.add(obj.mesh, id);
         ids.push(id);
     }
 };
 
 exports.spawnString = function (str) {
     var id = exports.newIdFn();
-    protocol.broadcast(protocol.spawnObject(id, str));
-    server.mapState.push({id: id, str: str});
+    protocol.broadcast(protocol.makePacket('spawnObj', id, str));
+    data.mapState.push({id: id, str: str});
     ocl.load(str, function (obj) {
         exports.spawnObj(obj, id);
     });
@@ -299,12 +315,12 @@ exports.spawnString = function (str) {
 
 exports.clear = function () {
     ids.forEach(function (id) {
-        protocol.broadcast(protocol.killEntity(id));
+        protocol.broadcast(protocol.makePacket('killEnt', id));
     });
-    ids.forEach(simulator.remove);
+    ids.forEach(scenehelper.remove);
     ids = [];
-    while (server.mapState.length > 0) {
-        server.mapState.pop();
+    while (data.mapState.length > 0) {
+        data.mapState.pop();
     }
 };
 
@@ -355,7 +371,7 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
     });
 });
 
-},{"../common/level":15,"../console/command":19,"../phys/simulator":31,"../util/ocl":39,"../vendor/SeXHR":40,"./../net/server":30,"./server":34}],30:[function(require,module,exports){
+},{"../common/level":16,"../console/command":20,"../phys/scenehelper":34,"../util/ocl":44,"../vendor/SeXHR":46,"./../net/server":33,"./server":38}],33:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -385,218 +401,55 @@ var
 // Module
     arena = require('../common/arena'),
     server = require('./../server/server'),
-    simulator = require('../phys/simulator'),
+    protocol = require('./protocol'),
 // Local
-    players = server.players,
-    receivers = [];
-
-var send = exports.send = function (p, d) {
-    p.connection.send(d);
-    if (arena.debug) {
-        console.log("[out]", p.playerId, ",", d);
-    }
-};
-
-exports.broadcast = function (d) {
-    for (var i = 0; i < players.length; i++) {
-        send(players[i], d);
-    }
-};
+    packets = [],
+    queue = [],
+    data;
 
 exports.receive = function (p, d) {
     if (arena.debug) {
-        console.log("[in]", p.playerId, ",", d);
+        console.log("[in]", d);
     }
     var type = d[0];
-    receivers[type](p, d);
+    var pck = packets[type].receive(d);
+    pck.player = p;
+    queue.push(pck);
     p.data.timer = Date.now();
 };
 
-// KeepAlive 0 num S<>C
-
-exports.sendKeepAlive = function (p) {
-    var num = Math.random();
-    p.data.lastKeepAlive = num;
-    send(p, [0, num]);
+exports.update = function (dt, data) {
+    data.packets = queue;
+    queue = [];
 };
 
-receivers[0] = exports.receiveKeepAlive = function (p, d) {
-    var num = d[1];
-    if (p.data.lastKeepAlive === num) {
-        p.data.lastKeepAlive = -1;
+exports.init = function (gamedata) {
+    data = gamedata;
+    protocol.registerPackets(packets);
+    exports.makePacket = protocol.makePacket;
+};
+
+function sendfn(player) {
+    return player.connection.send.bind(player.connection);
+}
+
+exports.send = function (player, pck) {
+    packets[pck.id].send(sendfn(player), pck);
+    if (arena.debug) {
+        console.log("[out]", player.playerId, ",", pck);
     }
 };
 
-// PlayerData 1 playerId type data S>C
-//            1 data pktnr C>S
-// Types:
-// 0 = welcome, 1 = position
-// 2 = connect, 3 = disconnect
-
-exports.sendPlayerData = function (p, plId, type, data) {
-    send(p, [1, plId, type, data]);
-};
-
-receivers[1] = exports.receivePlayerData = function (p, d) {
-    p.updateBody(d[1]);
-    exports.broadcast([1, p.playerId, 1, {
-        p: p.mesh.position.toArray(),
-        v: p.mesh.getLinearVelocity().toArray(),
-        pnr: d[2]
-    }]);
-};
-
-// Logon 3 name C>S
-
-receivers[3] = exports.receiveLogon = function (p, d) {
-    p.name = d[1];
-    exports.sendPlayerData(p, p.playerId, 0, {});
-    exports.sendSpawnMany(p, server.mapState);
-    for (var i = 0; i < server.players.length; i++) {
-        var player = server.players[i];
-        exports.sendPlayerData(player, p.playerId, 2, {
-            id: p.entityId,
-            pos: p.mesh.position.toArray()
-        });
-        exports.sendPlayerData(p, player.playerId, 2, {
-            id: player.entityId,
-            pos: player.mesh.position.toArray()
-        });
+exports.broadcast = function (pck) {
+    for (var i = 0; i < data.players.length; i++) {
+        packets[pck.id].send(sendfn(data.players[i]), pck);
     }
-    exports.sendGameState(p, server.gameState);
-    server.players.push(p);
-    simulator.add(p.mesh, p.entityId);
-};
-
-// Chat Message 4 msg C<>S
-
-exports.sendChatMsg = function (p, msg) {
-    send(p, [4, msg]);
-};
-
-exports.chatMsg = function (msg) {
-    return [4, msg];
-};
-
-receivers[4] = exports.receiveChatMsg = function (p, d) {
-    var origMsg = d[1];
-    var playerName = p.name;
-    var msg = playerName + ": " + origMsg + "<br>";
-    // TODO: filter event exploits
-    exports.broadcast(exports.chatMsg(msg));
-};
-
-// === Entities ===
-
-// Spawn object from string 10 id string S>C
-
-exports.sendSpawnObject = function (p, id, str) {
-    send(p, [10, id, str]);
-};
-
-exports.spawnObject = function (id, str) {
-    return [10, id, str];
-};
-
-// Spawn entity by name 11 id name meta S>C
-
-exports.sendSpawnEntity = function (p, id, name, meta) {
-    send(p, [11, id, name, meta]);
-};
-
-exports.spawnEntity = function (id, name, meta) {
-    return [11, id, name, meta];
-};
-
-// Update entity by id 12 id meta S>C
-
-exports.sendUpdateEntity = function (p, id, meta) {
-    send(p, [12, id, meta]);
-};
-
-exports.updateEntity = function (id, meta) {
-    return [12, id, meta];
-};
-
-// Kill entity by id 13 id S>C
-
-exports.sendKillEntity = function (p, id) {
-    send(p, [13, id]);
-};
-
-exports.killEntity = function (id) {
-    return [13, id];
-};
-
-// Spawn many 14 list
-// list: array of {id,str/name,meta}
-
-exports.sendSpawnMany = function (p, list) {
-    send(p, [14, list]);
-};
-
-// ===
-
-// Game state 20 state S>C
-
-exports.sendGameState = function (p, state) {
-    send(p, [20, state]);
-};
-
-exports.gameState = function (state) {
-    return [20, state];
-};
-
-// RCON protocol
-// rcon status 200 - C>S | msg S>C
-// rcon error 201 msg S>C
-// rcon command 202 str C>S
-// rcon query 203 cvarname C>S
-// rcon cvar 204 cvarname value S>C
-// rcon reversecmd (sent by server, must not be questioned) 205 cmd S>C
-// rcon authorize 206 password C>S
-// rcon queryall 207 C>S
-// rcon consolemessage 208 msg S>C
-// Important: messages are not encrypted! Do not reuse the rcon password
-// for things like email and stuff! Someone getting into your server
-// should not be a big deal, as you can easily restart it via ssh or whatever
-
-receivers[200] = exports.receiveRconStatus = function (p /*, d*/) {
-    send(p, [200, server.getServerStatusMsg()]);
-};
-
-receivers[202] = exports.receiveRconCmd = function (p, d) {
-    if (!p.data.rconAuthorized) {
-        send(p, [201, "not authorized"]);
-        return;
-    }
-    server.executeCommand(d[1]);
-};
-
-receivers[203] = exports.receiveRconQuery = function (p, d) {
-    var response = server.getCvar(d[1], p.data.rconAuthorized);
-    send(p, [204, d[1], response]);
-};
-
-receivers[206] = exports.receiveRconAuthorize = function (p, d) {
-    if (server.matchesRconPassword(d[1])) {
-        p.data.rconAuthorized = true;
+    if (arena.debug) {
+        console.log("[out] [bcast] ,", pck);
     }
 };
 
-receivers[207] = exports.receiveRconQueryAll = function (p /*, d*/) {
-    var responseList = server.getCvarList(p.data.rconAuthorized);
-    for (var i = 0; i < responseList.length; i++) {
-        var res = responseList[i];
-        send(p, [204, res[0], res[1]]);
-    }
-};
-
-exports.sendRconMessage = function (p, msg) {
-    send(p, [208, msg]);
-};
-
-},{"../common/arena":14,"../phys/simulator":31,"./../server/server":34}],34:[function(require,module,exports){
+},{"../common/arena":15,"./../server/server":38,"./protocol":32}],38:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -625,25 +478,76 @@ var
     cmdEngine = require('../console/engine'),
     arena = require('../common/arena'),
     command = require('../console/command'),
+    scenehelper = require('../phys/scenehelper'),
+    protocol = require('../net/server'),
 // Local
-    players = [],
-    idCounter = 1;
+    idCounter = 1,
+    meshI = 0,
+    gamedata;
 
-exports.players = players;
+exports.init = function (data) {
+    gamedata = data;
+};
+exports.update = function (dt, data) {
+    data.gameState.time += dt;
+    // Pick Object to broadcast
+    var playerMeshes = data.players.map(function (p) {
+        return p.entityId;
+    });
+    var meshIds = game.data.scene.children.map(scenehelper.getId).filter(function (m) {
+        return m > 0 && playerMeshes.indexOf(m) < 0;
+    });
+    if (meshIds.length > 0) {
+        if (meshI >= meshIds.length) {
+            meshI = 0;
+        }
+        var id = meshIds[meshI++];
+        protocol.broadcast(protocol.makePacket('updateEnt', id, scenehelper.makeUpdatePacket(id)));
+    }
+
+    for (var i = 0; i < data.packets.length; i++) {
+        var pck = data.packets[i], player = pck.player;
+        if (pck.type == 'playerDataS') {
+            player.updateBody(pck.data);
+            protocol.broadcast(protocol.makePacket('playerDataC', player.playerId, 1, {
+                p: player.mesh.position.toArray(),
+                v: player.mesh.getLinearVelocity().toArray(),
+                pnr: pck.pknr
+            }));
+        } else if (pck.type == 'logon') {
+            player.name = pck.name;
+            protocol.send(player, protocol.makePacket('playerDataC', player.playerId, 0, {}));
+            protocol.send(player, protocol.makePacket('spawnMany', data.mapState));
+            for (var j = 0; j < data.players.length; j++) {
+                var player2 = data.players[j];
+                protocol.send(player2, protocol.makePacket('playerDataC', player.playerId, 2, {
+                    id: player.entityId,
+                    pos: player.mesh.position.toArray()
+                }));
+                protocol.send(player, protocol.makePacket('playerDataC', player2.playerId, 2, {
+                    id: player2.entityId,
+                    pos: player2.mesh.position.toArray()
+                }));
+            }
+            protocol.send(player, protocol.makePacket('gameState', data.gameState));
+            data.players.push(player);
+            scenehelper.add(player.mesh, player.entityId);
+        } else if (pck.type == 'chatMsg') {
+            var origMsg = pck.msg;
+            var playerName = player.name;
+            var msg = playerName + ": " + origMsg + "<br>";
+            // TODO: filter event exploits
+            protocol.broadcast(exports.makePacket('chatMsg', msg));
+        }
+    }
+};
 
 exports.newId = function () {
     return idCounter++;
 };
 
-exports.mapState = [];
-
-exports.gameState = {
-    started: true,
-    time: 0.0
-};
-
 exports.getServerStatusMsg = function () {
-    return String.format("Running version {0} | {1} player(s) | Running for {2}s", arena.version, players.length, exports.gameState.time);
+    return String.format("Running version {0} | {1} player(s) | Running for {2}s", arena.version, gamedata.players.length, gamedata.gameState.time);
 };
 
 exports.executeCommand = null;
@@ -675,9 +579,9 @@ exports.execute = function (cmd) {
 command("tpa <x> <y> <z>", {
     mandatory: [{name: 'x', type: 'number'}, {name: 'y', type: 'number'}, {name: 'z', type: 'number'}]
 }, 'tpa', function (match) {
-    players.forEach(function (p) {
+    gamedata.players.forEach(function (p) {
         p.teleport(match.x, match.y, match.z);
     });
 });
 
-},{"../common/arena":14,"../console/command":19,"../console/engine":20}]},{},[2]);
+},{"../common/arena":15,"../console/command":20,"../console/engine":21,"../net/server":33,"../phys/scenehelper":34}]},{},[2]);
