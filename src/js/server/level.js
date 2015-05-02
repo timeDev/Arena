@@ -66,7 +66,7 @@ exports.spawnString = function (str) {
 
 exports.clear = function () {
     ids.forEach(function (id) {
-        protocol.broadcast(protocol.makePacket('killEntity', id));
+        protocol.broadcast(protocol.makePacket('killEnt', id));
     });
     ids.forEach(scenehelper.remove);
     ids = [];

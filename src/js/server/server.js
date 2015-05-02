@@ -57,35 +57,35 @@ exports.update = function (dt, data) {
         var pck = data.packets[i], player = pck.player;
         if (pck.type == 'playerDataS') {
             player.updateBody(pck.data);
-            exports.broadcast(exports.makePacket('playerDataC', p.playerId, 1, {
+            protocol.broadcast(protocol.makePacket('playerDataC', player.playerId, 1, {
                 p: player.mesh.position.toArray(),
                 v: player.mesh.getLinearVelocity().toArray(),
                 pnr: pck.pknr
             }));
-        } else if(pck.type == 'logon') {
+        } else if (pck.type == 'logon') {
             player.name = pck.name;
-            exports.send(player, exports.makePacket('playerDataC', player.playerId, 0, {}));
-            exports.send(player, exports.makePacket('spawnMany', player, data.mapState));
+            protocol.send(player, protocol.makePacket('playerDataC', player.playerId, 0, {}));
+            protocol.send(player, protocol.makePacket('spawnMany', data.mapState));
             for (var j = 0; j < data.players.length; j++) {
                 var player2 = data.players[j];
-                exports.send(player2, exports.makePacket('playerDataC', player.playerId, 2, {
+                protocol.send(player2, protocol.makePacket('playerDataC', player.playerId, 2, {
                     id: player.entityId,
                     pos: player.mesh.position.toArray()
                 }));
-                exports.send(player, exports.makePacket('playerDataC', player2.playerId, 2, {
+                protocol.send(player, protocol.makePacket('playerDataC', player2.playerId, 2, {
                     id: player2.entityId,
                     pos: player2.mesh.position.toArray()
                 }));
             }
-            exports.send(player, exports.makePacket('gameState', data.gameState));
+            protocol.send(player, protocol.makePacket('gameState', data.gameState));
             data.players.push(player);
             scenehelper.add(player.mesh, player.entityId);
-        } else if(pck.type == 'chatMsg') {
+        } else if (pck.type == 'chatMsg') {
             var origMsg = pck.msg;
             var playerName = player.name;
             var msg = playerName + ": " + origMsg + "<br>";
             // TODO: filter event exploits
-            exports.broadcast(exports.makePacket('chatMsg', msg));
+            protocol.broadcast(exports.makePacket('chatMsg', msg));
         }
     }
 };

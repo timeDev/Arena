@@ -48,6 +48,7 @@ inElement.addEventListener('keypress', function (e) {
             }
         } catch (e) {
             exports.error(e.toString());
+            exports.w.error(e);
         }
         inElement.value = "";
     }

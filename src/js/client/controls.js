@@ -100,16 +100,16 @@ exports.render = function () {
 };
 
 exports.update = function (dt, data) {
-    if (!data.gameState.started) {
-        return;
-    }
-
     input.updateGamepad();
 
     for (var i = 0; i < data.packets.length; i++) {
         if (data.packets[i].type === 'playerDataC') {
             handlePlayerData(data, data.packets[i]);
         }
+    }
+
+    if (!data.gameState.started) {
+        return;
     }
 
     var accdt = settings.player.acc * dt;
@@ -168,6 +168,7 @@ var pktnr = 0,
 function handlePlayerData(data, pck) {
     var pid = pck.pid, action = pck.action, pkdata = pck.data, eid;
     if (action === 0) {
+        console.log('Logged on');
         data.players[pid] = 0;
     }
     if (action === 1) {

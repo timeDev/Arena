@@ -49,10 +49,10 @@ exports.init = function (gamedata) {
 exports.update = function (dt, data) {
     for (var i = 0; i < data.packets.length; i++) {
         var pck = data.packets[i];
-        if(pck.type === 'gameState') {
+        if (pck.type === 'gameState') {
             exports.updateGameState(pck.state);
-        } else if(pck.type === 'playerDataC' && pck.action === 2) {
-                exports.spawnPlayer(pck.pid, pck.data);
+        } else if (pck.type === 'playerDataC' && pck.action === 2) {
+            exports.spawnPlayer(pck.pid, pck.data);
         }
     }
 };
@@ -64,10 +64,10 @@ exports.connect = function (address) {
     protocol.send(protocol.makePacket('logon', exports.playerName));
 };
 
-exports.spawnPlayer = function (pid, data) {
-    var eid = data.id;
+exports.spawnPlayer = function (pid, pdata) {
+    var eid = pdata.id;
     data.players[pid] = eid;
-    var pos = data.pos;
+    var pos = pdata.pos;
     pos = {x: pos[0], y: pos[1], z: pos[2]};
     var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height), new THREE.MeshBasicMaterial({color: 0xc80000}), settings.player.mass);
     mesh.position.copy(pos);

@@ -88,7 +88,7 @@ Connection.prototype.accept = function (target) {
 };
 
 Connection.prototype.send = function (data) {
-    if (this.target === null) {
+    if (!this.target) {
         console.error("Cannon send data without connection!");
     } else {
         this.target.send(data);

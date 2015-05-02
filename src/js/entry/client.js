@@ -74,6 +74,7 @@ game.data.entities = []; // EntityId-BodyId lookup
 game.data.server = {};
 game.data.players = [];
 game.data.gameState = {};
+game.data.packets = [];
 
 game.data.cameratype = "first person";
 game.data.camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
@@ -85,6 +86,7 @@ game.addComponent(require('../client/controls'));
 game.addComponent(require('../phys/simulator'));
 game.addComponent(require('../client/client'));
 game.addComponent(require('../client/chat'));
+game.addComponent(require('../client/level'));
 
 require('../phys/scenehelper').init(game.data);
 game.init();

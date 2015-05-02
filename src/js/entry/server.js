@@ -81,13 +81,14 @@ game.data.gameState = {
     time: 0.0
 };
 game.data.mapState = [];
+game.data.packets = [];
 
 // Add components
+game.addComponent(require('../net/server'));
 game.addComponent(require('../phys/simulator'));
 game.addComponent(server);
 
 require('../phys/scenehelper').init(game.data);
-require('../net/server').init(game.data);
 level.init(game.data);
 
 game.init();

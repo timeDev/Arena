@@ -27,36 +27,11 @@ var
 // Module
     arena = require('../common/arena'),
     server = require('./../server/server'),
-    scenehelper = require('../phys/scenehelper'),
-    makePacket = require('./packet'),
+    protocol = require('./protocol'),
 // Local
-    receivers = [],
     packets = [],
     queue = [],
     data;
-
-// 0:KeepAlive [S<->C] num
-packets[0] = makePacket(['num'], 0, 'keepAlive');
-// 1:PlayerDataC [S->C] pid action data
-packets[1] = makePacket(['pid', 'action', 'data'], 1, 'playerDataC');
-// 2:PlayerDataS [C->S] data pknr
-packets[2] = makePacket(['data', 'pknr'], 2, 'playerDataS');
-// 3:Logon [C->S] name
-packets[3] = makePacket(['name'], 3, 'logon');
-// 4:Chat Message [S<->C] msg
-packets[4] = makePacket(['msg'], 4, 'chatMsg');
-// 10:Spawn Object from String [S->C] id string
-packets[10] = makePacket(['id', 'string'], 10, 'spawnObj');
-// 11:Spawn entity by name [S->C] id name meta
-packets[11] = makePacket(['id', 'name', 'meta'], 11, 'spawnEnt');
-// 12:Update Entity [S->C] id data
-packets[12] = makePacket(['id', 'data'], 12, 'updateEnt');
-// 13:Kill entity [S->C] id
-packets[13] = makePacket(['id'], 13, 'killEnt');
-// 14:Spawn many [S->C] list
-packets[14] = makePacket(['list'], 14, 'spawnMany');
-// 20:Game State [S->C] state
-packets[20] = makePacket(['state'], 20, 'gameState');
 
 exports.receive = function (p, d) {
     if (arena.debug) {
@@ -72,51 +47,20 @@ exports.receive = function (p, d) {
 exports.update = function (dt, data) {
     data.packets = queue;
     queue = [];
-
-    handleCommon(data);
 };
-
-exports.makePacket = function (type) {
-    for (var i = 0; i < packets.length && typeof type === 'string'; i++) {
-        if (packets[i] && packets[i].type === type) {
-            type = packets[i].id;
-            break;
-        }
-    }
-    if (typeof type !== 'number' || !packets[type]) {
-        throw "Invalid packet id: " + type;
-    }
-    var args = [];
-    for (var j = 1; j < arguments.length; j++) {
-        args[i - 1] = (arguments[i]);
-    }
-    return packets[type].make.apply(this, args);
-};
-
-function sendRaw(p, d) {
-    p.connection.send(d);
-    if (arena.debug) {
-        console.log("[out]", d);
-    }
-}
-
-function handleCommon(data) {
-    // Handle all easy packets (simple response) here
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if (pck.type === 'keepAlive') {
-            // Send it right back
-            exports.send(pck);
-        }
-    }
-}
 
 exports.init = function (gamedata) {
     data = gamedata;
+    protocol.registerPackets(packets);
+    exports.makePacket = protocol.makePacket;
 };
 
+function sendfn(player) {
+    return player.connection.send.bind(player.connection);
+}
+
 exports.send = function (player, pck) {
-    packets[pck.id].send(sendRaw.bind(player), pck);
+    packets[pck.id].send(sendfn(player), pck);
     if (arena.debug) {
         console.log("[out]", player.playerId, ",", pck);
     }
@@ -124,9 +68,9 @@ exports.send = function (player, pck) {
 
 exports.broadcast = function (pck) {
     for (var i = 0; i < data.players.length; i++) {
-        packets[pck.id].send(sendRaw.bind(data.players[i]), pck);
+        packets[pck.id].send(sendfn(data.players[i]), pck);
     }
     if (arena.debug) {
-        console.log("[out] [broadcast] ,", pck);
+        console.log("[out] [bcast] ,", pck);
     }
 };
