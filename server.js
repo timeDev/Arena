@@ -73,6 +73,7 @@ settings.api.loadCfg();
 var game = window.game = require('../game');
 
 // Add common data
+game.data.serverside = true;
 game.data.scene = new PHYSI.Scene();
 game.data.players = [];
 game.data.bodies = []; // ID-Body lookup
@@ -85,11 +86,14 @@ game.data.mapState = [];
 game.data.packets = [];
 
 // Add components
-game.addComponent(require('../net/server'));
+game.addComponent(game.data.protocol = require('../net/server'));
 game.addComponent(require('../phys/simulator'));
 game.addComponent(server);
 
 require('../phys/scenehelper').init(game.data);
+require('../common/rcon').init(game.data);
+require('../common/cheat').init(game.data);
+require('../common/replicated').init(game.data);
 level.init(game.data);
 
 game.init();
@@ -120,32 +124,20 @@ game.run();
 var cmdEnv = {
     log: function () {
         var msg = Array.prototype.join.call(arguments, " ");
-        game.data.players.forEach(function (p) {
-            //if (p.data.rconAuthorized) {
-            //    protocol.sendRconMessage(p, msg);
-            //}
-        });
+        protocol.broadcastLevel(1, protocol.makePacket('rconStatus', 'msg', msg));
         console.log.apply(console, arguments);
         console.w.log.apply(console.w, arguments);
     },
     error: function () {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
-        game.data.players.forEach(function (p) {
-            //if (p.data.rconAuthorized) {
-            //    protocol.sendRconMessage(p, msg);
-            //}
-        });
+        protocol.broadcastLevel(1, protocol.makePacket('rconStatus', 'error', msg));
         console.error.apply(console, arguments);
         console.w.error.apply(console.w, arguments);
     }
     ,
     warn: function () {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
-        game.data.players.forEach(function (p) {
-            //if (p.data.rconAuthorized) {
-            //    protocol.sendRconMessage(p, msg);
-            //}
-        });
+        protocol.broadcastLevel(1, protocol.makePacket('rconStatus', 'error', msg));
         console.warn.apply(console, arguments);
         console.w.warn.apply(console.w, arguments);
     }
@@ -168,7 +160,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":15,"../common/settings":18,"../console/builtins":19,"../console/engine":21,"../dom/console":25,"../game":28,"../net/connection":30,"../net/server":33,"../phys/scenehelper":34,"../phys/simulator":35,"../server/level":36,"../server/player":37,"../server/server":38,"../vendor/physi":50}],37:[function(require,module,exports){
+},{"../common/arena":14,"../common/cheat":15,"../common/rcon":18,"../common/replicated":19,"../common/settings":20,"../console/builtins":21,"../console/engine":23,"../dom/console":27,"../game":30,"../net/connection":32,"../net/server":35,"../phys/scenehelper":36,"../phys/simulator":37,"../server/level":38,"../server/player":39,"../server/server":40,"../vendor/physi":52}],39:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -204,10 +196,11 @@ function Player(connection) {
     this.connection = connection;
     this.name = "unnamed";
     this.data = {};
+    this.privilege = 0;
     this.entityId = server.newId();
     this.playerId = Player.newId();
 
-    this.mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius,settings.player.height),
+    this.mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height),
         PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
 }
 
@@ -246,7 +239,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":18,"../vendor/physi":50,"../vendor/three":52,"./server":38}],36:[function(require,module,exports){
+},{"../common/settings":20,"../vendor/physi":52,"../vendor/three":54,"./server":40}],38:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -371,7 +364,7 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
     });
 });
 
-},{"../common/level":16,"../console/command":20,"../phys/scenehelper":34,"../util/ocl":44,"../vendor/SeXHR":46,"./../net/server":33,"./server":38}],33:[function(require,module,exports){
+},{"../common/level":16,"../console/command":22,"../phys/scenehelper":36,"../util/ocl":46,"../vendor/SeXHR":48,"./../net/server":35,"./server":40}],35:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -449,7 +442,18 @@ exports.broadcast = function (pck) {
     }
 };
 
-},{"../common/arena":15,"./../server/server":38,"./protocol":32}],38:[function(require,module,exports){
+exports.broadcastLevel = function (level, pck) {
+    for (var i = 0; i < data.players.length; i++) {
+        if (data.players[i].privilege >= level) {
+            packets[pck.id].send(sendfn(data.players[i]), pck);
+        }
+    }
+    if (arena.debug) {
+        console.log("[out] [bcast level " + level + "] ,", pck);
+    }
+};
+
+},{"../common/arena":14,"./../server/server":40,"./protocol":34}],40:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -480,6 +484,7 @@ var
     command = require('../console/command'),
     scenehelper = require('../phys/scenehelper'),
     protocol = require('../net/server'),
+    rcon = require('../common/rcon'),
 // Local
     idCounter = 1,
     meshI = 0,
@@ -538,6 +543,22 @@ exports.update = function (dt, data) {
             var msg = playerName + ": " + origMsg + "<br>";
             // TODO: filter event exploits
             protocol.broadcast(exports.makePacket('chatMsg', msg));
+        } else if (pck.type == 'rconRequest') {
+            if (pck.action == 'auth') {
+                rcon.authorize(pck.arg, player);
+            } else if (pck.action == 'cmd') {
+                if (player.privilege > 0) {
+                    exports.executeCommand(pck.arg);
+                } else {
+                    protocol.send(player, protocol.makePacket('rconStatus', 'error', "Not authorized"));
+                }
+            } else if (pck.action == 'changeCvar') {
+                if (player.privilege > 0) {
+                    cmdEngine.setCvar(pck.arg[0], pck.arg[1]);
+                } else {
+                    protocol.send(player, protocol.makePacket('rconStatus', 'error', "Not authorized"));
+                }
+            }
         }
     }
 };
@@ -584,4 +605,8 @@ command("tpa <x> <y> <z>", {
     });
 });
 
-},{"../common/arena":15,"../console/command":20,"../console/engine":21,"../net/server":33,"../phys/scenehelper":34}]},{},[2]);
+command("status", {}, 'status', function () {
+    this.log(exports.getServerStatusMsg());
+});
+
+},{"../common/arena":14,"../common/rcon":18,"../console/command":22,"../console/engine":23,"../net/server":35,"../phys/scenehelper":36}]},{},[2]);

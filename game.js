@@ -81,7 +81,7 @@ game.data.cameratype = "first person";
 game.data.camera = new THREE.PerspectiveCamera(settings.graphics.fov, window.innerWidth / (window.innerHeight), 0.1, 1000);
 
 // Add components
-game.addComponent(require('../net/client'));
+game.addComponent(game.data.protocol = require('../net/client'));
 game.addComponent(require('../client/display'));
 game.addComponent(require('../client/controls'));
 game.addComponent(require('../phys/simulator'));
@@ -90,9 +90,10 @@ game.addComponent(require('../client/chat'));
 game.addComponent(require('../client/level'));
 
 require('../phys/scenehelper').init(game.data);
+require('../common/rcon').init(game.data);
+require('../common/cheat').init(game.data);
+require('../common/replicated').init(game.data);
 game.init();
-
-require('../client/rcon');
 
 if (!cmdBuiltins.registered) {
     console.warn("Built-in commands have not been registered!");
@@ -119,94 +120,7 @@ if (document.readyState === 'interactive') {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
 
-},{"../client/chat":8,"../client/client":9,"../client/controls":10,"../client/display":11,"../client/level":12,"../client/overlay-mgr":13,"../client/rcon":14,"../common/arena":15,"../common/settings":18,"../console/builtins":19,"../console/engine":21,"../dom/console":25,"../game":28,"../net/client":29,"../phys/scenehelper":34,"../phys/simulator":35,"../vendor/physi":50,"../vendor/three":52}],14:[function(require,module,exports){
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015 Oskar Homburg
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-/*global require, module, exports:true */
-var
-// Module
-    command = require('../console/command'),
-    cmdEngine = require('../console/engine'),
-    protocol = require('./../net/client'),
-    console = require('../dom/console'),
-// Local
-    cvarCache;
-
-protocol.rconHandler = {
-    status: function (msg) {
-        console.log(msg);
-    },
-    error: function (msg) {
-        console.warn(msg);
-    },
-    cvar: function (name, value) {
-        cvarCache[name] = value;
-    },
-    command: function (cmd) {
-        // Execute command as server
-        cmdEngine.executeString(cmd, window.console);
-    }
-};
-
-exports.cacheCvars = function () {
-    cvarCache = {};
-    protocol.sendRconQueryAll();
-};
-
-exports.execute = function (str) {
-    protocol.sendRconCommand(str);
-};
-
-exports.setCvar = function (name, value) {
-    protocol.sendRconCommand(name, value);
-};
-
-exports.getCvar = function (name) {
-    // Refresh even if we already know it
-    protocol.sendRconQuery(name);
-    return cvarCache[name];
-};
-
-command("rcon auth <pwd> | status | cmd <cmd>", [{
-    mandatory: [{name: 'mode', type: 'value', value: 'auth'},
-        {name: 'pwd', type: 'string'}]
-}, {
-    mandatory: [{name: 'mode', type: 'value', value: 'status'}]
-}, {
-    mandatory: [{name: 'mode', type: 'value', value: 'cmd'},
-        {name: 'cmd', type: 'string'}]
-}], 'rcon', function (match) {
-    if (match.matchI === 0) {
-        protocol.sendRconAuthorize(match.pwd);
-    } else if (match.matchI === 1) {
-        protocol.sendRconStatus();
-    } else if (match.matchI === 2) {
-        protocol.sendRconCommand(match.cmd);
-    }
-});
-
-},{"../console/command":20,"../console/engine":21,"../dom/console":25,"./../net/client":29}],12:[function(require,module,exports){
+},{"../client/chat":8,"../client/client":9,"../client/controls":10,"../client/display":11,"../client/level":12,"../client/overlay-mgr":13,"../common/arena":14,"../common/cheat":15,"../common/rcon":18,"../common/replicated":19,"../common/settings":20,"../console/builtins":21,"../console/engine":23,"../dom/console":27,"../game":30,"../net/client":31,"../phys/scenehelper":36,"../phys/simulator":37,"../vendor/physi":52,"../vendor/three":54}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -293,7 +207,7 @@ exports.update = function (dt, data) {
     }
 };
 
-},{"../common/level":16,"../console/command":20,"../phys/scenehelper":34,"../util/ocl":44}],11:[function(require,module,exports){
+},{"../common/level":16,"../console/command":22,"../phys/scenehelper":36,"../util/ocl":46}],11:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -418,7 +332,7 @@ exports.update = function() {
 
 };
 
-},{"../common/settings":18,"../console/command":20,"../dom/console":25,"../dom/draggable":26,"../vendor/Stats":47,"../vendor/three":52,"./../util/input":42,"./overlay-mgr":13}],47:[function(require,module,exports){
+},{"../common/settings":20,"../console/command":22,"../dom/console":27,"../dom/draggable":28,"../vendor/Stats":49,"../vendor/three":54,"./../util/input":44,"./overlay-mgr":13}],49:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -568,7 +482,7 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
-},{}],26:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -835,7 +749,7 @@ exports.firstPersonCam = function (camera) {
     yawObj.add(pitchObj);
 };
 
-},{"../common/settings":18,"../console/command":20,"../phys/scenehelper":34,"../vendor/physi":50,"../vendor/three":52,"./../net/client":29,"./../util/input":42,"./../util/keycode":43}],42:[function(require,module,exports){
+},{"../common/settings":20,"../console/command":22,"../phys/scenehelper":36,"../vendor/physi":52,"../vendor/three":54,"./../net/client":31,"./../util/input":44,"./../util/keycode":45}],44:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1072,6 +986,8 @@ var
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
     overlay = require('./overlay-mgr'),
+    rcon = require('../common/rcon'),
+    console = require('../dom/console'),
 // Local
     data;
 
@@ -1093,6 +1009,22 @@ exports.update = function (dt, data) {
             exports.updateGameState(pck.state);
         } else if (pck.type === 'playerDataC' && pck.action === 2) {
             exports.spawnPlayer(pck.pid, pck.data);
+        } else if (pck.type == 'rconStatus') {
+            if (pck.action == 'auth') {
+                data.rconAuth = !!data.arg;
+            } else if (pck.action == 'changeCvar') {
+                command.engine.setCvarNocheck(pck.arg[0], pck.arg[1]);
+            } else if (pck.action == 'error') {
+                console.warn(pck.arg);
+            } else if (pck.action == 'cmd') {
+                try {
+                    command.engine.executeString(pck.arg, console);
+                } catch (e) {
+                    console.error(e);
+                }
+            } else if (pck.action == 'msg') {
+                console.log('>', pck.arg);
+            }
         }
     }
 };
@@ -1139,9 +1071,21 @@ command("connect <address>",
         exports.connect(match.address);
     });
 
+command("rcon <cmd>",
+    {mandatory: [{name: 'cmd', type: 'string'}]},
+    'rcon', function (match) {
+        rcon.execCommand(match.cmd);
+    });
+
+command("auth <pwd>",
+    {mandatory: [{name: 'pwd', type: 'string'}]},
+    'auth', function (match) {
+        rcon.authorize(match.pwd);
+    });
+
 command.engine.registerCvar('name', exports, 'playerName');
 
-},{"../common/settings":18,"../console/command":20,"../net/connection":30,"../phys/scenehelper":34,"../vendor/physi":50,"../vendor/three":52,"./../net/client":29,"./overlay-mgr":13}],13:[function(require,module,exports){
+},{"../common/rcon":18,"../common/settings":20,"../console/command":22,"../dom/console":27,"../net/connection":32,"../phys/scenehelper":36,"../vendor/physi":52,"../vendor/three":54,"./../net/client":31,"./overlay-mgr":13}],13:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1202,7 +1146,7 @@ exports.add = function (name, text, cl) {
     return ol;
 };
 
-},{"../dom/overlay":27}],27:[function(require,module,exports){
+},{"../dom/overlay":29}],29:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1383,7 +1327,7 @@ exports.fade = function () {
     fadeWaitId = -1;
 };
 
-},{"../net/client":29,"../util/keycode":43}],29:[function(require,module,exports){
+},{"../net/client":31,"../util/keycode":45}],31:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1464,4 +1408,4 @@ function handleCommon(data) {
     }
 }
 
-},{"../common/arena":15,"./protocol":32}]},{},[1]);
+},{"../common/arena":14,"./protocol":34}]},{},[1]);
