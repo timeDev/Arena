@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    settings = require('../common/settings'),
+    simulator = require('../pyhs/simulator'),
     THREE = require('../vendor/three'),
     PHYSI = require('../vendor/physi'),
     server = require('./server');
@@ -37,15 +37,15 @@ function Player(connection) {
     this.entityId = server.newId();
     this.playerId = Player.newId();
 
-    this.mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height),
-        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
+    this.mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(simulator.player.radius, simulator.player.radius, simulator.player.height),
+        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), simulator.player.mass);
 }
 
 Player.prototype.updateBody = function (state) {
     if (state.v) {
         var v = new THREE.Vector3(state.v[0], state.v[1], state.v[2]);
-        if (v.length > settings.player.speed) {
-            v.setLength(settings.player.speed);
+        if (v.length > simulator.player.speed) {
+            v.setLength(simulator.player.speed);
         }
         this.mesh.setLinearVelocity(v);
     }
@@ -53,9 +53,9 @@ Player.prototype.updateBody = function (state) {
         var p = new THREE.Vector3(state.p[0], state.p[1], state.p[2]);
         var len = p.distanceTo(this.mesh.position);
         // Use 1.3 tolerance
-        if (len > settings.player.speed * 1.3) {
+        if (len > simulator.player.speed * 1.3) {
             p.sub(this.mesh.position);
-            p.setLength(settings.player.speed);
+            p.setLength(simulator.player.speed);
             p.add(this.mesh.position);
         }
         this.mesh.position.copy(p);

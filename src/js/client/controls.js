@@ -28,10 +28,11 @@ var
     keycode = require('./../util/keycode'),
     THREE = require('../vendor/three'),
     PHYSI = require('../vendor/physi'),
-    settings = require('../common/settings'),
     command = require('../console/command'),
+    settings = require('./settings'),
     protocol = require('./../net/client'),
     scenehelper = require('../phys/scenehelper'),
+    simulator = require('../phys/simulator'),
 // Local
     paused = true,
     onground = true, jumpPrg = 0,
@@ -70,8 +71,8 @@ exports.init = function (data) {
     input.bind('key', keycode.space, 'jump');
     input.bind('mouse', 0, 'shoot');
 
-    mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height),
-        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
+    mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(simulator.player.radius, simulator.player.radius, simulator.player.height),
+        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), simulator.player.mass);
 
     mesh.addEventListener('ready', function () {
         mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
@@ -112,7 +113,7 @@ exports.update = function (dt, data) {
         return;
     }
 
-    var accdt = settings.player.acc * dt;
+    var accdt = simulator.player.acc * dt;
     if (paused) {
         vec3a.set(0, 0, 0);
     } else {
@@ -131,11 +132,11 @@ exports.update = function (dt, data) {
         changeVel.multiplyScalar(0.1);
     }
 
-    if (jumpPrg < settings.player.jumpDur && input.check('jump') > 0.2) {
+    if (jumpPrg < simulator.player.jumpDur && input.check('jump') > 0.2) {
         if (onground) {
             changeVel.multiplyScalar(1.2);
         }
-        changeVel.y = settings.player.jumpVel * dt;
+        changeVel.y = simulator.player.simulator * dt;
         onground = false;
         jumpPrg += dt;
     }
@@ -157,7 +158,7 @@ function updateMovement() {
     if (vec3a.length() > 1) {
         vec3a.normalize();
     }
-    vec3a.multiplyScalar(settings.player.speed);
+    vec3a.multiplyScalar(simulator.player.speed);
     vec3a.applyQuaternion(yawObj.quaternion);
 }
 

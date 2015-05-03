@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,35 +22,16 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
+var command = require('../console/command');
 
-var cmdEngine = require('../console/engine');
-
-exports.update = function (dt, data) {
-    if (data.gameState.started) {
-        data.scene.simulate(dt, 2);
+exports.loadCfg = function () {
+    var cfg = window.localStorage.getItem('config');
+    if (cfg == null) {
+        window.localStorage.setItem('config', cfg = ";");
     }
+    command.engine.executeString(cfg, window.console);
 };
 
-exports.render = function () {
-};
-exports.init = function () {
-    cmdEngine.registerCvar('move_mass', exports.player, 'mass', ['cheat', 'repl']);
-    cmdEngine.registerCvar('pcol_radius', exports.player, 'radius', ['cheat', 'repl']);
-    cmdEngine.registerCvar('move_speed', exports.player, 'speed', ['cheat', 'repl']);
-    cmdEngine.registerCvar('move_acc', exports.player, 'acc', ['cheat', 'repl']);
-    cmdEngine.registerCvar('move_jvel', exports.player, 'jumpVel-', ['cheat', 'repl']);
-    cmdEngine.registerCvar('move_jdur', exports.player, 'jumpDur', ['cheat', 'repl']);
-    cmdEngine.registerCvar('pcol_height', exports.player, 'height', ['cheat', 'repl']);
-};
-exports.initDom = function () {
-};
-
-exports.player = {
-    mass: 80,
-    radius: 0.6,
-    speed: 6.0,
-    acc: 3.0,
-    jumpVel: 90,
-    jumpDur: 0.08,
-    height: 1.8
-};
+command("cfg_write [file]", {optional: [{name: 'file', type: 'string'}]}, 'cfg_write', function (match) {
+    window.localStorage.setItem(match.file ? match.file : 'config', command.engine.getCfgString());
+});
