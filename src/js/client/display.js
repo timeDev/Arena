@@ -28,7 +28,7 @@ var
     Stats = require('../vendor/Stats'),
     command = require('../console/command'),
     console = require('../dom/console'),
-    settings = require('../common/settings'),
+    settings = require('./settings'),
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
     overlay = require('./overlay-mgr'),

@@ -55,8 +55,8 @@ var
     Player = require('../server/player'),
     arena = require('../common/arena'),
     level = require('../server/level'),
-    settings = require('../common/settings'),
     PHYSI = require('../vendor/physi'),
+    config = require('../common/config'),
 // Local
     conListener;
 
@@ -66,10 +66,9 @@ if (arena.debug) {
     window.debugging = true;
 }
 
-settings.api.init();
-settings.api.loadCfg();
-
 var game = window.game = require('../game');
+
+config.loadCfg();
 
 // Add common data
 game.data.serverside = true;
@@ -146,9 +145,6 @@ var cmdEnv = {
 console.executeFn = window.c = server.executeCommand = function (str) {
     return cmdEngine.executeString(str, cmdEnv);
 };
-
-settings.api.init();
-settings.api.loadCfg();
 
 function initDom() {
     document.body.appendChild(console.domElement);

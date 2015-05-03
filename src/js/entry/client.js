@@ -45,7 +45,8 @@ if (!String.format) {
 
 
 var arena = require('../common/arena'),
-    settings = require('../common/settings'),
+    settings = require('../client/settings'),
+    config = require('../common/config'),
     console = require('../dom/console'),
     PHYSI = require('../vendor/physi'),
     THREE = require('../vendor/three'),
@@ -60,10 +61,9 @@ if (arena.debug) {
     window.debugging = true;
 }
 
-settings.api.init();
-settings.api.loadCfg();
-
 var game = window.game = require('../game');
+
+config.loadCfg();
 
 // Add common data
 game.data.clientside = true;

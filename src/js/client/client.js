@@ -29,7 +29,7 @@ var
     protocol = require('./../net/client'),
     PHYSI = require('../vendor/physi'),
     scenehelper = require('../phys/scenehelper'),
-    settings = require('../common/settings'),
+    simulator = require('../phys/simulator'),
     THREE = require('../vendor/three'),
     overlay = require('./overlay-mgr'),
     rcon = require('../common/rcon'),
@@ -87,7 +87,7 @@ exports.spawnPlayer = function (pid, pdata) {
     data.players[pid] = eid;
     var pos = pdata.pos;
     pos = {x: pos[0], y: pos[1], z: pos[2]};
-    var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height), new THREE.MeshBasicMaterial({color: 0xc80000}), settings.player.mass);
+    var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(simulator.player.radius, simulator.player.radius, simulator.player.height), new THREE.MeshBasicMaterial({color: 0xc80000}), simulator.player.mass);
     mesh.position.copy(pos);
     mesh.addEventListener('ready', function () {
         mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));

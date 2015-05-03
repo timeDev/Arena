@@ -24,13 +24,13 @@
 /*global require, module, exports */
 var
 // Module
-    input = require('./../util/input'),
-    keycode = require('./../util/keycode'),
+    input = require('../util/input'),
+    keycode = require('../util/keycode'),
     THREE = require('../vendor/three'),
     PHYSI = require('../vendor/physi'),
     command = require('../console/command'),
     settings = require('./settings'),
-    protocol = require('./../net/client'),
+    protocol = require('../net/client'),
     scenehelper = require('../phys/scenehelper'),
     simulator = require('../phys/simulator'),
 // Local

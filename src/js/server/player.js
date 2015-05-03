@@ -24,7 +24,7 @@
 /*global require, module, exports */
 var
 // Module
-    simulator = require('../pyhs/simulator'),
+    simulator = require('../phys/simulator'),
     THREE = require('../vendor/three'),
     PHYSI = require('../vendor/physi'),
     server = require('./server');
