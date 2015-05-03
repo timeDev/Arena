@@ -104,8 +104,8 @@ exports.registerGetSet = function (name, getter, setter, types) {
     if (setter === undefined) {
         setter = getter;
     }
-    var setterWrap = types ? function (value) {
-        for (var i = 0; i < types.length; i++) {
+    var setterWrap = types ? function (value, skip) {
+        for (var i = 0; i < types.length && !skip; i++) {
             if (!typesRegistry[types[i]].call(null, name, value)) {
                 return;
             }
@@ -132,6 +132,10 @@ exports.getCvar = function (name) {
 
 exports.setCvar = function (name, value) {
     registry[name].setter(value);
+};
+
+exports.setCvarNocheck = function (name, value) {
+    registry[name].setter(value, true);
 };
 
 exports.isRegistered = function (name) {

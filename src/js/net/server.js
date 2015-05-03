@@ -74,3 +74,14 @@ exports.broadcast = function (pck) {
         console.log("[out] [bcast] ,", pck);
     }
 };
+
+exports.broadcastLevel = function (level, pck) {
+    for (var i = 0; i < data.players.length; i++) {
+        if (data.players[i].privilege >= level) {
+            packets[pck.id].send(sendfn(data.players[i]), pck);
+        }
+    }
+    if (arena.debug) {
+        console.log("[out] [bcast level " + level + "] ,", pck);
+    }
+};

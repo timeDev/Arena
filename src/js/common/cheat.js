@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Oskar Homburg
+ * Copyright (c) 2015 Oskar Homburg
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,14 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-exports.major = 0;
-exports.minor = 7;
-exports.revision = 1;
-exports.build = 0;
-exports.timestamp = "2015-05-03T00:02:34.529Z";
+var cmdEngine = require('../console/engine'), gamedata;
 
-exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
-exports.versionString = exports.versionArray.join(".");
+cmdEngine.registerCvarType('cheat', function () {
+    return gamedata.allowCheats;
+});
+
+exports.init = function (data) {
+    gamedata = data;
+    data.allowCheats = false;
+    cmdEngine.registerCvar('cheat', data, 'allowCheats', ['repl']);
+};

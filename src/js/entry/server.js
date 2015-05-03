@@ -72,6 +72,7 @@ settings.api.loadCfg();
 var game = window.game = require('../game');
 
 // Add common data
+game.data.serverside = true;
 game.data.scene = new PHYSI.Scene();
 game.data.players = [];
 game.data.bodies = []; // ID-Body lookup
@@ -84,11 +85,14 @@ game.data.mapState = [];
 game.data.packets = [];
 
 // Add components
-game.addComponent(require('../net/server'));
+game.addComponent(game.data.protocol = require('../net/server'));
 game.addComponent(require('../phys/simulator'));
 game.addComponent(server);
 
 require('../phys/scenehelper').init(game.data);
+require('../common/rcon').init(game.data);
+require('../common/cheat').init(game.data);
+require('../common/replicated').init(game.data);
 level.init(game.data);
 
 game.init();
@@ -119,32 +123,20 @@ game.run();
 var cmdEnv = {
     log: function () {
         var msg = Array.prototype.join.call(arguments, " ");
-        game.data.players.forEach(function (p) {
-            //if (p.data.rconAuthorized) {
-            //    protocol.sendRconMessage(p, msg);
-            //}
-        });
+        protocol.broadcastLevel(1, protocol.makePacket('rconStatus', 'msg', msg));
         console.log.apply(console, arguments);
         console.w.log.apply(console.w, arguments);
     },
     error: function () {
         var msg = "[error] " + Array.prototype.join.call(arguments, " ");
-        game.data.players.forEach(function (p) {
-            //if (p.data.rconAuthorized) {
-            //    protocol.sendRconMessage(p, msg);
-            //}
-        });
+        protocol.broadcastLevel(1, protocol.makePacket('rconStatus', 'error', msg));
         console.error.apply(console, arguments);
         console.w.error.apply(console.w, arguments);
     }
     ,
     warn: function () {
         var msg = "[warning] " + Array.prototype.join.call(arguments, " ");
-        game.data.players.forEach(function (p) {
-            //if (p.data.rconAuthorized) {
-            //    protocol.sendRconMessage(p, msg);
-            //}
-        });
+        protocol.broadcastLevel(1, protocol.makePacket('rconStatus', 'error', msg));
         console.warn.apply(console, arguments);
         console.w.warn.apply(console.w, arguments);
     }

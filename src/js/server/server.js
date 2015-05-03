@@ -28,6 +28,7 @@ var
     command = require('../console/command'),
     scenehelper = require('../phys/scenehelper'),
     protocol = require('../net/server'),
+    rcon = require('../common/rcon'),
 // Local
     idCounter = 1,
     meshI = 0,
@@ -86,6 +87,22 @@ exports.update = function (dt, data) {
             var msg = playerName + ": " + origMsg + "<br>";
             // TODO: filter event exploits
             protocol.broadcast(exports.makePacket('chatMsg', msg));
+        } else if (pck.type == 'rconRequest') {
+            if (pck.action == 'auth') {
+                rcon.authorize(pck.arg, player);
+            } else if (pck.action == 'cmd') {
+                if (player.privilege > 0) {
+                    exports.executeCommand(pck.arg);
+                } else {
+                    protocol.send(player, protocol.makePacket('rconStatus', 'error', "Not authorized"));
+                }
+            } else if (pck.action == 'changeCvar') {
+                if (player.privilege > 0) {
+                    cmdEngine.setCvar(pck.arg[0], pck.arg[1]);
+                } else {
+                    protocol.send(player, protocol.makePacket('rconStatus', 'error', "Not authorized"));
+                }
+            }
         }
     }
 };
@@ -130,4 +147,8 @@ command("tpa <x> <y> <z>", {
     gamedata.players.forEach(function (p) {
         p.teleport(match.x, match.y, match.z);
     });
+});
+
+command("status", {}, 'status', function () {
+    this.log(exports.getServerStatusMsg());
 });

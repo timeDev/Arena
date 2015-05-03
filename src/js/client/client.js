@@ -32,6 +32,8 @@ var
     settings = require('../common/settings'),
     THREE = require('../vendor/three'),
     overlay = require('./overlay-mgr'),
+    rcon = require('../common/rcon'),
+    console = require('../dom/console'),
 // Local
     data;
 
@@ -53,6 +55,22 @@ exports.update = function (dt, data) {
             exports.updateGameState(pck.state);
         } else if (pck.type === 'playerDataC' && pck.action === 2) {
             exports.spawnPlayer(pck.pid, pck.data);
+        } else if (pck.type == 'rconStatus') {
+            if (pck.action == 'auth') {
+                data.rconAuth = !!data.arg;
+            } else if (pck.action == 'changeCvar') {
+                command.engine.setCvarNocheck(pck.arg[0], pck.arg[1]);
+            } else if (pck.action == 'error') {
+                console.warn(pck.arg);
+            } else if (pck.action == 'cmd') {
+                try {
+                    command.engine.executeString(pck.arg, console);
+                } catch (e) {
+                    console.error(e);
+                }
+            } else if (pck.action == 'msg') {
+                console.log('>', pck.arg);
+            }
         }
     }
 };
@@ -97,6 +115,18 @@ command("connect <address>",
     'connect',
     function (match) {
         exports.connect(match.address);
+    });
+
+command("rcon <cmd>",
+    {mandatory: [{name: 'cmd', type: 'string'}]},
+    'rcon', function (match) {
+        rcon.execCommand(match.cmd);
+    });
+
+command("auth <pwd>",
+    {mandatory: [{name: 'pwd', type: 'string'}]},
+    'auth', function (match) {
+        rcon.authorize(match.pwd);
     });
 
 command.engine.registerCvar('name', exports, 'playerName');
