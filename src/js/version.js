@@ -23,10 +23,10 @@
  */
 /*global require, module, exports */
 exports.major = 0;
-exports.minor = 7;
-exports.revision = 1;
+exports.minor = 8;
+exports.revision = 0;
 exports.build = 0;
-exports.timestamp = "2015-05-03T00:02:34.529Z";
+exports.timestamp = "2015-05-03T12:49:26.972Z";
 
 exports.versionArray = [exports.major, exports.minor, exports.revision, exports.build];
 exports.versionString = exports.versionArray.join(".");
