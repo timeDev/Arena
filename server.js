@@ -56,8 +56,8 @@ var
     Player = require('../server/player'),
     arena = require('../common/arena'),
     level = require('../server/level'),
-    settings = require('../common/settings'),
     PHYSI = require('../vendor/physi'),
+    config = require('../common/config'),
 // Local
     conListener;
 
@@ -67,10 +67,9 @@ if (arena.debug) {
     window.debugging = true;
 }
 
-settings.api.init();
-settings.api.loadCfg();
-
 var game = window.game = require('../game');
+
+config.loadCfg();
 
 // Add common data
 game.data.serverside = true;
@@ -148,9 +147,6 @@ console.executeFn = window.c = server.executeCommand = function (str) {
     return cmdEngine.executeString(str, cmdEnv);
 };
 
-settings.api.init();
-settings.api.loadCfg();
-
 function initDom() {
     document.body.appendChild(console.domElement);
 }
@@ -160,7 +156,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":14,"../common/cheat":15,"../common/rcon":18,"../common/replicated":19,"../common/settings":20,"../console/builtins":21,"../console/engine":23,"../dom/console":27,"../game":30,"../net/connection":32,"../net/server":35,"../phys/scenehelper":36,"../phys/simulator":37,"../server/level":38,"../server/player":39,"../server/server":40,"../vendor/physi":52}],39:[function(require,module,exports){
+},{"../common/arena":15,"../common/cheat":16,"../common/config":17,"../common/rcon":20,"../common/replicated":21,"../console/builtins":22,"../console/engine":24,"../dom/console":28,"../game":31,"../net/connection":33,"../net/server":36,"../phys/scenehelper":37,"../phys/simulator":38,"../server/level":39,"../server/player":40,"../server/server":41,"../vendor/physi":53}],40:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -187,7 +183,7 @@ if (document.readyState === 'interactive') {
 /*global require, module, exports */
 var
 // Module
-    settings = require('../common/settings'),
+    simulator = require('../phys/simulator'),
     THREE = require('../vendor/three'),
     PHYSI = require('../vendor/physi'),
     server = require('./server');
@@ -200,15 +196,15 @@ function Player(connection) {
     this.entityId = server.newId();
     this.playerId = Player.newId();
 
-    this.mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height),
-        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
+    this.mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(simulator.player.radius, simulator.player.radius, simulator.player.height),
+        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), simulator.player.mass);
 }
 
 Player.prototype.updateBody = function (state) {
     if (state.v) {
         var v = new THREE.Vector3(state.v[0], state.v[1], state.v[2]);
-        if (v.length > settings.player.speed) {
-            v.setLength(settings.player.speed);
+        if (v.length > simulator.player.speed) {
+            v.setLength(simulator.player.speed);
         }
         this.mesh.setLinearVelocity(v);
     }
@@ -216,9 +212,9 @@ Player.prototype.updateBody = function (state) {
         var p = new THREE.Vector3(state.p[0], state.p[1], state.p[2]);
         var len = p.distanceTo(this.mesh.position);
         // Use 1.3 tolerance
-        if (len > settings.player.speed * 1.3) {
+        if (len > simulator.player.speed * 1.3) {
             p.sub(this.mesh.position);
-            p.setLength(settings.player.speed);
+            p.setLength(simulator.player.speed);
             p.add(this.mesh.position);
         }
         this.mesh.position.copy(p);
@@ -239,7 +235,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../common/settings":20,"../vendor/physi":52,"../vendor/three":54,"./server":40}],38:[function(require,module,exports){
+},{"../phys/simulator":38,"../vendor/physi":53,"../vendor/three":55,"./server":41}],39:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -364,7 +360,7 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
     });
 });
 
-},{"../common/level":16,"../console/command":22,"../phys/scenehelper":36,"../util/ocl":46,"../vendor/SeXHR":48,"./../net/server":35,"./server":40}],35:[function(require,module,exports){
+},{"../common/level":18,"../console/command":23,"../phys/scenehelper":37,"../util/ocl":47,"../vendor/SeXHR":49,"./../net/server":36,"./server":41}],36:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -453,7 +449,7 @@ exports.broadcastLevel = function (level, pck) {
     }
 };
 
-},{"../common/arena":14,"./../server/server":40,"./protocol":34}],40:[function(require,module,exports){
+},{"../common/arena":15,"./../server/server":41,"./protocol":35}],41:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -609,4 +605,4 @@ command("status", {}, 'status', function () {
     this.log(exports.getServerStatusMsg());
 });
 
-},{"../common/arena":14,"../common/rcon":18,"../console/command":22,"../console/engine":23,"../net/server":35,"../phys/scenehelper":36}]},{},[2]);
+},{"../common/arena":15,"../common/rcon":20,"../console/command":23,"../console/engine":24,"../net/server":36,"../phys/scenehelper":37}]},{},[2]);

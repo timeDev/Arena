@@ -46,7 +46,8 @@ if (!String.format) {
 
 
 var arena = require('../common/arena'),
-    settings = require('../common/settings'),
+    settings = require('../client/settings'),
+    config = require('../common/config'),
     console = require('../dom/console'),
     PHYSI = require('../vendor/physi'),
     THREE = require('../vendor/three'),
@@ -61,10 +62,9 @@ if (arena.debug) {
     window.debugging = true;
 }
 
-settings.api.init();
-settings.api.loadCfg();
-
 var game = window.game = require('../game');
+
+config.loadCfg();
 
 // Add common data
 game.data.clientside = true;
@@ -120,7 +120,7 @@ if (document.readyState === 'interactive') {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
 
-},{"../client/chat":8,"../client/client":9,"../client/controls":10,"../client/display":11,"../client/level":12,"../client/overlay-mgr":13,"../common/arena":14,"../common/cheat":15,"../common/rcon":18,"../common/replicated":19,"../common/settings":20,"../console/builtins":21,"../console/engine":23,"../dom/console":27,"../game":30,"../net/client":31,"../phys/scenehelper":36,"../phys/simulator":37,"../vendor/physi":52,"../vendor/three":54}],12:[function(require,module,exports){
+},{"../client/chat":8,"../client/client":9,"../client/controls":10,"../client/display":11,"../client/level":12,"../client/overlay-mgr":13,"../client/settings":14,"../common/arena":15,"../common/cheat":16,"../common/config":17,"../common/rcon":20,"../common/replicated":21,"../console/builtins":22,"../console/engine":24,"../dom/console":28,"../game":31,"../net/client":32,"../phys/scenehelper":37,"../phys/simulator":38,"../vendor/physi":53,"../vendor/three":55}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -207,7 +207,7 @@ exports.update = function (dt, data) {
     }
 };
 
-},{"../common/level":16,"../console/command":22,"../phys/scenehelper":36,"../util/ocl":46}],11:[function(require,module,exports){
+},{"../common/level":18,"../console/command":23,"../phys/scenehelper":37,"../util/ocl":47}],11:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -238,7 +238,7 @@ var
     Stats = require('../vendor/Stats'),
     command = require('../console/command'),
     console = require('../dom/console'),
-    settings = require('../common/settings'),
+    settings = require('./settings'),
     input = require('./../util/input'),
     makeDraggable = require('../dom/draggable'),
     overlay = require('./overlay-mgr'),
@@ -332,7 +332,7 @@ exports.update = function() {
 
 };
 
-},{"../common/settings":20,"../console/command":22,"../dom/console":27,"../dom/draggable":28,"../vendor/Stats":49,"../vendor/three":54,"./../util/input":44,"./overlay-mgr":13}],49:[function(require,module,exports){
+},{"../console/command":23,"../dom/console":28,"../dom/draggable":29,"../vendor/Stats":50,"../vendor/three":55,"./../util/input":45,"./overlay-mgr":13,"./settings":14}],50:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -482,7 +482,7 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -566,14 +566,15 @@ module.exports = function (domElement) {
 /*global require, module, exports */
 var
 // Module
-    input = require('./../util/input'),
-    keycode = require('./../util/keycode'),
+    input = require('../util/input'),
+    keycode = require('../util/keycode'),
     THREE = require('../vendor/three'),
     PHYSI = require('../vendor/physi'),
-    settings = require('../common/settings'),
     command = require('../console/command'),
-    protocol = require('./../net/client'),
+    settings = require('./settings'),
+    protocol = require('../net/client'),
     scenehelper = require('../phys/scenehelper'),
+    simulator = require('../phys/simulator'),
 // Local
     paused = true,
     onground = true, jumpPrg = 0,
@@ -612,8 +613,8 @@ exports.init = function (data) {
     input.bind('key', keycode.space, 'jump');
     input.bind('mouse', 0, 'shoot');
 
-    mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height),
-        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), settings.player.mass);
+    mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(simulator.player.radius, simulator.player.radius, simulator.player.height),
+        PHYSI.createMaterial(new THREE.MeshBasicMaterial({visible: false}), 0.1, 0.0), simulator.player.mass);
 
     mesh.addEventListener('ready', function () {
         mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
@@ -654,7 +655,7 @@ exports.update = function (dt, data) {
         return;
     }
 
-    var accdt = settings.player.acc * dt;
+    var accdt = simulator.player.acc * dt;
     if (paused) {
         vec3a.set(0, 0, 0);
     } else {
@@ -673,11 +674,11 @@ exports.update = function (dt, data) {
         changeVel.multiplyScalar(0.1);
     }
 
-    if (jumpPrg < settings.player.jumpDur && input.check('jump') > 0.2) {
+    if (jumpPrg < simulator.player.jumpDur && input.check('jump') > 0.2) {
         if (onground) {
             changeVel.multiplyScalar(1.2);
         }
-        changeVel.y = settings.player.jumpVel * dt;
+        changeVel.y = simulator.player.simulator * dt;
         onground = false;
         jumpPrg += dt;
     }
@@ -699,7 +700,7 @@ function updateMovement() {
     if (vec3a.length() > 1) {
         vec3a.normalize();
     }
-    vec3a.multiplyScalar(settings.player.speed);
+    vec3a.multiplyScalar(simulator.player.speed);
     vec3a.applyQuaternion(yawObj.quaternion);
 }
 
@@ -749,7 +750,7 @@ exports.firstPersonCam = function (camera) {
     yawObj.add(pitchObj);
 };
 
-},{"../common/settings":20,"../console/command":22,"../phys/scenehelper":36,"../vendor/physi":52,"../vendor/three":54,"./../net/client":31,"./../util/input":44,"./../util/keycode":45}],44:[function(require,module,exports){
+},{"../console/command":23,"../net/client":32,"../phys/scenehelper":37,"../phys/simulator":38,"../util/input":45,"../util/keycode":46,"../vendor/physi":53,"../vendor/three":55,"./settings":14}],45:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -951,7 +952,52 @@ exports.resetDelta = function () {
     mousepos[3] = 0.0;
 };
 
-},{"signals":6}],9:[function(require,module,exports){
+},{"signals":6}],14:[function(require,module,exports){
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Oskar Homburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*global require, module, exports */
+var cmdEngine = require('../console/engine');
+
+exports.mouse = {
+    sensitivityX: 2.0 / 1000,
+    sensitivityY: 2.0 / 1000
+};
+
+exports.graphics = {
+    fov: 75.0
+};
+
+exports.debug = {
+    showGrid: true
+};
+
+cmdEngine.registerCvar('inp_mousex', exports.mouse, 'sensitivityX');
+cmdEngine.registerCvar('inp_mousey', exports.mouse, 'sensitivityY');
+cmdEngine.registerCvar('g_fov', exports.graphics, 'fov');
+cmdEngine.registerCvar('debug_grid', exports.debug, 'showGrid');
+
+},{"../console/engine":24}],9:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -983,7 +1029,7 @@ var
     protocol = require('./../net/client'),
     PHYSI = require('../vendor/physi'),
     scenehelper = require('../phys/scenehelper'),
-    settings = require('../common/settings'),
+    simulator = require('../phys/simulator'),
     THREE = require('../vendor/three'),
     overlay = require('./overlay-mgr'),
     rcon = require('../common/rcon'),
@@ -1041,7 +1087,7 @@ exports.spawnPlayer = function (pid, pdata) {
     data.players[pid] = eid;
     var pos = pdata.pos;
     pos = {x: pos[0], y: pos[1], z: pos[2]};
-    var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(settings.player.radius, settings.player.radius, settings.player.height), new THREE.MeshBasicMaterial({color: 0xc80000}), settings.player.mass);
+    var mesh = new PHYSI.CapsuleMesh(new THREE.CylinderGeometry(simulator.player.radius, simulator.player.radius, simulator.player.height), new THREE.MeshBasicMaterial({color: 0xc80000}), simulator.player.mass);
     mesh.position.copy(pos);
     mesh.addEventListener('ready', function () {
         mesh.setAngularFactor(new THREE.Vector3(0, 0, 0));
@@ -1085,7 +1131,7 @@ command("auth <pwd>",
 
 command.engine.registerCvar('name', exports, 'playerName');
 
-},{"../common/rcon":18,"../common/settings":20,"../console/command":22,"../dom/console":27,"../net/connection":32,"../phys/scenehelper":36,"../vendor/physi":52,"../vendor/three":54,"./../net/client":31,"./overlay-mgr":13}],13:[function(require,module,exports){
+},{"../common/rcon":20,"../console/command":23,"../dom/console":28,"../net/connection":33,"../phys/scenehelper":37,"../phys/simulator":38,"../vendor/physi":53,"../vendor/three":55,"./../net/client":32,"./overlay-mgr":13}],13:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1146,7 +1192,7 @@ exports.add = function (name, text, cl) {
     return ol;
 };
 
-},{"../dom/overlay":29}],29:[function(require,module,exports){
+},{"../dom/overlay":30}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1327,7 +1373,7 @@ exports.fade = function () {
     fadeWaitId = -1;
 };
 
-},{"../net/client":31,"../util/keycode":45}],31:[function(require,module,exports){
+},{"../net/client":32,"../util/keycode":46}],32:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1408,4 +1454,4 @@ function handleCommon(data) {
     }
 }
 
-},{"../common/arena":14,"./protocol":34}]},{},[1]);
+},{"../common/arena":15,"./protocol":35}]},{},[1]);
