@@ -156,7 +156,7 @@ if (document.readyState === 'interactive') {
 } else {
     document.addEventListener('DOMContentLoaded', initDom);
 }
-},{"../common/arena":15,"../common/cheat":16,"../common/config":17,"../common/rcon":20,"../common/replicated":21,"../console/builtins":22,"../console/engine":24,"../dom/console":28,"../game":31,"../net/connection":33,"../net/server":36,"../phys/scenehelper":37,"../phys/simulator":38,"../server/level":39,"../server/player":40,"../server/server":41,"../vendor/physi":53}],40:[function(require,module,exports){
+},{"../common/arena":16,"../common/cheat":17,"../common/config":18,"../common/rcon":21,"../common/replicated":22,"../console/builtins":23,"../console/engine":25,"../dom/console":29,"../game":32,"../net/connection":34,"../net/server":37,"../phys/scenehelper":38,"../phys/simulator":39,"../server/level":40,"../server/player":41,"../server/server":42,"../vendor/physi":54}],41:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -235,7 +235,7 @@ Player.newId = function () {
 }();
 
 module.exports = Player;
-},{"../phys/simulator":38,"../vendor/physi":53,"../vendor/three":55,"./server":41}],39:[function(require,module,exports){
+},{"../phys/simulator":39,"../vendor/physi":54,"../vendor/three":56,"./server":42}],40:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -360,7 +360,7 @@ command("map <mapname>", {mandatory: [{name: 'mapname', type: 'string'}]}, 'map'
     });
 });
 
-},{"../common/level":18,"../console/command":23,"../phys/scenehelper":37,"../util/ocl":47,"../vendor/SeXHR":49,"./../net/server":36,"./server":41}],36:[function(require,module,exports){
+},{"../common/level":19,"../console/command":24,"../phys/scenehelper":38,"../util/ocl":48,"../vendor/SeXHR":50,"./../net/server":37,"./server":42}],37:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -449,7 +449,7 @@ exports.broadcastLevel = function (level, pck) {
     }
 };
 
-},{"../common/arena":15,"./../server/server":41,"./protocol":35}],41:[function(require,module,exports){
+},{"../common/arena":16,"./../server/server":42,"./protocol":36}],42:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -475,6 +475,7 @@ exports.broadcastLevel = function (level, pck) {
  */
 /*global require, module, exports */
 var
+    _ = require('lodash'),
     cmdEngine = require('../console/engine'),
     arena = require('../common/arena'),
     command = require('../console/command'),
@@ -492,10 +493,8 @@ exports.init = function (data) {
 exports.update = function (dt, data) {
     data.gameState.time += dt;
     // Pick Object to broadcast
-    var playerMeshes = data.players.map(function (p) {
-        return p.entityId;
-    });
-    var meshIds = game.data.scene.children.map(scenehelper.getId).filter(function (m) {
+    var playerMeshes = _.pluck(data.players, 'entityId');
+    var meshIds = _(game.data.scene.children).map(scenehelper.getId).filter(function (m) {
         return m > 0 && playerMeshes.indexOf(m) < 0;
     });
     if (meshIds.length > 0) {
@@ -506,57 +505,64 @@ exports.update = function (dt, data) {
         protocol.broadcast(protocol.makePacket('updateEnt', id, scenehelper.makeUpdatePacket(id)));
     }
 
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i], player = pck.player;
-        if (pck.type == 'playerDataS') {
-            player.updateBody(pck.data);
-            protocol.broadcast(protocol.makePacket('playerDataC', player.playerId, 1, {
-                p: player.mesh.position.toArray(),
-                v: player.mesh.getLinearVelocity().toArray(),
-                pnr: pck.pknr
+    _(data.packets).where({type: 'playerDataS'}).forEach(function (pck) {
+        var player = pck.player;
+        player.updateBody(pck.data);
+        protocol.broadcast(protocol.makePacket('playerDataC', player.playerId, 1, {
+            p: player.mesh.position.toArray(),
+            v: player.mesh.getLinearVelocity().toArray(),
+            pnr: pck.pknr
+        }));
+    });
+
+    _(data.packets).where({type: 'logon'}).forEach(function (pck) {
+        var player = pck.player;
+        player.name = pck.name;
+        protocol.send(player, protocol.makePacket('playerDataC', player.playerId, 0, {}));
+        protocol.send(player, protocol.makePacket('spawnMany', data.mapState));
+        for (var j = 0; j < data.players.length; j++) {
+            var player2 = data.players[j];
+            protocol.send(player2, protocol.makePacket('playerDataC', player.playerId, 2, {
+                id: player.entityId,
+                pos: player.mesh.position.toArray()
             }));
-        } else if (pck.type == 'logon') {
-            player.name = pck.name;
-            protocol.send(player, protocol.makePacket('playerDataC', player.playerId, 0, {}));
-            protocol.send(player, protocol.makePacket('spawnMany', data.mapState));
-            for (var j = 0; j < data.players.length; j++) {
-                var player2 = data.players[j];
-                protocol.send(player2, protocol.makePacket('playerDataC', player.playerId, 2, {
-                    id: player.entityId,
-                    pos: player.mesh.position.toArray()
-                }));
-                protocol.send(player, protocol.makePacket('playerDataC', player2.playerId, 2, {
-                    id: player2.entityId,
-                    pos: player2.mesh.position.toArray()
-                }));
+            protocol.send(player, protocol.makePacket('playerDataC', player2.playerId, 2, {
+                id: player2.entityId,
+                pos: player2.mesh.position.toArray()
+            }));
+        }
+        protocol.send(player, protocol.makePacket('gameState', data.gameState));
+        data.players.push(player);
+        scenehelper.add(player.mesh, player.entityId);
+    });
+
+    _(data.packets).where({type: 'chatMsg'}).forEach(function (pck) {
+        var player = pck.player;
+        var origMsg = pck.msg;
+        var playerName = player.name;
+        var msg = playerName + ": " + origMsg + "<br>";
+        // TODO: filter event exploits
+        protocol.broadcast(exports.makePacket('chatMsg', msg));
+    });
+
+    _(data.packets).where({type: 'rconRequest'}).forEach(function (pck) {
+        var player = pck.player;
+        if (pck.action == 'auth') {
+            rcon.authorize(pck.arg, player);
+        } else if (pck.action == 'cmd') {
+            if (player.privilege > 0) {
+                exports.executeCommand(pck.arg);
+            } else {
+                protocol.send(player, protocol.makePacket('rconStatus', 'error', "Not authorized"));
             }
-            protocol.send(player, protocol.makePacket('gameState', data.gameState));
-            data.players.push(player);
-            scenehelper.add(player.mesh, player.entityId);
-        } else if (pck.type == 'chatMsg') {
-            var origMsg = pck.msg;
-            var playerName = player.name;
-            var msg = playerName + ": " + origMsg + "<br>";
-            // TODO: filter event exploits
-            protocol.broadcast(exports.makePacket('chatMsg', msg));
-        } else if (pck.type == 'rconRequest') {
-            if (pck.action == 'auth') {
-                rcon.authorize(pck.arg, player);
-            } else if (pck.action == 'cmd') {
-                if (player.privilege > 0) {
-                    exports.executeCommand(pck.arg);
-                } else {
-                    protocol.send(player, protocol.makePacket('rconStatus', 'error', "Not authorized"));
-                }
-            } else if (pck.action == 'changeCvar') {
-                if (player.privilege > 0) {
-                    cmdEngine.setCvar(pck.arg[0], pck.arg[1]);
-                } else {
-                    protocol.send(player, protocol.makePacket('rconStatus', 'error', "Not authorized"));
-                }
+        } else if (pck.action == 'changeCvar') {
+            if (player.privilege > 0) {
+                cmdEngine.setCvar(pck.arg[0], pck.arg[1]);
+            } else {
+                protocol.send(player, protocol.makePacket('rconStatus', 'error', "Not authorized"));
             }
         }
-    }
+    });
 };
 
 exports.newId = function () {
@@ -577,11 +583,11 @@ exports.matchesRconPassword = function (pwd) {
 exports.getCvarList = function (/*admin*/) {
     var reg = cmdEngine.getRegistry();
     var list = [];
-    for (var k in reg) {
-        if (reg.hasOwnProperty(k) && reg[k].type === 'cvar') {
-            list.push([k, reg[k].getter()]);
+    _.forOwn(reg, function (value, key) {
+        if (value.type == 'cvar') {
+            list.push([key, value.getter()]);
         }
-    }
+    });
     return list;
 };
 
@@ -605,4 +611,4 @@ command("status", {}, 'status', function () {
     this.log(exports.getServerStatusMsg());
 });
 
-},{"../common/arena":15,"../common/rcon":20,"../console/command":23,"../console/engine":24,"../net/server":36,"../phys/scenehelper":37}]},{},[2]);
+},{"../common/arena":16,"../common/rcon":21,"../console/command":24,"../console/engine":25,"../net/server":37,"../phys/scenehelper":38,"lodash":6}]},{},[2]);

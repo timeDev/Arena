@@ -120,7 +120,7 @@ if (document.readyState === 'interactive') {
     document.addEventListener('DOMContentLoaded', entrypoint);
 }
 
-},{"../client/chat":8,"../client/client":9,"../client/controls":10,"../client/display":11,"../client/level":12,"../client/overlay-mgr":13,"../client/settings":14,"../common/arena":15,"../common/cheat":16,"../common/config":17,"../common/rcon":20,"../common/replicated":21,"../console/builtins":22,"../console/engine":24,"../dom/console":28,"../game":31,"../net/client":32,"../phys/scenehelper":37,"../phys/simulator":38,"../vendor/physi":53,"../vendor/three":55}],12:[function(require,module,exports){
+},{"../client/chat":9,"../client/client":10,"../client/controls":11,"../client/display":12,"../client/level":13,"../client/overlay-mgr":14,"../client/settings":15,"../common/arena":16,"../common/cheat":17,"../common/config":18,"../common/rcon":21,"../common/replicated":22,"../console/builtins":23,"../console/engine":25,"../dom/console":29,"../game":32,"../net/client":33,"../phys/scenehelper":38,"../phys/simulator":39,"../vendor/physi":54,"../vendor/three":56}],13:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -147,6 +147,7 @@ if (document.readyState === 'interactive') {
 /*global require, module, exports */
 var
 // Module
+    _ = require('lodash'),
     ocl = require('../util/ocl'),
     command = require('../console/command'),
     scenehelper = require('../phys/scenehelper'),
@@ -181,33 +182,23 @@ exports.load = function (str) {
     });
 };
 
-exports.init = function () {
-};
-
-exports.initDom = function () {
-};
-
-exports.render = function (dt, data) {
-
-};
+exports.init = _.noop;
+exports.initDom = _.noop;
+exports.render = _.noop;
 
 exports.update = function (dt, data) {
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if(pck.type == 'spawnObj') {
-            exports.spawnFromDesc(pck.string, pck.eid);
-        } else if(pck.type == 'spawnMany') {
-            for (var j = 0; j < pck.list.length; j++) {
-                var obj = pck.list[j];
-                if (obj.str) {
-                    exports.spawnFromDesc(obj.str, obj.id);
-                }
-            }
+    _(data.packets).where({type: 'spawnObj'}).forEach(function (pck) {
+        exports.spawnFromDesc(pck.string, pck.eid);
+    });
+
+    _(data.packets).where({type: 'spawnMany'}).pluck('list').flatten().forEach(function (pck) {
+        if (obj.str) {
+            exports.spawnFromDesc(obj.str, obj.id);
         }
-    }
+    });
 };
 
-},{"../common/level":18,"../console/command":23,"../phys/scenehelper":37,"../util/ocl":47}],11:[function(require,module,exports){
+},{"../common/level":19,"../console/command":24,"../phys/scenehelper":38,"../util/ocl":48,"lodash":6}],12:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -332,7 +323,7 @@ exports.update = function() {
 
 };
 
-},{"../console/command":23,"../dom/console":28,"../dom/draggable":29,"../vendor/Stats":50,"../vendor/three":55,"./../util/input":45,"./overlay-mgr":13,"./settings":14}],50:[function(require,module,exports){
+},{"../console/command":24,"../dom/console":29,"../dom/draggable":30,"../vendor/Stats":51,"../vendor/three":56,"./../util/input":46,"./overlay-mgr":14,"./settings":15}],51:[function(require,module,exports){
 /**
  * @author mrdoob / http://mrdoob.com/
  */
@@ -482,7 +473,7 @@ if ( typeof module === 'object' ) {
 	module.exports = Stats;
 
 }
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -539,7 +530,7 @@ module.exports = function (domElement) {
     });
 };
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -566,6 +557,7 @@ module.exports = function (domElement) {
 /*global require, module, exports */
 var
 // Module
+    _ = require('lodash'),
     input = require('../util/input'),
     keycode = require('../util/keycode'),
     THREE = require('../vendor/three'),
@@ -645,11 +637,7 @@ exports.render = function () {
 exports.update = function (dt, data) {
     input.updateGamepad();
 
-    for (var i = 0; i < data.packets.length; i++) {
-        if (data.packets[i].type === 'playerDataC') {
-            handlePlayerData(data, data.packets[i]);
-        }
-    }
+    _(data.packets).where({type: 'playerDataC'}).forEach(_.partial(handlePlayerData, data));
 
     if (!data.gameState.started) {
         return;
@@ -750,7 +738,7 @@ exports.firstPersonCam = function (camera) {
     yawObj.add(pitchObj);
 };
 
-},{"../console/command":23,"../net/client":32,"../phys/scenehelper":37,"../phys/simulator":38,"../util/input":45,"../util/keycode":46,"../vendor/physi":53,"../vendor/three":55,"./settings":14}],45:[function(require,module,exports){
+},{"../console/command":24,"../net/client":33,"../phys/scenehelper":38,"../phys/simulator":39,"../util/input":46,"../util/keycode":47,"../vendor/physi":54,"../vendor/three":56,"./settings":15,"lodash":6}],46:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -786,8 +774,7 @@ var
     prevent = false,
     mousepos = [0, 0, 0, 0],
 // Functions
-    updateMouseMoveHandler, lockChangeCb, lockErrorCb,
-    bind, unbind, check;
+    updateMouseMoveHandler, lockChangeCb, lockErrorCb;
 
 // Signals
 exports.escape = new Signal();
@@ -952,7 +939,7 @@ exports.resetDelta = function () {
     mousepos[3] = 0.0;
 };
 
-},{"signals":6}],14:[function(require,module,exports){
+},{"signals":7}],15:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -997,7 +984,7 @@ cmdEngine.registerCvar('inp_mousey', exports.mouse, 'sensitivityY');
 cmdEngine.registerCvar('g_fov', exports.graphics, 'fov');
 cmdEngine.registerCvar('debug_grid', exports.debug, 'showGrid');
 
-},{"../console/engine":24}],9:[function(require,module,exports){
+},{"../console/engine":25}],10:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1024,6 +1011,7 @@ cmdEngine.registerCvar('debug_grid', exports.debug, 'showGrid');
 /*global require, module, exports */
 var
 // Module
+    _ = require('lodash'),
     command = require('../console/command'),
     Connection = require('../net/connection'),
     protocol = require('./../net/client'),
@@ -1039,40 +1027,38 @@ var
 
 exports.playerName = "Bob";
 
-exports.render = function () {
-};
-exports.initDom = function () {
-};
+exports.render = _.noop;
+exports.initDom = _.noop;
 
 exports.init = function (gamedata) {
     data = gamedata;
 };
 
 exports.update = function (dt, data) {
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if (pck.type === 'gameState') {
-            exports.updateGameState(pck.state);
-        } else if (pck.type === 'playerDataC' && pck.action === 2) {
-            exports.spawnPlayer(pck.pid, pck.data);
-        } else if (pck.type == 'rconStatus') {
-            if (pck.action == 'auth') {
-                data.rconAuth = !!data.arg;
-            } else if (pck.action == 'changeCvar') {
-                command.engine.setCvarNocheck(pck.arg[0], pck.arg[1]);
-            } else if (pck.action == 'error') {
-                console.warn(pck.arg);
-            } else if (pck.action == 'cmd') {
-                try {
-                    command.engine.executeString(pck.arg, console);
-                } catch (e) {
-                    console.error(e);
-                }
-            } else if (pck.action == 'msg') {
-                console.log('>', pck.arg);
+    _(data.packets).where({type: 'gameState'}).pluck('state').forEach(exports.updateGameState);
+
+    _(data.packets).where({type: 'playerDataC', action: 2}).forEach(function (pck) {
+        exports.spawnPlayer(pck.pid, pck.data);
+    });
+
+    _(data.packets).where({type: 'rconStatus'}).forEach(function (pck) {
+        if (pck.action == 'auth') {
+            data.rconAuth = !!data.arg;
+        } else if (pck.action == 'changeCvar') {
+            command.engine.setCvarNocheck(pck.arg[0], pck.arg[1]);
+        } else if (pck.action == 'error') {
+            console.warn(pck.arg);
+        } else if (pck.action == 'cmd') {
+            var err = _.attempt(function () {
+                command.engine.executeString(pck.arg, console);
+            });
+            if (_.isError(err)) {
+                console.error("[server command]", err);
             }
+        } else if (pck.action == 'msg') {
+            console.log('>', pck.arg);
         }
-    }
+    });
 };
 
 exports.connect = function (address) {
@@ -1103,11 +1089,7 @@ exports.updateGameState = function (state) {
         overlay.show('sv-startup');
     }
 
-    for (var k in state) {
-        if (state.hasOwnProperty(k)) {
-            data.gameState[k] = state[k];
-        }
-    }
+    _.assign(data.gameState, state);
 };
 
 command("connect <address>",
@@ -1131,7 +1113,7 @@ command("auth <pwd>",
 
 command.engine.registerCvar('name', exports, 'playerName');
 
-},{"../common/rcon":20,"../console/command":23,"../dom/console":28,"../net/connection":33,"../phys/scenehelper":37,"../phys/simulator":38,"../vendor/physi":53,"../vendor/three":55,"./../net/client":32,"./overlay-mgr":13}],13:[function(require,module,exports){
+},{"../common/rcon":21,"../console/command":24,"../dom/console":29,"../net/connection":34,"../phys/scenehelper":38,"../phys/simulator":39,"../vendor/physi":54,"../vendor/three":56,"./../net/client":33,"./overlay-mgr":14,"lodash":6}],14:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1192,7 +1174,7 @@ exports.add = function (name, text, cl) {
     return ol;
 };
 
-},{"../dom/overlay":30}],30:[function(require,module,exports){
+},{"../dom/overlay":31}],31:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1238,7 +1220,7 @@ module.exports = function (text, cl) {
     }
 };
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1266,6 +1248,7 @@ module.exports = function (text, cl) {
 
 var
 // Module
+    _ = require('lodash'),
     keycode = require('../util/keycode'),
     protocol = require('../net/client'),
 // Local
@@ -1273,24 +1256,18 @@ var
     inElement = document.createElement('input'),
     outElement = document.createElement('div');
 
-exports.init = function () {
-};
+exports.init = _.noop;
+exports.render = _.noop;
 
 exports.initDom = function () {
     document.body.appendChild(domElement);
 };
 
-exports.render = function () {
-};
-
 exports.update = function (dt, data) {
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if(pck.type == 'chatMsg') {
-            exports.write(pck.msg);
-            exports.refresh();
-        }
-    }
+    _(data.packets).where({type: 'chatMsg'}).forEach(function (pck) {
+        exports.write(pck.msg);
+        exports.refresh();
+    });
 };
 
 domElement.classList.add("chat-container");
@@ -1322,7 +1299,7 @@ exports.refresh = function () {
     window.clearInterval(fadeId);
     window.clearTimeout(fadeWaitId);
     if (!focused) {
-        fadeWaitId = window.setTimeout(exports.fade, 3000);
+        fadeWaitId = _.delay(exports.fade, 3000);
     }
 };
 
@@ -1373,7 +1350,7 @@ exports.fade = function () {
     fadeWaitId = -1;
 };
 
-},{"../net/client":32,"../util/keycode":46}],32:[function(require,module,exports){
+},{"../net/client":33,"../util/keycode":47,"lodash":6}],33:[function(require,module,exports){
 /*
  * The MIT License (MIT)
  *
@@ -1401,6 +1378,7 @@ exports.fade = function () {
 
 var
 // Module
+    _ = require('lodash'),
     arena = require('../common/arena'),
     protocol = require('./protocol'),
 // Local
@@ -1411,10 +1389,8 @@ exports.init = function (gamedata) {
     protocol.registerPackets(packets);
     exports.makePacket = protocol.makePacket;
 };
-exports.initDom = function () {
-};
-exports.render = function () {
-};
+exports.initDom = _.noop;
+exports.render = _.noop;
 
 exports.receive = function (d) {
     if (arena.debug) {
@@ -1445,13 +1421,7 @@ function sendRaw(d) {
 
 function handleCommon(data) {
     // Handle all easy packets (simple response) here
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if (pck.type === 'keepAlive') {
-            // Send it right back
-            exports.send(pck);
-        }
-    }
+    _(data.packets).where({type:'keepAlive'}).forEach(exports.send);
 }
 
-},{"../common/arena":15,"./protocol":35}]},{},[1]);
+},{"../common/arena":16,"./protocol":36,"lodash":6}]},{},[1]);
