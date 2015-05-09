@@ -22,8 +22,6 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-var parser = require('./parser');
-
 var stack = [];
 
 Object.defineProperty(stack, "last", {

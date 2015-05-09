@@ -24,6 +24,7 @@
 /*global require, module, exports */
 var
 // Module
+    _ = require('lodash'),
     ocl = require('../util/ocl'),
     command = require('../console/command'),
     scenehelper = require('../phys/scenehelper'),
@@ -58,28 +59,18 @@ exports.load = function (str) {
     });
 };
 
-exports.init = function () {
-};
-
-exports.initDom = function () {
-};
-
-exports.render = function (dt, data) {
-
-};
+exports.init = _.noop;
+exports.initDom = _.noop;
+exports.render = _.noop;
 
 exports.update = function (dt, data) {
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if(pck.type == 'spawnObj') {
-            exports.spawnFromDesc(pck.string, pck.eid);
-        } else if(pck.type == 'spawnMany') {
-            for (var j = 0; j < pck.list.length; j++) {
-                var obj = pck.list[j];
-                if (obj.str) {
-                    exports.spawnFromDesc(obj.str, obj.id);
-                }
-            }
+    _(data.packets).where({type: 'spawnObj'}).forEach(function (pck) {
+        exports.spawnFromDesc(pck.string, pck.eid);
+    });
+
+    _(data.packets).where({type: 'spawnMany'}).pluck('list').flatten().forEach(function (pck) {
+        if (obj.str) {
+            exports.spawnFromDesc(obj.str, obj.id);
         }
-    }
+    });
 };

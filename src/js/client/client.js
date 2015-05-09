@@ -24,6 +24,7 @@
 /*global require, module, exports */
 var
 // Module
+    _ = require('lodash'),
     command = require('../console/command'),
     Connection = require('../net/connection'),
     protocol = require('./../net/client'),
@@ -39,40 +40,38 @@ var
 
 exports.playerName = "Bob";
 
-exports.render = function () {
-};
-exports.initDom = function () {
-};
+exports.render = _.noop;
+exports.initDom = _.noop;
 
 exports.init = function (gamedata) {
     data = gamedata;
 };
 
 exports.update = function (dt, data) {
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if (pck.type === 'gameState') {
-            exports.updateGameState(pck.state);
-        } else if (pck.type === 'playerDataC' && pck.action === 2) {
-            exports.spawnPlayer(pck.pid, pck.data);
-        } else if (pck.type == 'rconStatus') {
-            if (pck.action == 'auth') {
-                data.rconAuth = !!data.arg;
-            } else if (pck.action == 'changeCvar') {
-                command.engine.setCvarNocheck(pck.arg[0], pck.arg[1]);
-            } else if (pck.action == 'error') {
-                console.warn(pck.arg);
-            } else if (pck.action == 'cmd') {
-                try {
-                    command.engine.executeString(pck.arg, console);
-                } catch (e) {
-                    console.error(e);
-                }
-            } else if (pck.action == 'msg') {
-                console.log('>', pck.arg);
+    _(data.packets).where({type: 'gameState'}).pluck('state').forEach(exports.updateGameState);
+
+    _(data.packets).where({type: 'playerDataC', action: 2}).forEach(function (pck) {
+        exports.spawnPlayer(pck.pid, pck.data);
+    });
+
+    _(data.packets).where({type: 'rconStatus'}).forEach(function (pck) {
+        if (pck.action == 'auth') {
+            data.rconAuth = !!data.arg;
+        } else if (pck.action == 'changeCvar') {
+            command.engine.setCvarNocheck(pck.arg[0], pck.arg[1]);
+        } else if (pck.action == 'error') {
+            console.warn(pck.arg);
+        } else if (pck.action == 'cmd') {
+            var err = _.attempt(function () {
+                command.engine.executeString(pck.arg, console);
+            });
+            if (_.isError(err)) {
+                console.error("[server command]", err);
             }
+        } else if (pck.action == 'msg') {
+            console.log('>', pck.arg);
         }
-    }
+    });
 };
 
 exports.connect = function (address) {
@@ -103,11 +102,7 @@ exports.updateGameState = function (state) {
         overlay.show('sv-startup');
     }
 
-    for (var k in state) {
-        if (state.hasOwnProperty(k)) {
-            data.gameState[k] = state[k];
-        }
-    }
+    _.assign(data.gameState, state);
 };
 
 command("connect <address>",

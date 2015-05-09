@@ -24,6 +24,7 @@
 /*global require, module, exports */
 var
 // Module
+    _ = require('lodash'),
     parser = require('./parser'),
     executor = require('./executor'),
 // Local
@@ -42,12 +43,12 @@ exports.executeString = function (cmdstring, env, ctx) {
 
 exports.executeFunction = function (fn, args, env) {
     var ctx = {};
-    if (Array.isArray(args)) {
+    if (_.isArray(args)) {
         ctx['arguments'] = args;
         if (args.length > 0) {
             ctx['$'] = args[0];
             for (var i = 1; i < args.length; i++) {
-                ctx[i] = args[i];
+                ctx[i] = args[i].toString();
             }
         }
     } else {
@@ -105,12 +106,16 @@ exports.registerGetSet = function (name, getter, setter, types) {
         setter = getter;
     }
     var setterWrap = types ? function (value, skip) {
-        for (var i = 0; i < types.length && !skip; i++) {
-            if (!typesRegistry[types[i]].call(null, name, value)) {
-                return;
-            }
+        if (skip) {
+            return setter(value);
         }
-        setter(value);
+        var success = true;
+        _.forEach(types, function () {
+            return success = typesRegistry[types[i]].call(null, name, value)
+        });
+        if (success) {
+            return setter(value);
+        }
     } : setter;
 
     registry[name] = {type: 'cvar', getter: getter, setter: setterWrap, cvartypes: types};
@@ -139,7 +144,7 @@ exports.setCvarNocheck = function (name, value) {
 };
 
 exports.isRegistered = function (name) {
-    return registry.hasOwnProperty(name);
+    return _.has(registry, name);
 };
 
 function toValueString(obj) {
@@ -164,7 +169,7 @@ function toValueString(obj) {
         return '[false]';
     }
     if (typeof obj === 'object') {
-        if (Array.isArray(obj)) {
+        if (_.isArray(obj)) {
             return '[array ' + obj.map(toValueString).join(" ") + ']';
         }
         // Resort to json command
@@ -177,11 +182,9 @@ function toValueString(obj) {
 
 exports.getCfgString = function () {
     var str = "";
-    for (var k in registry) {
-        if (registry.hasOwnProperty(k) && registry[k].type == 'cvar') {
-            str += k + " " + toValueString(registry[k].getter()) + ";";
-        }
-    }
+    _.forOwn(registry, function (value, key) {
+        str += key + " " + toValueString(value.getter()) + ";";
+    });
     return str;
 };
 

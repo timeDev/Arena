@@ -25,6 +25,7 @@
 
 var
 // Module
+    _ = require('lodash'),
     arena = require('../common/arena'),
     protocol = require('./protocol'),
 // Local
@@ -35,10 +36,8 @@ exports.init = function (gamedata) {
     protocol.registerPackets(packets);
     exports.makePacket = protocol.makePacket;
 };
-exports.initDom = function () {
-};
-exports.render = function () {
-};
+exports.initDom = _.noop;
+exports.render = _.noop;
 
 exports.receive = function (d) {
     if (arena.debug) {
@@ -69,11 +68,5 @@ function sendRaw(d) {
 
 function handleCommon(data) {
     // Handle all easy packets (simple response) here
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if (pck.type === 'keepAlive') {
-            // Send it right back
-            exports.send(pck);
-        }
-    }
+    _(data.packets).where({type:'keepAlive'}).forEach(exports.send);
 }

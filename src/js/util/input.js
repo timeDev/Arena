@@ -33,8 +33,7 @@ var
     prevent = false,
     mousepos = [0, 0, 0, 0],
 // Functions
-    updateMouseMoveHandler, lockChangeCb, lockErrorCb,
-    bind, unbind, check;
+    updateMouseMoveHandler, lockChangeCb, lockErrorCb;
 
 // Signals
 exports.escape = new Signal();

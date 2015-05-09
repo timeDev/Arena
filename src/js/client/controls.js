@@ -24,6 +24,7 @@
 /*global require, module, exports */
 var
 // Module
+    _ = require('lodash'),
     input = require('../util/input'),
     keycode = require('../util/keycode'),
     THREE = require('../vendor/three'),
@@ -103,11 +104,7 @@ exports.render = function () {
 exports.update = function (dt, data) {
     input.updateGamepad();
 
-    for (var i = 0; i < data.packets.length; i++) {
-        if (data.packets[i].type === 'playerDataC') {
-            handlePlayerData(data, data.packets[i]);
-        }
-    }
+    _(data.packets).where({type: 'playerDataC'}).forEach(_.partial(handlePlayerData, data));
 
     if (!data.gameState.started) {
         return;

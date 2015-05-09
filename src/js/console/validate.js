@@ -22,7 +22,9 @@
  * THE SOFTWARE.
  */
 /*global require, module, exports */
-/* Validate the args according to syntax:
+var _ = require('lodash');
+
+/** Validate the args according to syntax:
  altern: either syntax object or array of alternatives
 
  syntax.mandatory: array of mandatory positional arguments
@@ -46,7 +48,7 @@
  */
 module.exports = function validate(altern, args) {
     // Make array of alternatives
-    if (!Array.isArray(altern)) {
+    if (!_.isArray(altern)) {
         altern = [altern];
     }
     // Attempt to match alternatives in order
@@ -99,7 +101,7 @@ function matchSyntax(syntax, args) {
             continue;
         }
         success = matchArgumentType(sArg, a);
-        if (typeof sArg.condition === 'function') {
+        if (_.isFunction(sArg.condition)) {
             success = success && sArg.condition(a);
         }
         if (success) {
@@ -163,12 +165,13 @@ function matchSyntax(syntax, args) {
 function matchArgumentType(sArg, a) {
     switch (sArg.type) {
         case 'number':
+            return _.isNumber(a);
         case 'string':
-            return typeof a === sArg.type;
+            return _.isString(a);
         case 'array':
-            return Array.isArray(a);
+            return _.isArray(a);
         case 'object':
-            return typeof a === 'object' && !Array.isArray(a);
+            return _.isPlainObject(a);
         case '*':
             return true;
         case 'func':

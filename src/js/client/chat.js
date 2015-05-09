@@ -25,6 +25,7 @@
 
 var
 // Module
+    _ = require('lodash'),
     keycode = require('../util/keycode'),
     protocol = require('../net/client'),
 // Local
@@ -32,24 +33,18 @@ var
     inElement = document.createElement('input'),
     outElement = document.createElement('div');
 
-exports.init = function () {
-};
+exports.init = _.noop;
+exports.render = _.noop;
 
 exports.initDom = function () {
     document.body.appendChild(domElement);
 };
 
-exports.render = function () {
-};
-
 exports.update = function (dt, data) {
-    for (var i = 0; i < data.packets.length; i++) {
-        var pck = data.packets[i];
-        if(pck.type == 'chatMsg') {
-            exports.write(pck.msg);
-            exports.refresh();
-        }
-    }
+    _(data.packets).where({type: 'chatMsg'}).forEach(function (pck) {
+        exports.write(pck.msg);
+        exports.refresh();
+    });
 };
 
 domElement.classList.add("chat-container");
@@ -81,7 +76,7 @@ exports.refresh = function () {
     window.clearInterval(fadeId);
     window.clearTimeout(fadeWaitId);
     if (!focused) {
-        fadeWaitId = window.setTimeout(exports.fade, 3000);
+        fadeWaitId = _.delay(exports.fade, 3000);
     }
 };
 

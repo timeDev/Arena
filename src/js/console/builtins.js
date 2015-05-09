@@ -24,6 +24,7 @@
 /*global require, module, exports */
 var
 // Module
+    _ = require('lodash'),
     engine = require('./engine'),
     command = require('./command');
 
@@ -33,12 +34,12 @@ engine.registerCommand('echo', function (args) {
         engine.env.error("Syntax: echo <str> [args]");
     }
     var str = args[0];
-    if (typeof str === 'string') {
+    if (_.isString(str)) {
         str = str.replace(/\{(\d+)}/g, function (match, number) {
             return args[number + 1] !== undefined ? args[number + 1] : match;
         });
     }
-    engine.env.log(str);
+    this.log(str);
     return str;
 });
 
@@ -137,7 +138,7 @@ command("cvar create|delete|list|handle", [
 ], 'cvar', function (match) {
     if (match.matchI === 0) {
         // create mode
-        var value = match.hasOwnProperty('value') ? match.value : null;
+        var value = _.has(match, 'value') ? match.value : null;
         var handlerFn = match.handler;
         if (handlerFn) {
             var env = engine.env;
@@ -161,16 +162,15 @@ command("cvar create|delete|list|handle", [
         // list mode
         var list = [];
         var reg = engine.getRegistry();
-        for (var k in reg) {
-            if (reg.hasOwnProperty(k) && reg[k].type === 'cvar') {
-                list.push({key: k, value: reg[k].getter()});
+        _.forOwn(reg, function (value, key) {
+            if (value.type == 'cvar') {
+                list.push({key: key, value: value.getter()});
             }
-        }
+        });
         if (!match.silent || match.verbose) {
-            for (var i = 0; i < list.length; i++) {
-                var obj = list[i];
+            _.forEach(list, function (obj) {
                 this.log(obj.key + " ", obj.value);
-            }
+            })
         }
         return list;
     } else if (match.matchI === 3) {
